@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Icon } from "@/components/common/Icon";
 import { ModuleData } from "@/types/campus";
 import { AcademicsView } from "@/components/modules/AcademicsView";
+import { StudentsView } from "@/components/modules/students/StudentsView";
 
 interface ModulePlaceholderProps {
   module: ModuleData;
@@ -14,6 +15,10 @@ interface ModulePlaceholderProps {
 export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) => {
   const [activeTab, setActiveTab] = useState<"records" | "specs">("records");
   const [tableSearch, setTableSearch] = useState("");
+
+  if (module.slug === "students") {
+    return <StudentsView />;
+  }
 
   if (module.slug === "academics") {
     return <AcademicsView />;

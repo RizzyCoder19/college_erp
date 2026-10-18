@@ -280,23 +280,25 @@ interface PersonnelItem {
               </div>
               <div className="space-y-1">
                 {matchingPersonnel.map((p: PersonnelItem) => (
-                  <div
+                  <Link
                     key={p.id}
-                    className="flex items-center justify-between rounded-xl p-2.5 hover:bg-slate-50 transition-colors cursor-default"
+                    href={p.role.includes("Student") ? "/modules/students" : "/modules/faculty"}
+                    onClick={handleClose}
+                    className="flex items-center justify-between rounded-xl p-2.5 hover:bg-slate-50 transition-colors cursor-pointer group"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-xs text-slate-700">
+                      <div className="w-8 h-8 rounded-full bg-blue-50 text-[#1657D9] border border-blue-100 flex items-center justify-center font-bold text-xs">
                         {p.name.charAt(0)}
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-slate-900">
+                        <div className="text-sm font-medium text-slate-900 group-hover:text-[#1657D9] transition-colors">
                           {p.name}
                         </div>
                         <div className="text-[11px] text-slate-500">{p.role}</div>
                       </div>
                     </div>
-                    <span className="text-[11px] font-mono text-slate-400">{p.id}</span>
-                  </div>
+                    <span className="text-[11px] font-mono text-slate-400 group-hover:text-[#1657D9]">{p.id}</span>
+                  </Link>
                 ))}
               </div>
             </div>
