@@ -84,14 +84,14 @@ export const ExecutiveOverview: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Hero Image & Mottos (Featuring authentic RPIHM Campus Walkway & Students) */}
-            <div className="lg:col-span-5 relative min-h-[220px] lg:min-h-full bg-slate-900 overflow-hidden group">
+            {/* Right Hero Image & Mottos (Featuring authentic RPIHM Illuminated Campus Signage) */}
+            <div className="lg:col-span-5 relative min-h-[220px] lg:min-h-full bg-slate-950 overflow-hidden group">
               <Image
-                src="/images/campus-walkway.png"
-                alt="R. P. Institute of Hospitality & Management Campus Walkway with Students & Faculty"
+                src="/images/campus-illuminated-sign.png"
+                alt="R. P. Institute of Hospitality & Management Illuminated Campus Signage"
                 fill
                 sizes="(max-width: 1024px) 100vw, 42vw"
-                className="object-cover object-center opacity-95 transition-transform duration-700 ease-out group-hover:scale-105"
+                className="object-cover object-top sm:object-center opacity-95 transition-transform duration-700 ease-out group-hover:scale-105"
                 priority
               />
 

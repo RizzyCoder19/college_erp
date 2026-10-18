@@ -1005,12 +1005,12 @@ export default function NotFound() {
             </Link>
           </div>
 
-          {/* Authentic College Campus Illuminated Signboard Card */}
+          {/* Authentic College Campus Walkway Card */}
           <div className="mt-8 p-3 rounded-2xl bg-[#07243A]/80 border border-[#164468] shadow-lg flex items-center space-x-4">
             <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden shrink-0 border border-[#1F537A]">
               <Image
-                src="/images/campus-illuminated-sign.png"
-                alt="R. P. Institute of Hospitality & Management Illuminated Campus Signboard"
+                src="/images/campus-walkway.png"
+                alt="R. P. Institute of Hospitality & Management Campus Walkway & Student Corridor"
                 fill
                 sizes="(max-width: 640px) 96px, 112px"
                 className="object-cover object-center"
@@ -1019,7 +1019,7 @@ export default function NotFound() {
             </div>
             <div className="min-w-0 flex-1">
               <span className="text-[11px] font-bold text-[#67B1E0] uppercase tracking-wider block">
-                Official Campus Signage
+                Vasai West Campus
               </span>
               <p className="text-xs font-semibold text-white leading-tight mt-0.5 truncate">
                 R. P. Institute of Hospitality & Management
