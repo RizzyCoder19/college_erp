@@ -1005,27 +1005,27 @@ export default function NotFound() {
             </Link>
           </div>
 
-          {/* Authentic College Campus Image Card */}
+          {/* Authentic College Campus Illuminated Signboard Card */}
           <div className="mt-8 p-3 rounded-2xl bg-[#07243A]/80 border border-[#164468] shadow-lg flex items-center space-x-4">
-            <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden shrink-0 border border-[#1F537A]">
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden shrink-0 border border-[#1F537A]">
               <Image
-                src="/images/campus-gate.jpeg"
-                alt="R. P. Institute of Hospitality & Management Campus Gate, Vasai"
+                src="/images/campus-illuminated-sign.png"
+                alt="R. P. Institute of Hospitality & Management Illuminated Campus Signboard"
                 fill
-                sizes="(max-width: 640px) 80px, 96px"
-                className="object-cover"
+                sizes="(max-width: 640px) 96px, 112px"
+                className="object-cover object-center"
                 priority
               />
             </div>
             <div className="min-w-0 flex-1">
               <span className="text-[11px] font-bold text-[#67B1E0] uppercase tracking-wider block">
-                Vasai West Campus
+                Official Campus Signage
               </span>
               <p className="text-xs font-semibold text-white leading-tight mt-0.5 truncate">
                 R. P. Institute of Hospitality & Management
               </p>
               <p className="text-[11px] text-[#93BDD9] leading-normal mt-1">
-                Affiliated to University of Mumbai. For syllabus, notices or attendance, navigate via the CampusOS menu.
+                Affiliated to University of Mumbai • Vasai (West). For syllabus, notices, or attendance records, please return to the CampusOS dashboard.
               </p>
             </div>
           </div>

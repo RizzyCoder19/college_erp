@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import Image from "next/image";
 import { Icon } from "@/components/common/Icon";
 import { FICTIONAL_USER } from "@/data/mockData";
 
@@ -76,6 +77,29 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
               <span className="text-slate-400 block mb-0.5">Academic Session</span>
               <span className="font-medium text-slate-800">{FICTIONAL_USER.academicYear}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-slate-200">
+              <Image
+                src="/images/campus-front-gate.jpg"
+                alt="RPIHM Campus Vasai"
+                fill
+                sizes="48px"
+                className="object-cover"
+              />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold text-[#1657D9] uppercase tracking-wider block">
+                Campus Location
+              </span>
+              <p className="text-xs font-semibold text-slate-800 truncate">
+                Vasai (West) Main Campus, Palghar
+              </p>
+              <p className="text-[10px] text-slate-400">
+                R.P. Educational Trust • Affiliated to Univ. of Mumbai
+              </p>
             </div>
           </div>
 

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Icon } from "@/components/common/Icon";
 import { ModuleData } from "@/types/campus";
 import { AcademicsView } from "@/components/modules/AcademicsView";
@@ -93,6 +94,87 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
           ))}
         </div>
       </div>
+
+      {/* Campus Infrastructure Showcase (Featured for Hospitality Labs & Facilities) */}
+      {module.slug === "facilities" && (
+        <div className="rounded-2xl bg-white p-6 border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 font-serif">
+                Campus Infrastructure & Academic Facilities
+              </h3>
+              <p className="text-xs text-slate-500">
+                On-site facilities at R. P. Institute of Hospitality & Management, Vasai (West)
+              </p>
+            </div>
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-[#1657D9] border border-blue-100">
+              Vasai West Campus
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+            {/* Facility Card 1: Multi-Level Academic Block */}
+            <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 group shadow-2xs">
+              <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
+                <Image
+                  src="/images/campus-staircase.png"
+                  alt="Multi-Level Academic Block & Laboratory Access"
+                  fill
+                  sizes="(max-width: 640px) 100vw, 33vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+                <span className="absolute bottom-2.5 left-3 text-xs font-bold text-white drop-shadow-sm">
+                  Academic Block & Lab Staircase
+                </span>
+              </div>
+              <div className="p-3 text-xs text-slate-600">
+                Multi-level vertical circulation connecting basic training kitchens, advanced bakery units, and IT laboratories.
+              </div>
+            </div>
+
+            {/* Facility Card 2: Student Walkway & Academic Corridors */}
+            <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 group shadow-2xs">
+              <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
+                <Image
+                  src="/images/campus-walkway.png"
+                  alt="Student Academic Walkway & Inspiration Corridors"
+                  fill
+                  sizes="(max-width: 640px) 100vw, 33vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+                <span className="absolute bottom-2.5 left-3 text-xs font-bold text-white drop-shadow-sm">
+                  Student Walkway & Inspiration Hall
+                </span>
+              </div>
+              <div className="p-3 text-xs text-slate-600">
+                Covered daylight thoroughfare lined with lush greenery and inspirational memorials of Dr. APJ Abdul Kalam and Albert Einstein.
+              </div>
+            </div>
+
+            {/* Facility Card 3: Main Entrance & Admissions Portal */}
+            <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 group shadow-2xs">
+              <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
+                <Image
+                  src="/images/campus-front-gate.jpg"
+                  alt="Campus Main Entrance & Affiliation Board"
+                  fill
+                  sizes="(max-width: 640px) 100vw, 33vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+                <span className="absolute bottom-2.5 left-3 text-xs font-bold text-white drop-shadow-sm">
+                  Campus Gate & Degree Center
+                </span>
+              </div>
+              <div className="p-3 text-xs text-slate-600">
+                Official institutional gateway hosting admissions counseling for Hospitality Studies, Computer Science, and Data Science.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Institutional Module Scope */}
       <div className="rounded-xl bg-slate-50 border border-slate-200 p-3.5 text-xs text-slate-600 flex items-center justify-between">

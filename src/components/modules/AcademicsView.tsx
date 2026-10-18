@@ -278,13 +278,13 @@ export const AcademicsView: React.FC = () => {
         <div className="lg:col-span-4 space-y-6">
           {/* Programme Overview Card matching reference image */}
           <div className="rounded-2xl bg-white border border-slate-200/90 shadow-2xs overflow-hidden">
-            <div className="relative h-40 bg-slate-900">
+            <div className="relative h-44 bg-slate-900">
               <Image
-                src="/images/reference-hero.png"
-                alt="RPIHM Campus Faculty & Facilities"
+                src="/images/campus-front-gate.jpg"
+                alt="R. P. Institute of Hospitality & Management Campus Gate & Affiliation Board"
                 fill
                 sizes="(max-width: 1024px) 100vw, 33vw"
-                className="object-cover opacity-90"
+                className="object-cover object-center opacity-90 transition-transform duration-500 hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0B1528] via-[#0B1528]/40 to-transparent"></div>
               <div className="absolute bottom-3 left-4 right-4 text-white">
