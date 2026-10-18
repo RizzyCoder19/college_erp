@@ -7,6 +7,7 @@ import { Icon } from "@/components/common/Icon";
 import { ModuleData } from "@/types/campus";
 import { AcademicsView } from "@/components/modules/AcademicsView";
 import { StudentsView } from "@/components/modules/students/StudentsView";
+import { FacultyView } from "@/components/modules/faculty/FacultyView";
 
 interface ModulePlaceholderProps {
   module: ModuleData;
@@ -22,6 +23,10 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
 
   if (module.slug === "academics") {
     return <AcademicsView />;
+  }
+
+  if (module.slug === "faculty") {
+    return <FacultyView />;
   }
 
   const filteredRows = module.mockRecords.rows.filter((row) =>

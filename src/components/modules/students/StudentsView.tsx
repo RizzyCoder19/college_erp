@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Icon } from "@/components/common/Icon";
@@ -15,27 +15,29 @@ import { DeleteConfirmModal } from "./DeleteConfirmModal";
 const STORAGE_KEY = "rpihm_student_records_v1";
 
 export const StudentsView: React.FC = () => {
-  const [students, setStudents] = useState<StudentRecord[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-          }
-        }
-      } catch {
-        // LocalStorage error fallback
-      }
-    }
-    return INITIAL_STUDENT_RECORDS;
-  });
+  const [students, setStudents] = useState<StudentRecord[]>(INITIAL_STUDENT_RECORDS);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProgramme, setSelectedProgramme] = useState("all");
   const [selectedSemester, setSelectedSemester] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedFee, setSelectedFee] = useState("all");
+
+  // Hydrate from localStorage after mount to prevent SSR hydration mismatch
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          requestAnimationFrame(() => {
+            setStudents(parsed);
+          });
+        }
+      }
+    } catch {
+      // LocalStorage error fallback
+    }
+  }, []);
 
   // Modals state
   const [detailStudent, setDetailStudent] = useState<StudentRecord | null>(null);

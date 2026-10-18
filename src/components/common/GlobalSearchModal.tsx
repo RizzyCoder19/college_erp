@@ -68,10 +68,12 @@ interface PersonnelItem {
   // Institutional personnel (Students & Faculty)
   const matchingPersonnel = useMemo<PersonnelItem[]>(() => {
     const list: PersonnelItem[] = [
-      { name: "Chef Vikramaditya Kapoor", role: "Executive Chef Instructor • Continental Kitchen", id: "FAC-012" },
-      { name: "Dr. Rajesh V. Nair", role: "Professor & HOD • Information Technology", id: "FAC-031" },
-      { name: "Prof. Snehal Kulkarni", role: "Assistant Professor • Data Science & AI", id: "FAC-045" },
-      { name: "Prof. Sneha Pillai", role: "Associate Professor & HOD • Food & Beverage Service", id: "FAC-024" },
+      { name: "Chef Vikramaditya Kapoor", role: "Executive Chef Instructor • Continental Kitchen", id: "RPIHM-FAC-012" },
+      { name: "Dr. Rajesh V. Nair", role: "Professor & HOD • Computing & Data Science", id: "RPIHM-FAC-031" },
+      { name: "Prof. Snehal Kulkarni", role: "Assistant Professor • Data Science & AI", id: "RPIHM-FAC-045" },
+      { name: "Prof. Sneha Pillai", role: "Associate Professor & HOD • F&B Operations", id: "RPIHM-FAC-024" },
+      { name: "Chef Laurent Deschanel", role: "Master Patissier Instructor • Artisan Bakery", id: "RPIHM-FAC-059" },
+      { name: "Mrs. Meenakshi Iyer", role: "Registrar & Academic Affairs Officer • Administration", id: "RPIHM-FAC-094" },
       { name: "Aarav Sharma", role: "Student • B.Sc. Data Science with AI (FY)", id: "2026DS041" },
       { name: "Nandini Swaminathan", role: "Student • B.Sc. Hospitality Studies (FY)", id: "2026HS088" },
       { name: "Rohan K. Verma", role: "Student • B.Sc. Information Technology (SY)", id: "2025IT112" },
