@@ -15,12 +15,28 @@ import {
 export const ExecutiveOverview: React.FC = () => {
   return (
     <div className="space-y-6">
-      {/* 1. Welcome Hero Banner with Real Campus Photography */}
+      {/* 1. Welcome Hero Banner with Real Campus Photography Camouflage & Zoom */}
       <AnimatedReveal delay={0}>
-        <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/90 shadow-xs">
-          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[220px]">
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200/90 shadow-xs group bg-[#071322]">
+          {/* Full-box background camouflage image with smooth cursor hover zoom */}
+          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            <Image
+              src="/images/campus-illuminated-sign.png"
+              alt="R. P. Institute of Hospitality & Management Campus Signage"
+              fill
+              sizes="100vw"
+              className="object-cover object-center sm:object-right transition-transform duration-700 ease-out group-hover:scale-110 opacity-90"
+              priority
+            />
+            {/* Camouflage blending: frosted white on left, dark navy institutional vignette on right */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/30 lg:w-[62%] z-10 backdrop-blur-[2px]"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0B1528]/85 via-[#0B1528]/30 to-transparent z-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#0B1528]/20 to-[#0B1528]/70 hidden lg:block z-10"></div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[220px] relative z-10">
             {/* Left Hero Content */}
-            <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between z-10 bg-white">
+            <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between">
               <div>
                 <div className="flex items-center space-x-2 text-xs font-bold text-[#D92534] tracking-wider uppercase">
                   <span className="w-5 h-[2.5px] bg-[#D92534]"></span>
@@ -44,7 +60,7 @@ export const ExecutiveOverview: React.FC = () => {
               <div className="mt-6 flex flex-wrap items-center gap-2">
                 <Link
                   href="/modules/admissions"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200 hover:border-blue-200 shadow-2xs transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white/90 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200/90 hover:border-blue-200 shadow-2xs transition-all cursor-pointer backdrop-blur-xs"
                 >
                   <Icon name="users" className="h-3.5 w-3.5 text-[#1657D9]" />
                   <span>Admissions</span>
@@ -52,7 +68,7 @@ export const ExecutiveOverview: React.FC = () => {
 
                 <Link
                   href="/modules/academics"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200 hover:border-blue-200 shadow-2xs transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white/90 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200/90 hover:border-blue-200 shadow-2xs transition-all cursor-pointer backdrop-blur-xs"
                 >
                   <Icon name="academic-cap" className="h-3.5 w-3.5 text-[#1657D9]" />
                   <span>Academics</span>
@@ -60,7 +76,7 @@ export const ExecutiveOverview: React.FC = () => {
 
                 <Link
                   href="/modules/faculty"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200 hover:border-blue-200 shadow-2xs transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white/90 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200/90 hover:border-blue-200 shadow-2xs transition-all cursor-pointer backdrop-blur-xs"
                 >
                   <Icon name="briefcase" className="h-3.5 w-3.5 text-[#1657D9]" />
                   <span>Faculty & Staff</span>
@@ -68,7 +84,7 @@ export const ExecutiveOverview: React.FC = () => {
 
                 <Link
                   href="/modules/examinations"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200 hover:border-blue-200 shadow-2xs transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white/90 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200/90 hover:border-blue-200 shadow-2xs transition-all cursor-pointer backdrop-blur-xs"
                 >
                   <Icon name="document-text" className="h-3.5 w-3.5 text-[#1657D9]" />
                   <span>Examinations</span>
@@ -76,7 +92,7 @@ export const ExecutiveOverview: React.FC = () => {
 
                 <Link
                   href="/modules/placements"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200 hover:border-blue-200 shadow-2xs transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white/90 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200/90 hover:border-blue-200 shadow-2xs transition-all cursor-pointer backdrop-blur-xs"
                 >
                   <Icon name="award" className="h-3.5 w-3.5 text-[#1657D9]" />
                   <span>Placements</span>
@@ -84,41 +100,26 @@ export const ExecutiveOverview: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Hero Image & Mottos (Featuring authentic RPIHM Illuminated Campus Signage) */}
-            <div className="lg:col-span-5 relative min-h-[220px] lg:min-h-full bg-slate-950 overflow-hidden group">
-              <Image
-                src="/images/campus-illuminated-sign.png"
-                alt="R. P. Institute of Hospitality & Management Illuminated Campus Signage"
-                fill
-                sizes="(max-width: 1024px) 100vw, 42vw"
-                className="object-cover object-top sm:object-center opacity-95 transition-transform duration-700 ease-out group-hover:scale-105"
-                priority
-              />
-
-              {/* Gradient Overlays for smooth institutional blending */}
-              <div className="absolute inset-0 bg-gradient-to-r from-white via-white/30 to-transparent hidden lg:block w-24 z-10 pointer-events-none"></div>
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0B1528]/85 via-[#0B1528]/30 to-transparent pointer-events-none"></div>
-
-              <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-between items-end text-right z-10 pointer-events-none">
-                <div className="text-white space-y-1 drop-shadow-md">
-                  <div className="text-[11px] font-bold tracking-widest uppercase text-white/95">
-                    PEOPLE
-                  </div>
-                  <div className="text-[11px] font-bold tracking-widest uppercase text-white/95">
-                    PROGRAMMES
-                  </div>
-                  <div className="text-[11px] font-bold tracking-widest uppercase text-white/95">
-                    PRACTICE
-                  </div>
-                  <div className="text-[11px] font-bold tracking-widest uppercase text-white/95">
-                    POSSIBILITIES
-                  </div>
-                  <div className="w-8 h-[2px] bg-[#D92534] ml-auto mt-1"></div>
+            {/* Right Hero Wing with Mottos */}
+            <div className="lg:col-span-5 relative min-h-[220px] lg:min-h-full p-5 sm:p-6 flex flex-col justify-between items-end text-right z-10 pointer-events-none">
+              <div className="text-white space-y-1 drop-shadow-md">
+                <div className="text-[11px] font-bold tracking-widest uppercase text-white/95">
+                  PEOPLE
                 </div>
-
-                <div className="text-amber-100 font-serif italic text-base sm:text-lg drop-shadow-md">
-                  Learning Beyond Classrooms
+                <div className="text-[11px] font-bold tracking-widest uppercase text-white/95">
+                  PROGRAMMES
                 </div>
+                <div className="text-[11px] font-bold tracking-widest uppercase text-white/95">
+                  PRACTICE
+                </div>
+                <div className="text-[11px] font-bold tracking-widest uppercase text-white/95">
+                  POSSIBILITIES
+                </div>
+                <div className="w-8 h-[2px] bg-[#D92534] ml-auto mt-1"></div>
+              </div>
+
+              <div className="text-amber-100 font-serif italic text-base sm:text-lg drop-shadow-md">
+                Learning Beyond Classrooms
               </div>
             </div>
           </div>
