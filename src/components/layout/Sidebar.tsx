@@ -22,16 +22,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
   const systemModules = MODULES_LIST.filter((m) => m.category === "system");
 
   return (
-    <aside className="flex h-full w-64 flex-col bg-[#0B1528] text-slate-300 border-r border-[#16243E] select-none text-[15px]">
+    <div className="flex h-full w-full flex-col bg-[#0B1528] text-slate-300 select-none text-[15px]">
       {/* Brand & Official Logo Header */}
-      <div className="px-5 py-5 border-b border-[#16243E] bg-[#070E1C]/80">
+      <div className="px-5 py-5 border-b border-[#16243E] bg-[#070E1C]/90">
         <Link
           href="/"
           onClick={onNavigate}
           className="flex flex-col gap-2 group focus:outline-none"
         >
           {/* Official Logo */}
-          <div className="bg-white/95 rounded-lg p-2 shadow-xs border border-white/20 transition-all group-hover:bg-white">
+          <div className="bg-white rounded-lg p-2.5 shadow-xs border border-white/20 transition-all group-hover:shadow-md">
             <Image
               src="/images/rpihm-logo.webp"
               alt="R. P. Institute of Hospitality & Management"
@@ -60,14 +60,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
 
       {/* Navigation Scrollable Body */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-        {/* Dashboard Link */}
+        {/* Dashboard Link with Magic Navigation Active Indicator */}
         <nav className="space-y-1">
           <Link
             href="/"
             onClick={onNavigate}
             className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 transition-all ${
               isDashboard
-                ? "magic-nav-active"
+                ? "magic-nav-active bg-[#1657D9] text-white font-semibold shadow-md"
                 : "text-slate-300 hover:bg-[#13223E] hover:text-white"
             }`}
           >
@@ -77,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
                 isDashboard ? "text-white" : "text-slate-400"
               }`}
             />
-            <span className="font-medium">Dashboard</span>
+            <span>Dashboard</span>
           </Link>
         </nav>
 
@@ -92,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
                 onClick={onNavigate}
                 className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2 transition-all ${
                   isActive
-                    ? "magic-nav-active"
+                    ? "magic-nav-active bg-[#1657D9] text-white font-semibold shadow-md"
                     : "text-slate-300 hover:bg-[#13223E] hover:text-white"
                 }`}
               >
@@ -123,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
                   onClick={onNavigate}
                   className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2 transition-all ${
                     isActive
-                      ? "magic-nav-active"
+                      ? "magic-nav-active bg-[#1657D9] text-white font-semibold shadow-md"
                       : "text-slate-300 hover:bg-[#13223E] hover:text-white"
                   }`}
                 >
@@ -161,7 +161,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
         </div>
 
         <div className="mt-2 flex items-start space-x-2 p-2 rounded-lg bg-red-950/40 border border-red-800/40 text-[11px] text-red-200">
-          <span className="w-2 h-2 rounded-full bg-red-500 shrink-0 mt-0.5"></span>
+          <span className="w-2 h-2 rounded-full bg-[#D92534] shrink-0 mt-0.5"></span>
           <div>
             <strong className="font-bold text-red-400">Demonstration Mode</strong>
             <p className="text-slate-400 text-[10px] leading-tight mt-0.5">
@@ -170,6 +170,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
           </div>
         </div>
       </div>
-    </aside>
+    </div>
   );
 };

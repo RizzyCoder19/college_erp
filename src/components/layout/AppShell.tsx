@@ -15,29 +15,32 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   return (
-    <div className="flex min-h-dvh w-full bg-[#F4F6F9] text-slate-900 antialiased">
-      {/* Desktop Persistent Dark Navy Sidebar */}
-      <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 z-30 shadow-lg">
+    <div className="min-h-screen w-full bg-[#F4F6F9] text-slate-900 flex flex-col relative">
+      {/* 1. Desktop Persistent Dark Navy Sidebar */}
+      <aside
+        className="hidden lg:flex flex-col fixed top-0 bottom-0 left-0 w-64 h-screen z-40 bg-[#0B1528] border-r border-[#16243E] overflow-y-auto"
+        aria-label="Institutional Sidebar"
+      >
         <Sidebar onOpenHelp={() => setIsHelpOpen(true)} />
-      </div>
+      </aside>
 
-      {/* Mobile Responsive Drawer */}
+      {/* 2. Mobile Responsive Drawer */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-50 flex lg:hidden bg-slate-900/60 backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 z-50 flex lg:hidden bg-slate-900/70 backdrop-blur-xs transition-opacity"
           onClick={() => setMobileMenuOpen(false)}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="relative flex w-72 max-w-xs flex-1 flex-col bg-[#0B1528] shadow-2xl"
+            className="relative flex w-72 max-w-xs flex-1 flex-col bg-[#0B1528] shadow-2xl h-full"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="absolute top-3 right-3 z-10">
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-[#13223E] cursor-pointer"
                 aria-label="Close navigation drawer"
               >
                 <Icon name="x-mark" className="h-5 w-5" />
@@ -52,14 +55,16 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         </div>
       )}
 
-      {/* Main Workspace Area */}
-      <div className="flex flex-1 flex-col lg:pl-64 min-h-dvh">
+      {/* 3. Main Workspace Column (Padded by 16rem / 256px on desktop to clear sidebar) */}
+      <div className="flex-1 flex flex-col min-w-0 lg:pl-64 w-full">
+        {/* Dark Navy Institutional Top Bar */}
         <TopBar
           onToggleMobileSidebar={() => setMobileMenuOpen(true)}
           academicYear={academicYear}
           onYearChange={setAcademicYear}
         />
 
+        {/* Dashboard / Module Content */}
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
@@ -113,7 +118,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               </div>
               <button
                 onClick={() => setIsHelpOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
               >
                 <Icon name="x-mark" className="h-5 w-5" />
               </button>
