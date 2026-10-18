@@ -40,39 +40,64 @@ export const ExecutiveOverview: React.FC = () => {
                 </p>
               </div>
 
-              {/* 3 Pillar Pill Badges */}
-              <div className="mt-6 flex flex-wrap items-center gap-2.5">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
+              {/* 5 Quick Action Module Pills matching reference */}
+              <div className="mt-6 flex flex-wrap items-center gap-2">
+                <Link
+                  href="/modules/admissions"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200 hover:border-blue-200 shadow-2xs transition-all cursor-pointer"
+                >
+                  <Icon name="users" className="h-3.5 w-3.5 text-[#1657D9]" />
+                  <span>Admissions</span>
+                </Link>
+
+                <Link
+                  href="/modules/academics"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200 hover:border-blue-200 shadow-2xs transition-all cursor-pointer"
+                >
                   <Icon name="academic-cap" className="h-3.5 w-3.5 text-[#1657D9]" />
-                  <span>Academic Excellence</span>
-                </span>
+                  <span>Academics</span>
+                </Link>
 
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
+                <Link
+                  href="/modules/faculty"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200 hover:border-blue-200 shadow-2xs transition-all cursor-pointer"
+                >
                   <Icon name="briefcase" className="h-3.5 w-3.5 text-[#1657D9]" />
-                  <span>Industry Exposure</span>
-                </span>
+                  <span>Faculty & Staff</span>
+                </Link>
 
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
+                <Link
+                  href="/modules/examinations"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200 hover:border-blue-200 shadow-2xs transition-all cursor-pointer"
+                >
+                  <Icon name="document-text" className="h-3.5 w-3.5 text-[#1657D9]" />
+                  <span>Examinations</span>
+                </Link>
+
+                <Link
+                  href="/modules/placements"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200 hover:border-blue-200 shadow-2xs transition-all cursor-pointer"
+                >
                   <Icon name="award" className="h-3.5 w-3.5 text-[#1657D9]" />
-                  <span>Holistic Development</span>
-                </span>
+                  <span>Placements</span>
+                </Link>
               </div>
             </div>
 
-            {/* Right Hero Image & Mottos (Using genuine campus entrance photography) */}
-            <div className="lg:col-span-5 relative min-h-[200px] lg:min-h-full bg-slate-900 overflow-hidden group">
+            {/* Right Hero Image & Mottos (Using exact reference campus building photography) */}
+            <div className="lg:col-span-5 relative min-h-[220px] lg:min-h-full bg-slate-900 overflow-hidden group">
               <Image
-                src="/images/campus-gate.jpeg"
-                alt="RPIHM Vasai Main Entrance & Accredited Campus Signage"
+                src="/images/reference-hero.png"
+                alt="RPIHM Campus Building & Palm Grounds"
                 fill
                 sizes="(max-width: 1024px) 100vw, 42vw"
-                className="object-cover object-top opacity-90 transition-transform duration-700 ease-out group-hover:scale-105"
+                className="object-cover object-center opacity-95 transition-transform duration-700 ease-out group-hover:scale-105"
                 priority
               />
 
-              {/* Gradient Overlays for readable text blending */}
-              <div className="absolute inset-0 bg-gradient-to-r from-white via-white/40 to-transparent hidden lg:block w-28 z-10 pointer-events-none"></div>
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0B1528]/90 via-[#0B1528]/40 to-transparent pointer-events-none"></div>
+              {/* Gradient Overlays for smooth institutional blending */}
+              <div className="absolute inset-0 bg-gradient-to-r from-white via-white/30 to-transparent hidden lg:block w-24 z-10 pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0B1528]/85 via-[#0B1528]/30 to-transparent pointer-events-none"></div>
 
               <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-between items-end text-right z-10 pointer-events-none">
                 <div className="text-white space-y-1 drop-shadow-md">
@@ -100,7 +125,7 @@ export const ExecutiveOverview: React.FC = () => {
         </div>
       </AnimatedReveal>
 
-      {/* 2. Concise Row of Readable Summary Metrics (4 cards with staggered animation) */}
+      {/* 2. Concise Row of Readable Summary Metrics (4 cards matching reference) */}
       <AnimatedReveal delay={100}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {EXECUTIVE_METRICS.map((metric, idx) => (
@@ -124,11 +149,8 @@ export const ExecutiveOverview: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                  {metric.change}
-                </span>
-                <Icon name="sparkline" className="h-4 w-4 text-slate-300" />
+              <div className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-500">
+                {metric.caption}
               </div>
             </div>
           ))}
@@ -143,9 +165,11 @@ export const ExecutiveOverview: React.FC = () => {
             <div>
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center space-x-2">
-                  <Icon name="document-text" className="h-5 w-5 text-[#1657D9]" />
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-[#1657D9] border border-blue-100">
+                    16 Oct 2026
+                  </span>
                   <h3 className="text-[15px] font-bold text-slate-900">
-                    Recent Academic Activity
+                    Academic Activity
                   </h3>
                 </div>
                 <Link
@@ -162,15 +186,15 @@ export const ExecutiveOverview: React.FC = () => {
                   <div key={act.id} className="flex items-start space-x-3 text-xs">
                     <div className="mt-1 w-2.5 h-2.5 rounded-full bg-[#1657D9] shrink-0"></div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-1">
                         <span className="font-bold text-slate-800 truncate">
                           {act.title}
                         </span>
                         <span
-                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
                             act.status === "Ongoing"
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-slate-100 text-slate-600"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-slate-100 text-slate-600 border border-slate-200"
                           }`}
                         >
                           {act.status}
@@ -220,6 +244,8 @@ export const ExecutiveOverview: React.FC = () => {
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                           item.type === "Lab Session"
                             ? "bg-blue-100 text-[#1657D9]"
+                            : item.type === "Class"
+                            ? "bg-indigo-100 text-indigo-800"
                             : item.type === "Examination"
                             ? "bg-amber-100 text-amber-800"
                             : item.type === "Event"

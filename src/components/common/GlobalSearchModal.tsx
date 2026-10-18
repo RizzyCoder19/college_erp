@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Icon } from "@/components/common/Icon";
 import { MODULES_LIST, ACADEMIC_PROGRAMMES } from "@/data/mockData";
+import { AcademicProgramme, ModuleData } from "@/types/campus";
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
@@ -15,64 +17,108 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   onClose,
 }) => {
   const [query, setQuery] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const handleClose = useCallback(() => {
     setQuery("");
+    setSelectedIndex(0);
     onClose();
   }, [onClose]);
 
   useEffect(() => {
     if (isOpen) {
       const timer = setTimeout(() => inputRef.current?.focus(), 50);
-      return () => clearTimeout(timer);
+      document.body.style.overflow = "hidden";
+      return () => {
+        clearTimeout(timer);
+        document.body.style.overflow = "unset";
+      };
     }
   }, [isOpen]);
 
-  // Handle escape key
+interface PersonnelItem {
+  name: string;
+  role: string;
+  id: string;
+}
+
+  // Filter modules
+  const matchingModules = useMemo(() => {
+    return MODULES_LIST.filter(
+      (m: ModuleData) =>
+        m.title.toLowerCase().includes(query.toLowerCase()) ||
+        m.department.toLowerCase().includes(query.toLowerCase()) ||
+        m.description.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [query]);
+
+  // Filter academic programmes
+  const matchingProgrammes = useMemo(() => {
+    return ACADEMIC_PROGRAMMES.filter(
+      (p: AcademicProgramme) =>
+        p.name.toLowerCase().includes(query.toLowerCase()) ||
+        p.code.toLowerCase().includes(query.toLowerCase()) ||
+        p.department.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [query]);
+
+  // Institutional personnel (Students & Faculty)
+  const matchingPersonnel = useMemo<PersonnelItem[]>(() => {
+    const list: PersonnelItem[] = [
+      { name: "Chef Vikramaditya Kapoor", role: "Executive Chef Instructor • Continental Kitchen", id: "FAC-012" },
+      { name: "Dr. Rajesh V. Nair", role: "Professor & HOD • Information Technology", id: "FAC-031" },
+      { name: "Prof. Snehal Kulkarni", role: "Assistant Professor • Data Science & AI", id: "FAC-045" },
+      { name: "Prof. Sneha Pillai", role: "Associate Professor & HOD • Food & Beverage Service", id: "FAC-024" },
+      { name: "Aarav Sharma", role: "Student • B.Sc. Data Science with AI (FY)", id: "2026DS041" },
+      { name: "Nandini Swaminathan", role: "Student • B.Sc. Hospitality Studies (FY)", id: "2026HS088" },
+      { name: "Rohan K. Verma", role: "Student • B.Sc. Information Technology (SY)", id: "2025IT112" },
+    ];
+    return list.filter(
+      (p: PersonnelItem) =>
+        p.name.toLowerCase().includes(query.toLowerCase()) ||
+        p.role.toLowerCase().includes(query.toLowerCase()) ||
+        p.id.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [query]);
+
+  // Flatten actionable items for keyboard navigation
+  const actionableItems = useMemo(() => {
+    return [
+      ...matchingProgrammes.map((p: AcademicProgramme) => ({ type: "programme" as const, href: "/modules/academics", id: p.id })),
+      ...matchingModules.map((m: ModuleData) => ({ type: "module" as const, href: `/modules/${m.slug}`, id: m.slug })),
+    ];
+  }, [matchingProgrammes, matchingModules]);
+
+  // Handle keyboard navigation: Escape, ArrowDown, ArrowUp, Enter
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
+      if (!isOpen) return;
+
+      if (e.key === "Escape") {
+        e.preventDefault();
         handleClose();
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((prev) => (actionableItems.length > 0 ? (prev + 1) % actionableItems.length : 0));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((prev) => (actionableItems.length > 0 ? (prev - 1 + actionableItems.length) % actionableItems.length : 0));
+      } else if (e.key === "Enter") {
+        if (actionableItems.length > 0 && actionableItems[selectedIndex]) {
+          e.preventDefault();
+          const target = actionableItems[selectedIndex];
+          handleClose();
+          router.push(target.href);
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, handleClose]);
+  }, [isOpen, handleClose, actionableItems, selectedIndex, router]);
 
   if (!isOpen) return null;
-
-  // Filter modules
-  const matchingModules = MODULES_LIST.filter(
-    (m) =>
-      m.title.toLowerCase().includes(query.toLowerCase()) ||
-      m.department.toLowerCase().includes(query.toLowerCase()) ||
-      m.description.toLowerCase().includes(query.toLowerCase())
-  );
-
-  // Filter academic programmes
-  const matchingProgrammes = ACADEMIC_PROGRAMMES.filter(
-    (p) =>
-      p.name.toLowerCase().includes(query.toLowerCase()) ||
-      p.code.toLowerCase().includes(query.toLowerCase()) ||
-      p.department.toLowerCase().includes(query.toLowerCase())
-  );
-
-  // Fictional demonstration people (Students & Faculty)
-  const fictionalPeople = [
-    { name: "Chef Vikramaditya Kapoor", role: "Executive Chef Instructor • Continental Kitchen", id: "FAC-012" },
-    { name: "Dr. Rajesh V. Nair", role: "Professor & HOD • Information Technology", id: "FAC-031" },
-    { name: "Prof. Snehal Kulkarni", role: "Assistant Professor • Data Science & AI", id: "FAC-045" },
-    { name: "Prof. Sneha Pillai", role: "Associate Professor & HOD • Food & Beverage Service", id: "FAC-024" },
-    { name: "Aarav Sharma", role: "Student • B.Sc. Data Science with AI (FY)", id: "2026DS041" },
-    { name: "Nandini Swaminathan", role: "Student • B.Sc. Hospitality Studies (FY)", id: "2026HS088" },
-    { name: "Rohan K. Verma", role: "Student • B.Sc. Information Technology (SY)", id: "2025IT112" },
-  ].filter(
-    (p) =>
-      p.name.toLowerCase().includes(query.toLowerCase()) ||
-      p.role.toLowerCase().includes(query.toLowerCase()) ||
-      p.id.toLowerCase().includes(query.toLowerCase())
-  );
 
   return (
     <div
@@ -80,7 +126,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       onClick={handleClose}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="global-search-title"
+      aria-label="Institutional Search"
     >
       <div
         className="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 border border-slate-200"
@@ -91,12 +137,16 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           <Icon name="search" className="h-5 w-5 text-[#1657D9] mr-3 shrink-0" />
           <input
             ref={inputRef}
-            id="global-search-title"
+            id="global-search-input"
             type="text"
             className="w-full bg-transparent text-slate-900 placeholder:text-slate-400 focus:outline-none text-base"
-            placeholder="Type to search programmes, students, faculty, or modules (e.g. 'Data Science', 'Bakery', 'Fees')..."
+            placeholder="Search students, faculty, programmes, schedules, notices…"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setSelectedIndex(0);
+            }}
+            aria-label="Search students, faculty, programmes, schedules, notices"
           />
           <button
             onClick={handleClose}
@@ -109,12 +159,20 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
         {/* Results Area */}
         <div className="max-h-[60vh] overflow-y-auto p-4 space-y-4 text-xs">
-          {/* Institutional Note */}
+          {/* Institutional Note & Keyboard Hint */}
           <div className="text-[11px] text-slate-500 bg-blue-50/60 p-2.5 rounded-lg border border-blue-100 flex items-center justify-between">
             <span>RPIHM Instant Institutional Search</span>
-            <span className="font-mono text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200">
-              ESC to close
-            </span>
+            <div className="flex items-center space-x-2">
+              <span className="font-mono text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200">
+                ↑↓ to navigate
+              </span>
+              <span className="font-mono text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200">
+                ↵ to select
+              </span>
+              <span className="font-mono text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200">
+                ESC to close
+              </span>
+            </div>
           </div>
 
           {/* Academic Programmes */}
@@ -124,31 +182,38 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                 Programmes (Technology & Hospitality)
               </div>
               <div className="space-y-1">
-                {matchingProgrammes.map((p) => (
-                  <Link
-                    key={p.id}
-                    href="/modules/academics"
-                    onClick={handleClose}
-                    className="flex items-center justify-between rounded-xl p-2.5 hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200 group"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 rounded-lg bg-blue-50 text-[#1657D9] border border-blue-100">
-                        <Icon name="academic-cap" className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-slate-900 group-hover:text-[#1657D9]">
-                          {p.name}
+                {matchingProgrammes.map((p: AcademicProgramme, pIdx: number) => {
+                  const isSelected = selectedIndex === pIdx;
+                  return (
+                    <Link
+                      key={p.id}
+                      href="/modules/academics"
+                      onClick={handleClose}
+                      className={`flex items-center justify-between rounded-xl p-2.5 transition-colors border ${
+                        isSelected
+                          ? "bg-blue-50/80 border-[#1657D9]/40 text-[#1657D9]"
+                          : "hover:bg-slate-50 border-transparent hover:border-slate-200"
+                      } group`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 rounded-lg bg-blue-50 text-[#1657D9] border border-blue-100">
+                          <Icon name="academic-cap" className="h-4 w-4" />
                         </div>
-                        <div className="text-[11px] text-slate-500">
-                          {p.department} • {p.duration} ({p.currentEnrollment} students)
+                        <div>
+                          <div className="text-sm font-bold text-slate-900 group-hover:text-[#1657D9]">
+                            {p.name}
+                          </div>
+                          <div className="text-[11px] text-slate-500">
+                            {p.department} • {p.duration} ({p.currentEnrollment} students)
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <span className="text-[11px] font-mono text-slate-400 group-hover:text-[#1657D9]">
-                      {p.code}
-                    </span>
-                  </Link>
-                ))}
+                      <span className="text-[11px] font-mono text-slate-400 group-hover:text-[#1657D9]">
+                        {p.code}
+                      </span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -160,41 +225,49 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                 Core Modules
               </div>
               <div className="space-y-1">
-                {matchingModules.map((m) => (
-                  <Link
-                    key={m.slug}
-                    href={`/modules/${m.slug}`}
-                    onClick={handleClose}
-                    className="flex items-center justify-between rounded-xl p-2.5 hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200 group"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 rounded-lg bg-slate-100 text-[#1657D9]">
-                        <Icon name={m.icon} className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-slate-900 group-hover:text-[#1657D9]">
-                          {m.title}
+                {matchingModules.map((m: ModuleData, mIdx: number) => {
+                  const globalIdx = matchingProgrammes.length + mIdx;
+                  const isSelected = selectedIndex === globalIdx;
+                  return (
+                    <Link
+                      key={m.slug}
+                      href={`/modules/${m.slug}`}
+                      onClick={handleClose}
+                      className={`flex items-center justify-between rounded-xl p-2.5 transition-colors border ${
+                        isSelected
+                          ? "bg-blue-50/80 border-[#1657D9]/40 text-[#1657D9]"
+                          : "hover:bg-slate-50 border-transparent hover:border-slate-200"
+                      } group`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 rounded-lg bg-slate-100 text-[#1657D9]">
+                          <Icon name={m.icon} className="h-4 w-4" />
                         </div>
-                        <div className="text-[11px] text-slate-500">{m.department}</div>
+                        <div>
+                          <div className="text-sm font-bold text-slate-900 group-hover:text-[#1657D9]">
+                            {m.title}
+                          </div>
+                          <div className="text-[11px] text-slate-500">{m.department}</div>
+                        </div>
                       </div>
-                    </div>
-                    <span className="text-[11px] text-[#1657D9] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
-                      Open Module →
-                    </span>
-                  </Link>
-                ))}
+                      <span className="text-[11px] text-[#1657D9] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                        Open Module →
+                      </span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* Fictional Demonstration People */}
-          {fictionalPeople.length > 0 && (
+          {/* Institutional Personnel Directory */}
+          {matchingPersonnel.length > 0 && (
             <div>
               <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-2">
                 Faculty & Students Directory
               </div>
               <div className="space-y-1">
-                {fictionalPeople.map((p) => (
+                {matchingPersonnel.map((p: PersonnelItem) => (
                   <div
                     key={p.id}
                     className="flex items-center justify-between rounded-xl p-2.5 hover:bg-slate-50 transition-colors cursor-default"
@@ -217,7 +290,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             </div>
           )}
 
-          {matchingModules.length === 0 && matchingProgrammes.length === 0 && fictionalPeople.length === 0 && (
+          {matchingModules.length === 0 && matchingProgrammes.length === 0 && matchingPersonnel.length === 0 && (
             <div className="py-12 text-center text-slate-500">
               <Icon name="search" className="mx-auto h-8 w-8 text-slate-300 mb-2" />
               <p className="text-sm font-medium text-slate-700">

@@ -64,7 +64,7 @@ export interface TodayScheduleItem {
   title: string;
   location: string;
   cohort: string;
-  type: "Lab Session" | "Meeting" | "Examination" | "Event";
+  type: "Lab Session" | "Meeting" | "Examination" | "Event" | "Class";
 }
 
 export interface CampusNoticeItem {

@@ -57,7 +57,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
       {/* 3. Main Workspace Column (Padded by 16rem / 256px on desktop to clear sidebar) */}
       <div className="flex-1 flex flex-col min-w-0 lg:pl-64 w-full">
-        {/* Dark Navy Institutional Top Bar */}
+        {/* Institutional Top Bar */}
         <TopBar
           onToggleMobileSidebar={() => setMobileMenuOpen(true)}
           academicYear={academicYear}

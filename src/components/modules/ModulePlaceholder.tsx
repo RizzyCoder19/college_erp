@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/common/Icon";
 import { ModuleData } from "@/types/campus";
+import { AcademicsView } from "@/components/modules/AcademicsView";
 
 interface ModulePlaceholderProps {
   module: ModuleData;
@@ -12,6 +13,10 @@ interface ModulePlaceholderProps {
 export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) => {
   const [activeTab, setActiveTab] = useState<"records" | "specs">("records");
   const [tableSearch, setTableSearch] = useState("");
+
+  if (module.slug === "academics") {
+    return <AcademicsView />;
+  }
 
   const filteredRows = module.mockRecords.rows.filter((row) =>
     row.some((cell) =>
