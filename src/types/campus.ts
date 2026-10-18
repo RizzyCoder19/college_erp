@@ -82,9 +82,10 @@ export interface FictionalUserProfile {
   department: string;
   office: string;
   institution: string;
-  employeeId: string;
-  email: string;
+  employeeId?: string;
+  email?: string;
   academicYear: string;
-  permissionsLevel: string;
-  lastLogin: string;
+  permissionsLevel?: string;
+  lastLogin?: string;
 }
+

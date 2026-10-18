@@ -89,25 +89,17 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
         </div>
       </div>
 
-      {/* Prominent Prototype Banner */}
-      <div className="rounded-xl bg-red-50 border-l-4 border-[#D92534] p-4 text-xs text-[#991B1B]">
-        <div className="flex items-start space-x-3">
-          <span className="w-5 h-5 rounded-full bg-[#D92534] text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-            i
-          </span>
-          <div>
-            <h4 className="font-bold uppercase tracking-wider text-[#991B1B]">
-              Module Prototype Placeholder (Milestone 2 Specification)
-            </h4>
-            <p className="mt-1 leading-relaxed text-slate-700">
-              The operational workflow and backend database integration for{" "}
-              <strong>{module.title}</strong> will be implemented in subsequent development phases. Below is a demonstration interface with anticipated data schemas and fictional sample records for R. P. Institute of Hospitality & Management.
-            </p>
-          </div>
-        </div>
+      {/* Institutional Module Scope */}
+      <div className="rounded-xl bg-slate-50 border border-slate-200 p-3.5 text-xs text-slate-600 flex items-center justify-between">
+        <p className="leading-relaxed">
+          Administrative subsystem for <strong>{module.title}</strong> • Academic Year 2026 – 27 • University of Mumbai Scheme
+        </p>
+        <span className="text-[11px] text-slate-400 font-mono hidden sm:inline-block">
+          Sample Records
+        </span>
       </div>
 
-      {/* Tab Switcher: Demonstration Records vs Planned Specifications */}
+      {/* Tab Switcher: Module Records vs Planned Specifications */}
       <div className="flex items-center space-x-2 border-b border-slate-200 pb-2">
         <button
           onClick={() => setActiveTab("records")}
@@ -117,7 +109,7 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
               : "text-slate-600 hover:bg-slate-200"
           }`}
         >
-          Demonstration Records ({module.mockRecords.rows.length})
+          Module Records ({module.mockRecords.rows.length})
         </button>
         <button
           onClick={() => setActiveTab("specs")}
@@ -137,10 +129,10 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-bold text-slate-900">
-                Simulated {module.title} Register
+                Department {module.title} Register
               </h3>
               <p className="text-xs text-slate-500">
-                Demonstration sample records for UI testing
+                Sample institutional records for administrative preview
               </p>
             </div>
 

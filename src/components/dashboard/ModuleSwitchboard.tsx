@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Icon } from "@/components/common/Icon";
+import { AnimatedReveal } from "@/components/common/AnimatedReveal";
 import { MODULES_LIST } from "@/data/mockData";
 
 export const ModuleSwitchboard: React.FC = () => {
@@ -19,28 +20,29 @@ export const ModuleSwitchboard: React.FC = () => {
   ].filter(Boolean);
 
   return (
-    <section id="switchboard" className="mt-8 space-y-4">
-      <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 font-serif">
-            Explore Modules
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Operational subsystems for both Technology and Hospitality divisions
-          </p>
+    <AnimatedReveal delay={150}>
+      <section id="switchboard" className="mt-8 space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 font-serif">
+              Explore Modules
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Operational subsystems for both Technology and Hospitality divisions
+            </p>
+          </div>
+
+          <Link
+            href="/modules/academics"
+            className="text-xs font-semibold text-[#1657D9] hover:underline flex items-center space-x-1"
+          >
+            <span>All Modules</span>
+            <Icon name="arrow-right" className="h-3.5 w-3.5" />
+          </Link>
         </div>
 
-        <Link
-          href="/modules/academics"
-          className="text-xs font-semibold text-[#1657D9] hover:underline flex items-center space-x-1"
-        >
-          <span>All Modules</span>
-          <Icon name="arrow-right" className="h-3.5 w-3.5" />
-        </Link>
-      </div>
-
-      {/* 2 Rows of 4 Cards matching reference screenshot */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 2 Rows of 4 Cards matching reference screenshot */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {featuredModules.map((module) => {
           if (!module) return null;
           return (
@@ -71,6 +73,7 @@ export const ModuleSwitchboard: React.FC = () => {
           );
         })}
       </div>
-    </section>
+      </section>
+    </AnimatedReveal>
   );
 };

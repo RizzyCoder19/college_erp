@@ -64,37 +64,185 @@ body {
   outline-offset: 2px;
 }
 
-/* Glowing Search border keyframe animation (adapted from Glowing-Animated-Search-bar) */
-@keyframes glowingConicRotate {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
-.glowing-search-frame {
+/* ==========================================================================
+   Glowing Animated Search Bar (Faithfully adapted from codes/Glowing-Animated-Search-bar.zip)
+   Layers: .search-layer-glow, .search-layer-darkBorderBg, .search-layer-white, .search-layer-border
+   ========================================================================== */
+.rpihm-glowing-poda {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
   border-radius: 12px;
 }
 
-.glowing-search-frame:focus-within::before {
+/* Layered gradient frames behind input */
+.search-layer-white,
+.search-layer-border,
+.search-layer-darkBorderBg,
+.search-layer-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 1. Dark border background */
+.search-layer-darkBorderBg {
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  filter: blur(3px);
+}
+.search-layer-darkBorderBg::before {
   content: "";
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 500px;
-  height: 500px;
+  transform: translate(-50%, -50%) rotate(82deg);
+  width: 600px;
+  height: 600px;
+  background-repeat: no-repeat;
   background-image: conic-gradient(
-    transparent,
-    rgba(22, 87, 217, 0.7),
-    rgba(217, 37, 52, 0.4),
-    transparent 40%
+    rgba(11, 21, 40, 0),
+    #0E3A99,
+    rgba(11, 21, 40, 0) 10%,
+    rgba(11, 21, 40, 0) 50%,
+    #8A121D,
+    rgba(11, 21, 40, 0) 60%
   );
-  animation: glowingConicRotate 4s linear infinite;
-  pointer-events: none;
-  z-index: 0;
+  transition: transform 2s ease;
+}
+
+/* 2. White / Highlight layer */
+.search-layer-white {
+  width: calc(100% + 3px);
+  height: calc(100% + 3px);
+  filter: blur(2px);
+}
+.search-layer-white::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(83deg);
+  width: 600px;
+  height: 600px;
+  background-repeat: no-repeat;
+  filter: brightness(1.3);
+  background-image: conic-gradient(
+    rgba(11, 21, 40, 0) 0%,
+    #60A5FA,
+    rgba(11, 21, 40, 0) 8%,
+    rgba(11, 21, 40, 0) 50%,
+    #F87171,
+    rgba(11, 21, 40, 0) 58%
+  );
+  transition: transform 2s ease;
+}
+
+/* 3. Border ring */
+.search-layer-border {
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  filter: blur(0.5px);
+}
+.search-layer-border::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(70deg);
+  width: 600px;
+  height: 600px;
+  background-repeat: no-repeat;
+  background-image: conic-gradient(
+    #0B1528,
+    #1657D9 5%,
+    #0B1528 14%,
+    #0B1528 50%,
+    #D92534 60%,
+    #0B1528 64%
+  );
+  transition: transform 2s ease;
+}
+
+/* 4. Outer glow layer */
+.search-layer-glow {
+  width: calc(100% + 10px);
+  height: calc(100% + 10px);
+  filter: blur(20px);
+  opacity: 0.45;
+}
+.search-layer-glow::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(60deg);
+  width: 900px;
+  height: 900px;
+  background-repeat: no-repeat;
+  background-image: conic-gradient(
+    #070E1C,
+    #1657D9 5%,
+    #070E1C 38%,
+    #070E1C 50%,
+    #D92534 60%,
+    #070E1C 87%
+  );
+  transition: transform 2s ease;
+}
+
+/* Hover rotations */
+.rpihm-glowing-poda:hover .search-layer-darkBorderBg::before {
+  transform: translate(-50%, -50%) rotate(262deg);
+}
+.rpihm-glowing-poda:hover .search-layer-glow::before {
+  transform: translate(-50%, -50%) rotate(240deg);
+}
+.rpihm-glowing-poda:hover .search-layer-white::before {
+  transform: translate(-50%, -50%) rotate(263deg);
+}
+.rpihm-glowing-poda:hover .search-layer-border::before {
+  transform: translate(-50%, -50%) rotate(250deg);
+}
+
+/* Focus-within / active rotations */
+.rpihm-glowing-poda:focus-within .search-layer-darkBorderBg::before,
+.rpihm-glowing-poda.poda-active .search-layer-darkBorderBg::before {
+  transform: translate(-50%, -50%) rotate(442deg);
+  transition: transform 4s ease;
+  animation: searchRotate 6s linear infinite;
+}
+.rpihm-glowing-poda:focus-within .search-layer-glow::before,
+.rpihm-glowing-poda.poda-active .search-layer-glow::before {
+  transform: translate(-50%, -50%) rotate(420deg);
+  opacity: 0.7;
+  transition: transform 4s ease;
+  animation: searchRotate 6s linear infinite;
+}
+.rpihm-glowing-poda:focus-within .search-layer-white::before,
+.rpihm-glowing-poda.poda-active .search-layer-white::before {
+  transform: translate(-50%, -50%) rotate(443deg);
+  transition: transform 4s ease;
+  animation: searchRotate 6s linear infinite;
+}
+.rpihm-glowing-poda:focus-within .search-layer-border::before,
+.rpihm-glowing-poda.poda-active .search-layer-border::before {
+  transform: translate(-50%, -50%) rotate(430deg);
+  transition: transform 4s ease;
+  animation: searchRotate 6s linear infinite;
+}
+
+@keyframes searchRotate {
+  100% {
+    transform: translate(-50%, -50%) rotate(450deg);
+  }
 }
 
 /* Magic Navigation active item transition */
@@ -124,10 +272,16 @@ body {
 
 /* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
-  .glowing-search-frame:focus-within::before {
-    animation: none;
+  .search-layer-darkBorderBg::before,
+  .search-layer-white::before,
+  .search-layer-border::before,
+  .search-layer-glow::before {
+    animation: none !important;
+    transition: none !important;
+    transform: translate(-50%, -50%) rotate(70deg) !important;
   }
   .magic-nav-item {
     transition: none;
   }
 }
+

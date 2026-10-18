@@ -81,14 +81,11 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               </p>
             </div>
 
-            <div className="flex items-center space-x-3 text-[11px]">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-50 text-[#D92534] border border-red-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D92534]"></span>
-                Demonstration Environment
-              </span>
+            <div className="flex items-center space-x-3 text-[11px] text-slate-500">
+              <span>Prototype Console • Sample Data</span>
               <span className="text-slate-300">|</span>
-              <span className="text-slate-600">
-                Academic Session: <strong className="text-slate-900">{academicYear}</strong>
+              <span>
+                Academic Session: <strong className="text-slate-700">{academicYear}</strong>
               </span>
             </div>
           </div>
@@ -134,7 +131,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                 <div>Campus Helpline: <span className="font-mono text-slate-800">+91 (0250) 238-XXXX</span></div>
               </div>
               <p className="text-[11px] text-slate-400 italic">
-                Note: In this demonstration build, support tickets are simulated.
+                Note: Institutional ticketing and support dispatch will be enabled in an upcoming release.
               </p>
             </div>
 

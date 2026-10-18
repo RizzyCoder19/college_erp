@@ -37,13 +37,21 @@ export const TopBar: React.FC<TopBarProps> = ({
           </button>
         </div>
 
-        {/* Center: Adapted Glowing Animated Global Search Bar */}
+        {/* Center: Adapted Glowing Animated Global Search Bar (Faithfully adapted from codes/Glowing-Animated-Search-bar) */}
         <div className="flex-1 max-w-xl mx-4 sm:mx-6">
-          <div className="glowing-search-frame relative p-[1px] rounded-xl overflow-hidden group">
+          <div className="rpihm-glowing-poda relative flex items-center justify-center w-full group">
+            {/* Layered animated gradient frames from source */}
+            <div className="search-layer-glow" aria-hidden="true"></div>
+            <div className="search-layer-darkBorderBg" aria-hidden="true"></div>
+            <div className="search-layer-white" aria-hidden="true"></div>
+            <div className="search-layer-border" aria-hidden="true"></div>
+
+            {/* Main search bar control button */}
             <button
+              type="button"
               onClick={() => setIsSearchOpen(true)}
-              className="relative z-10 w-full flex items-center justify-between rounded-xl bg-[#13223E] hover:bg-[#182B4F] px-3.5 py-2 text-[14px] text-slate-300 transition-all border border-[#1E3456] shadow-inner cursor-pointer"
-              aria-label="Search institutional records"
+              className="relative z-10 w-full flex items-center justify-between rounded-xl bg-[#0F1D38] hover:bg-[#132547] px-3.5 py-2 text-[14px] text-slate-200 transition-colors shadow-inner cursor-pointer border border-[#1E3456]/70 group-focus-within:border-transparent"
+              aria-label="Search institutional records (Press Ctrl + K)"
             >
               <span className="flex items-center space-x-2.5 truncate">
                 <Icon name="search" className="h-4 w-4 text-[#3B82F6] shrink-0" />
@@ -51,7 +59,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   Search students, faculty, programmes, modules, reports...
                 </span>
               </span>
-              <kbd className="hidden sm:inline-flex items-center rounded border border-[#1E3456] bg-[#0B1528] px-2 py-0.5 font-mono text-xs text-slate-300 shadow-xs">
+              <kbd className="hidden sm:inline-flex items-center rounded border border-[#1E3456] bg-[#070E1C] px-2 py-0.5 font-mono text-xs text-slate-300 shadow-xs">
                 Ctrl + K
               </kbd>
             </button>
@@ -110,14 +118,14 @@ export const TopBar: React.FC<TopBarProps> = ({
             aria-label="Open profile modal"
           >
             <div className="w-9 h-9 rounded-full bg-[#1657D9] text-white font-bold text-xs flex items-center justify-center shadow-xs border border-white/20">
-              DS
+              KS
             </div>
             <div className="hidden xl:block">
               <div className="text-[14px] font-bold text-white leading-tight">
                 {FICTIONAL_USER.name}
               </div>
               <div className="text-[11px] text-slate-400 font-medium">
-                {FICTIONAL_USER.office.split("•")[0].trim()}
+                {FICTIONAL_USER.designation}
               </div>
             </div>
             <Icon name="chevron-down" className="h-4 w-4 text-slate-400 hidden xl:block" />

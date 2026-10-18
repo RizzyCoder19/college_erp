@@ -191,7 +191,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           {fictionalPeople.length > 0 && (
             <div>
               <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-2">
-                Demonstration Faculty & Students
+                Faculty & Students Directory
               </div>
               <div className="space-y-1">
                 {fictionalPeople.map((p) => (

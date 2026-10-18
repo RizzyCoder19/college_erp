@@ -19,13 +19,13 @@ export default function NotFound() {
     <div className="min-h-screen bg-[#0B1528] text-white flex flex-col justify-between p-4 sm:p-8">
       {/* Top Bar Branding */}
       <div className="max-w-6xl mx-auto w-full flex items-center justify-between pb-6 border-b border-[#16243E]">
-        <div className="bg-white rounded-lg p-2 shadow-xs border border-white/20">
+        <div className="py-1">
           <Image
-            src="/images/rpihm-logo.webp"
+            src="/images/rpihm-logo-transparent.webp"
             alt="R. P. Institute of Hospitality & Management"
-            width={180}
-            height={36}
-            className="h-auto w-auto max-h-8 object-contain"
+            width={200}
+            height={42}
+            className="h-auto w-auto max-h-10 object-contain filter drop-shadow-xs"
             priority
           />
         </div>

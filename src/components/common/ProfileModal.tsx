@@ -45,12 +45,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
           
           <div className="flex items-center space-x-4">
             <div className="w-14 h-14 rounded-full bg-[#1657D9] text-white flex items-center justify-center font-bold text-lg shadow-md border-2 border-white/20">
-              DS
+              KS
             </div>
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/20 text-blue-200 border border-blue-400/30 mb-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                {FICTIONAL_USER.permissionsLevel}
+                Institutional Designation
               </div>
               <h2 className="text-xl font-bold tracking-tight text-white">{FICTIONAL_USER.name}</h2>
               <p className="text-xs text-slate-300">{FICTIONAL_USER.designation}</p>
@@ -60,19 +60,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
         {/* Profile Details Content */}
         <div className="p-6 space-y-4 text-sm">
-          {/* Institutional Note */}
-          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-900">
-            <strong>Demonstration Identity Notice:</strong> This profile is populated with simulated administrative credentials for R. P. Institute of Hospitality & Management, Vasai. No production authentication is claimed in this milestone.
-          </div>
-
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
               <span className="text-slate-400 block mb-0.5">Institution</span>
               <span className="font-semibold text-slate-800">{FICTIONAL_USER.institution}</span>
             </div>
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-slate-400 block mb-0.5">Secretariat ID</span>
-              <span className="font-mono font-semibold text-slate-800">{FICTIONAL_USER.employeeId}</span>
+              <span className="text-slate-400 block mb-0.5">Designation</span>
+              <span className="font-semibold text-slate-800">{FICTIONAL_USER.designation}</span>
             </div>
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
               <span className="text-slate-400 block mb-0.5">Affiliated Body</span>
@@ -84,14 +79,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
-            <span className="text-slate-500">Official Campus Email</span>
-            <span className="font-mono text-slate-800">{FICTIONAL_USER.email}</span>
-          </div>
-
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
-            <span className="text-slate-500">Session Status</span>
-            <span className="text-emerald-700 font-medium font-mono">Active (Demonstration Mode)</span>
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 leading-relaxed">
+            <strong className="text-slate-800 font-semibold block mb-1">Institutional Administration:</strong>
+            CampusOS authentication and role-based permissions will be integrated in a subsequent milestone. Sample departmental records are currently displayed.
           </div>
         </div>
 

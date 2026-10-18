@@ -9,17 +9,14 @@ import {
 } from "@/types/campus";
 
 export const FICTIONAL_USER: FictionalUserProfile = {
-  name: "Dean's Secretariat",
-  designation: "Academic & Administrative Office",
-  department: "Office of the Dean & Registrar",
-  office: "Academic Secretariat • Central Administration Wing",
+  name: "Khushali Sharma",
+  designation: "Head of Department (HOD)",
+  department: "Department Administration",
+  office: "Department Office • Main Campus",
   institution: "R. P. Institute of Hospitality & Management, Vasai",
-  employeeId: "RPIHM-SEC-001",
-  email: "dean.office@rpihm.edu.in",
   academicYear: "2026 – 27",
-  permissionsLevel: "Executive Institutional Console (Demonstration)",
-  lastLogin: "Today at 09:30 AM IST",
 };
+
 
 export const EXECUTIVE_METRICS: MetricCardData[] = [
   {
@@ -282,7 +279,7 @@ export const MODULES_LIST: ModuleData[] = [
   {
     slug: "academics",
     title: "Academics & Programmes",
-    department: "Academic Council & Dean's Office",
+    department: "Academic Council & Department Heads",
     description: "Courses, curriculum, credit matrices, semester schemes, timetables, and academic calendar under University of Mumbai guidelines.",
     icon: "book-open",
     category: "main",
@@ -520,7 +517,7 @@ export const MODULES_LIST: ModuleData[] = [
   {
     slug: "calendar",
     title: "Events & Calendar",
-    department: "Dean's Office & Student Council",
+    department: "Academic Affairs & Student Council",
     description: "Comprehensive institutional calendar, academic terms, culinary workshops, guest lectures, sports meets, and holidays.",
     icon: "calendar",
     category: "main",
@@ -549,7 +546,7 @@ export const MODULES_LIST: ModuleData[] = [
   {
     slug: "notices",
     title: "Notices & Circulars",
-    department: "Registrar Secretariat",
+    department: "Office of the Registrar",
     description: "Official institutional directives, circulars, examination notifications, and administrative alerts for staff and students.",
     icon: "document-text",
     category: "main",
@@ -571,7 +568,7 @@ export const MODULES_LIST: ModuleData[] = [
         ["CIR/2026/104", "Mid-Term Practical Schedule Released", "Controller of Exams", "16 Oct 2026", "High", "Active Published"],
         ["CIR/2026/102", "Library Timings During Examinations", "Chief Librarian", "14 Oct 2026", "Standard", "Active Published"],
         ["CIR/2026/099", "Hospitality Lab Maintenance Notice", "Estates Officer", "12 Oct 2026", "Standard", "Active Published"],
-        ["CIR/2026/095", "Campus Recruitment Season 2026-27", "Placement Dean", "10 Oct 2026", "Urgent", "Active Published"],
+        ["CIR/2026/095", "Campus Recruitment Season 2026-27", "Placement Office", "10 Oct 2026", "Urgent", "Active Published"],
       ],
     },
   },

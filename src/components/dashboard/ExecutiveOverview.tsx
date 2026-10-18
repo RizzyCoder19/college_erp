@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Icon } from "@/components/common/Icon";
+import { AnimatedReveal } from "@/components/common/AnimatedReveal";
 import {
   EXECUTIVE_METRICS,
   RECENT_ACADEMIC_ACTIVITY,
@@ -12,301 +13,283 @@ import {
 } from "@/data/mockData";
 
 export const ExecutiveOverview: React.FC = () => {
-  const [showDemoNotice, setShowDemoNotice] = useState(true);
-
   return (
     <div className="space-y-6">
-      {/* 1. Welcome Hero Banner matching reference screenshot */}
-      <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/90 shadow-xs">
-        <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[220px]">
-          {/* Left Hero Content */}
-          <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between z-10 bg-white">
-            <div>
-              <div className="flex items-center space-x-2 text-xs font-bold text-[#D92534] tracking-wider uppercase">
-                <span className="w-5 h-[2.5px] bg-[#D92534]"></span>
-                <span>WELCOME TO</span>
-              </div>
-
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#0F172A] mt-1 font-serif">
-                RPIHM <span className="text-[#D92534]">CampusOS</span>
-              </h1>
-
-              <h2 className="text-base sm:text-lg font-bold text-slate-800 mt-1">
-                R. P. Institute of Hospitality & Management, Vasai
-              </h2>
-
-              <p className="text-sm text-slate-600 mt-2 max-w-xl leading-relaxed">
-                A unified academic and administrative platform for a smarter, well-connected campus experience.
-              </p>
-            </div>
-
-            {/* 3 Pillar Pill Badges */}
-            <div className="mt-6 flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
-                <Icon name="academic-cap" className="h-3.5 w-3.5 text-[#1657D9]" />
-                <span>Academic Excellence</span>
-              </span>
-
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
-                <Icon name="briefcase" className="h-3.5 w-3.5 text-[#1657D9]" />
-                <span>Industry Exposure</span>
-              </span>
-
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
-                <Icon name="award" className="h-3.5 w-3.5 text-[#1657D9]" />
-                <span>Holistic Development</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Right Hero Image & Mottos */}
-          <div className="lg:col-span-5 relative min-h-[180px] bg-slate-900 overflow-hidden">
-            <Image
-              src="/images/campus-gate.jpeg"
-              alt="RPIHM Vasai Campus"
-              fill
-              className="object-cover opacity-80 mix-blend-luminosity"
-              priority
-            />
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white via-transparent to-black/60 hidden lg:block"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-
-            <div className="absolute inset-0 p-6 flex flex-col justify-between items-end text-right z-10">
-              <div className="text-white space-y-1">
-                <div className="text-[11px] font-bold tracking-widest uppercase text-white/90">
-                  PEOPLE
-                </div>
-                <div className="text-[11px] font-bold tracking-widest uppercase text-white/90">
-                  PROGRAMMES
-                </div>
-                <div className="text-[11px] font-bold tracking-widest uppercase text-white/90">
-                  PRACTICE
-                </div>
-                <div className="text-[11px] font-bold tracking-widest uppercase text-white/90">
-                  POSSIBILITIES
-                </div>
-                <div className="w-8 h-[2px] bg-[#D92534] ml-auto mt-1"></div>
-              </div>
-
-              <div className="text-amber-100 font-serif italic text-lg sm:text-xl drop-shadow-md">
-                Learning Beyond Classrooms
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Demonstration Environment Notice */}
-      {showDemoNotice && (
-        <div className="rounded-xl bg-[#FDF2F2] border border-[#FCA5A5] p-3.5 text-xs text-[#991B1B] flex items-center justify-between shadow-2xs">
-          <div className="flex items-center space-x-2.5">
-            <span className="w-5 h-5 rounded-full bg-[#D92534] text-white flex items-center justify-center font-bold text-[11px] shrink-0">
-              i
-            </span>
-            <div className="leading-relaxed">
-              <strong className="font-bold uppercase tracking-wide">
-                DEMONSTRATION ENVIRONMENT:
-              </strong>{" "}
-              All student records, faculty names, statistics and schedules are fictional and for UI/UX demonstration purposes only.
-            </div>
-          </div>
-
-          <button
-            onClick={() => setShowDemoNotice(false)}
-            className="text-slate-400 hover:text-slate-700 p-1 rounded-md cursor-pointer ml-3 shrink-0"
-            aria-label="Dismiss demonstration notice"
-          >
-            <Icon name="x-mark" className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
-      {/* 3. Concise Row of Readable Summary Metrics (4 cards) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {EXECUTIVE_METRICS.map((metric) => (
-          <div
-            key={metric.id}
-            className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs hover:border-[#1657D9]/40 transition-all flex flex-col justify-between"
-          >
-            <div className="flex items-start justify-between">
+      {/* 1. Welcome Hero Banner with Real Campus Photography */}
+      <AnimatedReveal delay={0}>
+        <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/90 shadow-xs">
+          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[220px]">
+            {/* Left Hero Content */}
+            <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between z-10 bg-white">
               <div>
-                <span className="text-xs font-semibold text-slate-500 block">
-                  {metric.label}
+                <div className="flex items-center space-x-2 text-xs font-bold text-[#D92534] tracking-wider uppercase">
+                  <span className="w-5 h-[2.5px] bg-[#D92534]"></span>
+                  <span>WELCOME TO</span>
+                </div>
+
+                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#0F172A] mt-1 font-serif">
+                  RPIHM <span className="text-[#D92534]">CampusOS</span>
+                </h1>
+
+                <h2 className="text-base sm:text-lg font-bold text-slate-800 mt-1">
+                  R. P. Institute of Hospitality & Management, Vasai
+                </h2>
+
+                <p className="text-sm text-slate-600 mt-2 max-w-xl leading-relaxed">
+                  A unified academic and administrative platform for a smarter, well-connected campus experience.
+                </p>
+              </div>
+
+              {/* 3 Pillar Pill Badges */}
+              <div className="mt-6 flex flex-wrap items-center gap-2.5">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
+                  <Icon name="academic-cap" className="h-3.5 w-3.5 text-[#1657D9]" />
+                  <span>Academic Excellence</span>
                 </span>
-                <div className="mt-2 text-2xl sm:text-3xl font-extrabold text-[#0F172A] tracking-tight">
-                  {metric.value}
+
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
+                  <Icon name="briefcase" className="h-3.5 w-3.5 text-[#1657D9]" />
+                  <span>Industry Exposure</span>
+                </span>
+
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
+                  <Icon name="award" className="h-3.5 w-3.5 text-[#1657D9]" />
+                  <span>Holistic Development</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Right Hero Image & Mottos (Using genuine campus entrance photography) */}
+            <div className="lg:col-span-5 relative min-h-[200px] lg:min-h-full bg-slate-900 overflow-hidden group">
+              <Image
+                src="/images/campus-gate.jpeg"
+                alt="RPIHM Vasai Main Entrance & Accredited Campus Signage"
+                fill
+                sizes="(max-width: 1024px) 100vw, 42vw"
+                className="object-cover object-top opacity-90 transition-transform duration-700 ease-out group-hover:scale-105"
+                priority
+              />
+
+              {/* Gradient Overlays for readable text blending */}
+              <div className="absolute inset-0 bg-gradient-to-r from-white via-white/40 to-transparent hidden lg:block w-28 z-10 pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0B1528]/90 via-[#0B1528]/40 to-transparent pointer-events-none"></div>
+
+              <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-between items-end text-right z-10 pointer-events-none">
+                <div className="text-white space-y-1 drop-shadow-md">
+                  <div className="text-[11px] font-bold tracking-widest uppercase text-white/95">
+                    PEOPLE
+                  </div>
+                  <div className="text-[11px] font-bold tracking-widest uppercase text-white/95">
+                    PROGRAMMES
+                  </div>
+                  <div className="text-[11px] font-bold tracking-widest uppercase text-white/95">
+                    PRACTICE
+                  </div>
+                  <div className="text-[11px] font-bold tracking-widest uppercase text-white/95">
+                    POSSIBILITIES
+                  </div>
+                  <div className="w-8 h-[2px] bg-[#D92534] ml-auto mt-1"></div>
+                </div>
+
+                <div className="text-amber-100 font-serif italic text-base sm:text-lg drop-shadow-md">
+                  Learning Beyond Classrooms
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AnimatedReveal>
+
+      {/* 2. Concise Row of Readable Summary Metrics (4 cards with staggered animation) */}
+      <AnimatedReveal delay={100}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {EXECUTIVE_METRICS.map((metric, idx) => (
+            <div
+              key={metric.id}
+              style={{ transitionDelay: `${idx * 60}ms` }}
+              className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs hover:border-[#1657D9]/40 hover:shadow-md transition-all flex flex-col justify-between"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-xs font-semibold text-slate-500 block">
+                    {metric.label}
+                  </span>
+                  <div className="mt-2 text-2xl sm:text-3xl font-extrabold text-[#0F172A] tracking-tight">
+                    {metric.value}
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-blue-50 text-[#1657D9] border border-blue-100">
+                  <Icon name={metric.icon} className="h-5 w-5" />
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-blue-50 text-[#1657D9] border border-blue-100">
-                <Icon name={metric.icon} className="h-5 w-5" />
+              <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                  {metric.change}
+                </span>
+                <Icon name="sparkline" className="h-4 w-4 text-slate-300" />
               </div>
             </div>
+          ))}
+        </div>
+      </AnimatedReveal>
 
-            <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                {metric.change}
-              </span>
-              <Icon name="sparkline" className="h-4 w-4 text-slate-300" />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* 4. Middle 3-Column Section: Academic Activity, Today on Campus, Notices & Circulars */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Column 1: Recent Academic Activity */}
-        <div className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center space-x-2">
-                <Icon name="document-text" className="h-5 w-5 text-[#1657D9]" />
-                <h3 className="text-[15px] font-bold text-slate-900">
-                  Recent Academic Activity
-                </h3>
+      {/* 3. Middle 3-Column Section: Academic Activity, Today on Campus, Notices & Circulars */}
+      <AnimatedReveal delay={200}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Column 1: Recent Academic Activity */}
+          <div className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center space-x-2">
+                  <Icon name="document-text" className="h-5 w-5 text-[#1657D9]" />
+                  <h3 className="text-[15px] font-bold text-slate-900">
+                    Recent Academic Activity
+                  </h3>
+                </div>
+                <Link
+                  href="/modules/academics"
+                  className="text-xs font-semibold text-[#1657D9] hover:underline flex items-center space-x-1"
+                >
+                  <span>View All</span>
+                  <Icon name="arrow-right" className="h-3 w-3" />
+                </Link>
               </div>
-              <Link
-                href="/modules/academics"
-                className="text-xs font-semibold text-[#1657D9] hover:underline flex items-center space-x-1"
-              >
-                <span>View All</span>
-                <Icon name="arrow-right" className="h-3 w-3" />
-              </Link>
-            </div>
 
-            <div className="mt-4 space-y-4">
-              {RECENT_ACADEMIC_ACTIVITY.map((act) => (
-                <div key={act.id} className="flex items-start space-x-3 text-xs">
-                  <div className="mt-1 w-2.5 h-2.5 rounded-full bg-[#1657D9] shrink-0"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-800 truncate">
-                        {act.title}
-                      </span>
-                      <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                          act.status === "Ongoing"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-slate-100 text-slate-600"
-                        }`}
-                      >
-                        {act.status}
+              <div className="mt-4 space-y-4">
+                {RECENT_ACADEMIC_ACTIVITY.map((act) => (
+                  <div key={act.id} className="flex items-start space-x-3 text-xs">
+                    <div className="mt-1 w-2.5 h-2.5 rounded-full bg-[#1657D9] shrink-0"></div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800 truncate">
+                          {act.title}
+                        </span>
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            act.status === "Ongoing"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {act.status}
+                        </span>
+                      </div>
+                      <p className="text-slate-500 mt-0.5 truncate">{act.details}</p>
+                      <span className="text-[11px] text-slate-400 mt-1 block">
+                        {act.time} • {act.category}
                       </span>
                     </div>
-                    <p className="text-slate-500 mt-0.5 truncate">{act.details}</p>
-                    <span className="text-[11px] text-slate-400 mt-1 block">
-                      {act.time} • {act.category}
-                    </span>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Column 2: Today on Campus */}
-        <div className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center space-x-2">
-                <Icon name="calendar" className="h-5 w-5 text-[#D92534]" />
-                <h3 className="text-[15px] font-bold text-slate-900">
-                  Today on Campus
-                </h3>
-              </div>
-              <Link
-                href="/modules/calendar"
-                className="text-xs font-semibold text-[#1657D9] hover:underline flex items-center space-x-1"
-              >
-                <span>View Calendar</span>
-                <Icon name="arrow-right" className="h-3 w-3" />
-              </Link>
-            </div>
-
-            <div className="mt-4 space-y-3.5">
-              {TODAY_ON_CAMPUS.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-slate-500 text-[11px]">
-                      {item.timeRange}
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        item.type === "Lab Session"
-                          ? "bg-blue-100 text-[#1657D9]"
-                          : item.type === "Examination"
-                          ? "bg-amber-100 text-amber-800"
-                          : item.type === "Event"
-                          ? "bg-rose-100 text-rose-800"
-                          : "bg-slate-200 text-slate-700"
-                      }`}
-                    >
-                      {item.type}
-                    </span>
-                  </div>
-                  <h4 className="font-bold text-slate-900 text-[13px]">
-                    {item.title}
-                  </h4>
-                  <p className="text-slate-600 mt-0.5 text-[11px]">
-                    {item.cohort} • <span className="text-slate-400">{item.location}</span>
-                  </p>
+          {/* Column 2: Today on Campus */}
+          <div className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center space-x-2">
+                  <Icon name="calendar" className="h-5 w-5 text-[#D92534]" />
+                  <h3 className="text-[15px] font-bold text-slate-900">
+                    Today on Campus
+                  </h3>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Column 3: Notices & Circulars */}
-        <div className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center space-x-2">
-                <Icon name="bell" className="h-5 w-5 text-[#D92534]" />
-                <h3 className="text-[15px] font-bold text-slate-900">
-                  Notices & Circulars
-                </h3>
-              </div>
-              <Link
-                href="/modules/notices"
-                className="text-xs font-semibold text-[#1657D9] hover:underline flex items-center space-x-1"
-              >
-                <span>View All</span>
-                <Icon name="arrow-right" className="h-3 w-3" />
-              </Link>
-            </div>
-
-            <div className="mt-4 divide-y divide-slate-100">
-              {NOTICES_AND_CIRCULARS.map((notice) => (
                 <Link
-                  key={notice.id}
-                  href="/modules/notices"
-                  className="py-3 first:pt-0 last:pb-0 flex items-start justify-between group block"
+                  href="/modules/calendar"
+                  className="text-xs font-semibold text-[#1657D9] hover:underline flex items-center space-x-1"
                 >
-                  <div className="text-xs min-w-0 pr-2">
-                    <span className="text-[10px] font-bold text-slate-400 block mb-0.5">
-                      {notice.date}
-                    </span>
-                    <h4 className="font-bold text-slate-800 group-hover:text-[#1657D9] transition-colors leading-snug">
-                      {notice.title}
+                  <span>View Calendar</span>
+                  <Icon name="arrow-right" className="h-3 w-3" />
+                </Link>
+              </div>
+
+              <div className="mt-4 space-y-3.5">
+                {TODAY_ON_CAMPUS.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold text-slate-500 text-[11px]">
+                        {item.timeRange}
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          item.type === "Lab Session"
+                            ? "bg-blue-100 text-[#1657D9]"
+                            : item.type === "Examination"
+                            ? "bg-amber-100 text-amber-800"
+                            : item.type === "Event"
+                            ? "bg-rose-100 text-rose-800"
+                            : "bg-slate-200 text-slate-700"
+                        }`}
+                      >
+                        {item.type}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-slate-900 text-[13px]">
+                      {item.title}
                     </h4>
-                    <p className="text-slate-500 text-[11px] mt-0.5 truncate">
-                      {notice.excerpt}
+                    <p className="text-slate-600 mt-0.5 text-[11px]">
+                      {item.cohort} • <span className="text-slate-400">{item.location}</span>
                     </p>
                   </div>
-                  <Icon
-                    name="chevron-right"
-                    className="h-4 w-4 text-slate-400 group-hover:text-[#1657D9] shrink-0 mt-2 transition-transform group-hover:translate-x-0.5"
-                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Column 3: Notices & Circulars */}
+          <div className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center space-x-2">
+                  <Icon name="bell" className="h-5 w-5 text-[#D92534]" />
+                  <h3 className="text-[15px] font-bold text-slate-900">
+                    Notices & Circulars
+                  </h3>
+                </div>
+                <Link
+                  href="/modules/notices"
+                  className="text-xs font-semibold text-[#1657D9] hover:underline flex items-center space-x-1"
+                >
+                  <span>View All</span>
+                  <Icon name="arrow-right" className="h-3 w-3" />
                 </Link>
-              ))}
+              </div>
+
+              <div className="mt-4 divide-y divide-slate-100">
+                {NOTICES_AND_CIRCULARS.map((notice) => (
+                  <Link
+                    key={notice.id}
+                    href="/modules/notices"
+                    className="py-3 first:pt-0 last:pb-0 flex items-start justify-between group block"
+                  >
+                    <div className="text-xs min-w-0 pr-2">
+                      <span className="text-[10px] font-bold text-slate-400 block mb-0.5">
+                        {notice.date}
+                      </span>
+                      <h4 className="font-bold text-slate-800 group-hover:text-[#1657D9] transition-colors leading-snug">
+                        {notice.title}
+                      </h4>
+                      <p className="text-slate-500 text-[11px] mt-0.5 truncate">
+                        {notice.excerpt}
+                      </p>
+                    </div>
+                    <Icon
+                      name="chevron-right"
+                      className="h-4 w-4 text-slate-400 group-hover:text-[#1657D9] shrink-0 mt-2 transition-transform group-hover:translate-x-0.5"
+                    />
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </AnimatedReveal>
     </div>
   );
 };

@@ -30,14 +30,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
           onClick={onNavigate}
           className="flex flex-col gap-2 group focus:outline-none"
         >
-          {/* Official Logo */}
-          <div className="bg-white rounded-lg p-2.5 shadow-xs border border-white/20 transition-all group-hover:shadow-md">
+          {/* Official Logo without white box */}
+          <div className="py-1 px-0.5 transition-all">
             <Image
-              src="/images/rpihm-logo.webp"
+              src="/images/rpihm-logo-transparent.webp"
               alt="R. P. Institute of Hospitality & Management"
               width={210}
-              height={42}
-              className="h-auto w-full object-contain"
+              height={52}
+              className="h-auto w-full object-contain filter drop-shadow-xs"
               priority
             />
           </div>
@@ -152,23 +152,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
         </div>
       </div>
 
-      {/* Footer Demonstration Status */}
+      {/* Institutional System Footer */}
       <div className="p-3.5 border-t border-[#16243E] bg-[#070E1C]">
         <div className="flex items-center space-x-2 text-xs font-medium text-slate-300">
           <span className="font-semibold text-white">RPIHM CampusOS</span>
           <span className="text-slate-500">•</span>
-          <span className="text-slate-400">Version 0.1.0 (Demo)</span>
+          <span className="text-slate-400">v0.1.0</span>
         </div>
-
-        <div className="mt-2 flex items-start space-x-2 p-2 rounded-lg bg-red-950/40 border border-red-800/40 text-[11px] text-red-200">
-          <span className="w-2 h-2 rounded-full bg-[#D92534] shrink-0 mt-0.5"></span>
-          <div>
-            <strong className="font-bold text-red-400">Demonstration Mode</strong>
-            <p className="text-slate-400 text-[10px] leading-tight mt-0.5">
-              Fictional data for UI/UX showcase only
-            </p>
-          </div>
-        </div>
+        <p className="text-[11px] text-slate-400 mt-1 leading-tight">
+          Vasai, Maharashtra • Affiliated to Univ. of Mumbai
+        </p>
       </div>
     </div>
   );
