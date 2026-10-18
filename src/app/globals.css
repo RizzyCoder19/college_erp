@@ -77,11 +77,170 @@ body {
   border-radius: 12px;
 }
 
-/* Layered gradient frames behind input */
-.search-layer-white,
-.search-layer-border,
-.search-layer-darkBorderBg,
-.search-layer-glow {
+:root {
+  --input-w: min(340px, calc(100vw - 130px));
+  --input-h: 46px;
+  --radius: 12px;
+
+  /* Layer boxes slightly larger than input to show borders */
+  --frame-w: calc(var(--input-w) + 6px);
+  --frame-h: calc(var(--input-h) + 6px);
+  --frame2-w: calc(var(--input-w) + 10px);
+  --frame2-h: calc(var(--input-h) + 10px);
+
+  --bg: #121212;
+}
+
+/* Utility: for accessible label */
+.visually-hidden {
+  position: absolute !important;
+  height: 1px; width: 1px;
+  overflow: hidden;
+  clip: rect(1px,1px,1px,1px);
+  white-space: nowrap;
+}
+
+/* Root wrapper centered */
+#poda {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: var(--input-w);
+  height: var(--input-h);
+}
+
+/* Positioning reference for layers */
+#main {
+  position: relative;
+  width: var(--input-w);
+  height: var(--input-h);
+}
+
+/* Input */
+#main .input {
+  background-color: #010201;
+  border: none;
+  width: var(--input-w);
+  height: var(--input-h);
+  border-radius: var(--radius);
+  color: white;
+  padding-inline: 46px 46px;
+  font-size: 14px;
+  position: relative;
+  z-index: 3;
+}
+
+#main .input::placeholder {
+  color: #c0b9c0;
+}
+#main .input:focus {
+  outline: 2px solid #2b2752;
+  outline-offset: 0;
+}
+
+/* Masks */
+#input-mask {
+  pointer-events: none;
+  width: 90px;
+  height: 18px;
+  position: absolute;
+  background: linear-gradient(90deg, transparent, #010201);
+  top: 14px;
+  left: 65px;
+  z-index: 4;
+}
+#main:focus-within > #input-mask {
+  display: none;
+}
+
+#pink-mask {
+  pointer-events: none;
+  width: 30px;
+  height: 20px;
+  position: absolute;
+  background: #cf30aa;
+  top: 8px;
+  left: 5px;
+  filter: blur(20px);
+  opacity: 0.8;
+  transition: opacity 0.4s ease;
+  z-index: 2;
+}
+#main:hover > #pink-mask {
+  opacity: 0;
+}
+
+/* Icons */
+#search-icon {
+  position: absolute;
+  left: 14px;
+  top: 11px;
+  z-index: 4;
+}
+
+#filter-icon {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+  height: 36px;
+  width: 36px;
+
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #161329, black, #1d1b4b);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+#filter-icon:focus-visible {
+  outline: 2px solid #6356d8;
+  outline-offset: 2px;
+}
+
+/* Filter border ring */
+.filterBorder {
+  height: 38px;
+  width: 38px;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  border-radius: 9px;
+  overflow: hidden;
+  z-index: 3;
+}
+.filterBorder::before {
+  content: "";
+  text-align: center;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  filter: brightness(1.35);
+  background-image: conic-gradient(
+    rgba(0, 0, 0, 0),
+    #3d3a4f,
+    rgba(0, 0, 0, 0) 50%,
+    rgba(0, 0, 0, 0) 50%,
+    #3d3a4f,
+    rgba(0, 0, 0, 0) 100%
+  );
+  animation: rotate 4s linear infinite;
+}
+
+/* Layered gradient frames (behind input) */
+#poda .white,
+#poda .border,
+#poda .darkBorderBg,
+#poda .glow {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -92,156 +251,164 @@ body {
   z-index: 1;
 }
 
-/* 1. Dark border background */
-.search-layer-darkBorderBg {
-  width: calc(100% + 4px);
-  height: calc(100% + 4px);
+#poda .white,
+#poda .border,
+#poda .darkBorderBg {
+  width: var(--frame-w);
+  height: var(--frame-h);
   filter: blur(3px);
 }
-.search-layer-darkBorderBg::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(82deg);
-  width: 600px;
-  height: 600px;
-  background-repeat: no-repeat;
-  background-image: conic-gradient(
-    rgba(11, 21, 40, 0),
-    #0E3A99,
-    rgba(11, 21, 40, 0) 10%,
-    rgba(11, 21, 40, 0) 50%,
-    #8A121D,
-    rgba(11, 21, 40, 0) 60%
-  );
-  transition: transform 2s ease;
-}
 
-/* 2. White / Highlight layer */
-.search-layer-white {
-  width: calc(100% + 3px);
-  height: calc(100% + 3px);
+#poda .white {
   filter: blur(2px);
 }
-.search-layer-white::before {
+#poda .white::before {
   content: "";
   position: absolute;
+  inset: 0;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(83deg);
   width: 600px;
   height: 600px;
   background-repeat: no-repeat;
-  filter: brightness(1.3);
+  background-position: 0 0;
+  filter: brightness(1.4);
   background-image: conic-gradient(
-    rgba(11, 21, 40, 0) 0%,
-    #60A5FA,
-    rgba(11, 21, 40, 0) 8%,
-    rgba(11, 21, 40, 0) 50%,
-    #F87171,
-    rgba(11, 21, 40, 0) 58%
+    rgba(0, 0, 0, 0) 0%,
+    #a099d8,
+    rgba(0, 0, 0, 0) 8%,
+    rgba(0, 0, 0, 0) 50%,
+    #dfa2da,
+    rgba(0, 0, 0, 0) 58%
   );
   transition: transform 2s ease;
 }
 
-/* 3. Border ring */
-.search-layer-border {
-  width: calc(100% + 2px);
-  height: calc(100% + 2px);
+#poda .border {
   filter: blur(0.5px);
 }
-.search-layer-border::before {
+#poda .border::before {
   content: "";
   position: absolute;
+  inset: 0;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(70deg);
   width: 600px;
   height: 600px;
+  filter: brightness(1.3);
   background-repeat: no-repeat;
+  background-position: 0 0;
   background-image: conic-gradient(
-    #0B1528,
-    #1657D9 5%,
-    #0B1528 14%,
-    #0B1528 50%,
-    #D92534 60%,
-    #0B1528 64%
+    #1c191c,
+    #402fb5 5%,
+    #1c191c 14%,
+    #1c191c 50%,
+    #cf30aa 60%,
+    #1c191c 64%
   );
   transition: transform 2s ease;
 }
 
-/* 4. Outer glow layer */
-.search-layer-glow {
-  width: calc(100% + 10px);
-  height: calc(100% + 10px);
-  filter: blur(20px);
-  opacity: 0.45;
-}
-.search-layer-glow::before {
+#poda .darkBorderBg::before {
   content: "";
   position: absolute;
+  inset: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(82deg);
+  width: 600px;
+  height: 600px;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-image: conic-gradient(
+    rgba(0, 0, 0, 0),
+    #18116a,
+    rgba(0, 0, 0, 0) 10%,
+    rgba(0, 0, 0, 0) 50%,
+    #6e1b60,
+    rgba(0, 0, 0, 0) 60%
+  );
+  transition: transform 2s ease;
+}
+
+/* Glow layer larger than frames */
+#poda .glow {
+  width: var(--frame2-w);
+  height: var(--frame2-h);
+  filter: blur(20px);
+  opacity: 0.4;
+}
+#poda .glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(60deg);
   width: 900px;
   height: 900px;
   background-repeat: no-repeat;
+  background-position: 0 0;
   background-image: conic-gradient(
-    #070E1C,
-    #1657D9 5%,
-    #070E1C 38%,
-    #070E1C 50%,
-    #D92534 60%,
-    #070E1C 87%
+    #000,
+    #402fb5 5%,
+    #000 38%,
+    #000 50%,
+    #cf30aa 60%,
+    #000 87%
   );
   transition: transform 2s ease;
 }
 
-/* Hover rotations */
-.rpihm-glowing-poda:hover .search-layer-darkBorderBg::before {
+/* Interactions: hover */
+#poda:hover > .darkBorderBg::before {
   transform: translate(-50%, -50%) rotate(262deg);
 }
-.rpihm-glowing-poda:hover .search-layer-glow::before {
+#poda:hover > .glow::before {
   transform: translate(-50%, -50%) rotate(240deg);
 }
-.rpihm-glowing-poda:hover .search-layer-white::before {
+#poda:hover > .white::before {
   transform: translate(-50%, -50%) rotate(263deg);
 }
-.rpihm-glowing-poda:hover .search-layer-border::before {
+#poda:hover > .border::before {
   transform: translate(-50%, -50%) rotate(250deg);
 }
 
-/* Focus-within / active rotations */
-.rpihm-glowing-poda:focus-within .search-layer-darkBorderBg::before,
-.rpihm-glowing-poda.poda-active .search-layer-darkBorderBg::before {
+/* Interactions: focus within (keyboard focus on input) */
+#poda:focus-within > .darkBorderBg::before {
   transform: translate(-50%, -50%) rotate(442deg);
   transition: transform 4s ease;
-  animation: searchRotate 6s linear infinite;
 }
-.rpihm-glowing-poda:focus-within .search-layer-glow::before,
-.rpihm-glowing-poda.poda-active .search-layer-glow::before {
+#poda:focus-within > .glow::before {
   transform: translate(-50%, -50%) rotate(420deg);
-  opacity: 0.7;
   transition: transform 4s ease;
-  animation: searchRotate 6s linear infinite;
 }
-.rpihm-glowing-poda:focus-within .search-layer-white::before,
-.rpihm-glowing-poda.poda-active .search-layer-white::before {
+#poda:focus-within > .white::before {
   transform: translate(-50%, -50%) rotate(443deg);
   transition: transform 4s ease;
-  animation: searchRotate 6s linear infinite;
 }
-.rpihm-glowing-poda:focus-within .search-layer-border::before,
-.rpihm-glowing-poda.poda-active .search-layer-border::before {
+#poda:focus-within > .border::before {
   transform: translate(-50%, -50%) rotate(430deg);
   transition: transform 4s ease;
-  animation: searchRotate 6s linear infinite;
 }
 
-@keyframes searchRotate {
+/* Animations */
+@keyframes rotate {
   100% {
     transform: translate(-50%, -50%) rotate(450deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filterBorder::before,
+  #poda .white::before,
+  #poda .border::before,
+  #poda .darkBorderBg::before,
+  #poda .glow::before {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
