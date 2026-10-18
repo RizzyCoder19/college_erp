@@ -126,16 +126,27 @@ export const ExecutiveOverview: React.FC = () => {
         </div>
       </AnimatedReveal>
 
-      {/* 2. Concise Row of Readable Summary Metrics (4 cards matching reference) */}
+      {/* 2. Concise Row of Readable Summary Metrics with Camouflage Hover Zoom */}
       <AnimatedReveal delay={100}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {EXECUTIVE_METRICS.map((metric, idx) => (
             <div
               key={metric.id}
               style={{ transitionDelay: `${idx * 60}ms` }}
-              className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs hover:border-[#1657D9]/40 hover:shadow-md transition-all flex flex-col justify-between"
+              className="relative overflow-hidden rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs hover:border-[#1657D9]/40 hover:shadow-md transition-all flex flex-col justify-between group"
             >
-              <div className="flex items-start justify-between">
+              {/* Subtle campus camouflage backdrop with hover zoom */}
+              <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-[0.07] transition-opacity duration-500 overflow-hidden pointer-events-none">
+                <Image
+                  src="/images/campus-illuminated-sign.png"
+                  alt=""
+                  fill
+                  sizes="300px"
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-115"
+                />
+              </div>
+
+              <div className="relative z-10 flex items-start justify-between">
                 <div>
                   <span className="text-xs font-semibold text-slate-500 block">
                     {metric.label}
@@ -145,12 +156,12 @@ export const ExecutiveOverview: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-blue-50 text-[#1657D9] border border-blue-100">
+                <div className="p-2.5 rounded-xl bg-blue-50 text-[#1657D9] border border-blue-100 group-hover:bg-[#1657D9] group-hover:text-white transition-colors">
                   <Icon name={metric.icon} className="h-5 w-5" />
                 </div>
               </div>
 
-              <div className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-500">
+              <div className="relative z-10 mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-500">
                 {metric.caption}
               </div>
             </div>
@@ -162,8 +173,19 @@ export const ExecutiveOverview: React.FC = () => {
       <AnimatedReveal delay={200}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Column 1: Recent Academic Activity */}
-          <div className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
-            <div>
+          <div className="relative overflow-hidden rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between group hover:border-[#1657D9]/40 hover:shadow-md transition-all">
+            {/* Subtle campus camouflage backdrop with hover zoom */}
+            <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-[0.06] transition-opacity duration-500 overflow-hidden pointer-events-none">
+              <Image
+                src="/images/campus-illuminated-sign.png"
+                alt=""
+                fill
+                sizes="400px"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+              />
+            </div>
+
+            <div className="relative z-10">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center space-x-2">
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-[#1657D9] border border-blue-100">
@@ -213,8 +235,19 @@ export const ExecutiveOverview: React.FC = () => {
           </div>
 
           {/* Column 2: Today on Campus */}
-          <div className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
-            <div>
+          <div className="relative overflow-hidden rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between group hover:border-[#1657D9]/40 hover:shadow-md transition-all">
+            {/* Subtle campus camouflage backdrop with hover zoom */}
+            <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-[0.06] transition-opacity duration-500 overflow-hidden pointer-events-none">
+              <Image
+                src="/images/campus-illuminated-sign.png"
+                alt=""
+                fill
+                sizes="400px"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+              />
+            </div>
+
+            <div className="relative z-10">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center space-x-2">
                   <Icon name="calendar" className="h-5 w-5 text-[#D92534]" />
@@ -270,8 +303,19 @@ export const ExecutiveOverview: React.FC = () => {
           </div>
 
           {/* Column 3: Notices & Circulars */}
-          <div className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
-            <div>
+          <div className="relative overflow-hidden rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between group hover:border-[#1657D9]/40 hover:shadow-md transition-all">
+            {/* Subtle campus camouflage backdrop with hover zoom */}
+            <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-[0.06] transition-opacity duration-500 overflow-hidden pointer-events-none">
+              <Image
+                src="/images/campus-illuminated-sign.png"
+                alt=""
+                fill
+                sizes="400px"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+              />
+            </div>
+
+            <div className="relative z-10">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center space-x-2">
                   <Icon name="bell" className="h-5 w-5 text-[#D92534]" />

@@ -1005,26 +1005,38 @@ export default function NotFound() {
             </Link>
           </div>
 
-          {/* Authentic College Campus Walkway Card */}
-          <div className="mt-8 p-3 rounded-2xl bg-[#07243A]/80 border border-[#164468] shadow-lg flex items-center space-x-4">
-            <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden shrink-0 border border-[#1F537A]">
+          {/* Authentic College Campus Card with Camouflage Backdrop & Hover Zoom */}
+          <div className="relative overflow-hidden mt-8 p-4 rounded-2xl bg-[#07243A]/90 border border-[#164468] shadow-xl flex items-center space-x-4 group hover:border-[#67B1E0]/50 transition-all">
+            {/* Subtle camouflage hover zoom backdrop */}
+            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+              <Image
+                src="/images/campus-illuminated-sign.png"
+                alt=""
+                fill
+                sizes="500px"
+                className="object-cover opacity-25 transition-transform duration-700 ease-out group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-[#07243A]/80 backdrop-blur-[1px]"></div>
+            </div>
+
+            <div className="relative z-10 w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden shrink-0 border border-[#1F537A] shadow-md">
               <Image
                 src="/images/campus-walkway.png"
                 alt="R. P. Institute of Hospitality & Management Campus Walkway & Student Corridor"
                 fill
                 sizes="(max-width: 640px) 96px, 112px"
-                className="object-cover object-center"
+                className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
                 priority
               />
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="relative z-10 min-w-0 flex-1">
               <span className="text-[11px] font-bold text-[#67B1E0] uppercase tracking-wider block">
                 Vasai West Campus
               </span>
-              <p className="text-xs font-semibold text-white leading-tight mt-0.5 truncate">
+              <p className="text-sm font-semibold text-white leading-tight mt-0.5 truncate">
                 R. P. Institute of Hospitality & Management
               </p>
-              <p className="text-[11px] text-[#93BDD9] leading-normal mt-1">
+              <p className="text-xs text-[#93BDD9] leading-normal mt-1">
                 Affiliated to University of Mumbai • Vasai (West). For syllabus, notices, or attendance records, please return to the CampusOS dashboard.
               </p>
             </div>

@@ -65,73 +65,89 @@ export const AcademicsView: React.FC = () => {
 
       {/* Header Banner */}
       <AnimatedReveal delay={0}>
-        <div className="rounded-2xl bg-white p-6 sm:p-8 border border-slate-200/90 shadow-xs">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-start space-x-4">
-              <div className="p-3.5 rounded-2xl bg-blue-50 text-[#1657D9] border border-blue-100 shrink-0">
-                <Icon name="academic-cap" className="h-8 w-8" />
-              </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#1657D9]">
-                    Academic Affairs & Curriculum Office
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    Active Session 2026 – 27
-                  </span>
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-serif mt-1">
-                  Academics & Programmes
-                </h1>
-                <p className="text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
-                  Management and oversight of degree, diploma, and certification offerings at R. P. Institute of Hospitality & Management.
-                </p>
-              </div>
-            </div>
-
-            <div className="shrink-0 flex items-center space-x-2">
-              <Link
-                href="/"
-                className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all border border-slate-200"
-              >
-                <Icon name="arrow-left" className="h-4 w-4" />
-                <span>Back to Dashboard</span>
-              </Link>
-            </div>
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200/90 shadow-xs group bg-[#071322]">
+          {/* Full-box background camouflage image with smooth cursor hover zoom */}
+          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            <Image
+              src="/images/campus-illuminated-sign.png"
+              alt="R. P. Institute of Hospitality & Management Campus Signage"
+              fill
+              sizes="100vw"
+              className="object-cover object-right opacity-80 transition-transform duration-700 ease-out group-hover:scale-108"
+              priority
+            />
+            {/* Frosted white camouflage overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/70 z-10 backdrop-blur-[1.5px]"></div>
           </div>
 
-          {/* Quick Metrics Strip */}
-          <div className="mt-6 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-              <div className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
-                Total Programmes
+          <div className="relative z-10 p-6 sm:p-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start space-x-4">
+                <div className="p-3.5 rounded-2xl bg-blue-50 text-[#1657D9] border border-blue-100 shrink-0">
+                  <Icon name="academic-cap" className="h-8 w-8" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#1657D9]">
+                      Academic Affairs & Curriculum Office
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Active Session 2026 – 27
+                    </span>
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-serif mt-1">
+                    Academics & Programmes
+                  </h1>
+                  <p className="text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
+                    Management and oversight of degree, diploma, and certification offerings at R. P. Institute of Hospitality & Management.
+                  </p>
+                </div>
               </div>
-              <div className="text-xl sm:text-2xl font-extrabold text-[#0F172A] mt-0.5 font-serif">
-                {counts.all}
+
+              <div className="shrink-0 flex items-center space-x-2">
+                <Link
+                  href="/"
+                  className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-white/90 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-all border border-slate-200 shadow-2xs backdrop-blur-xs"
+                >
+                  <Icon name="arrow-left" className="h-4 w-4" />
+                  <span>Back to Dashboard</span>
+                </Link>
               </div>
             </div>
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-              <div className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
-                Undergraduate (UG)
+
+            {/* Quick Metrics Strip */}
+            <div className="mt-6 pt-4 border-t border-slate-200/80 grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="bg-white/80 backdrop-blur-xs p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                <div className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
+                  Total Programmes
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-[#0F172A] mt-0.5 font-serif">
+                  {counts.all}
+                </div>
               </div>
-              <div className="text-xl sm:text-2xl font-extrabold text-[#0F172A] mt-0.5 font-serif">
-                {counts.ug}
+              <div className="bg-white/80 backdrop-blur-xs p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                <div className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
+                  Undergraduate (UG)
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-[#0F172A] mt-0.5 font-serif">
+                  {counts.ug}
+                </div>
               </div>
-            </div>
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-              <div className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
-                Diploma Courses
+              <div className="bg-white/80 backdrop-blur-xs p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                <div className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
+                  Diploma Courses
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-[#0F172A] mt-0.5 font-serif">
+                  {counts.diploma}
+                </div>
               </div>
-              <div className="text-xl sm:text-2xl font-extrabold text-[#0F172A] mt-0.5 font-serif">
-                {counts.diploma}
-              </div>
-            </div>
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-              <div className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
-                Skill Certificates
-              </div>
-              <div className="text-xl sm:text-2xl font-extrabold text-[#0F172A] mt-0.5 font-serif">
-                {counts.certificate}
+              <div className="bg-white/80 backdrop-blur-xs p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                <div className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
+                  Skill Certificates
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-[#0F172A] mt-0.5 font-serif">
+                  {counts.certificate}
+                </div>
               </div>
             </div>
           </div>
@@ -143,64 +159,77 @@ export const AcademicsView: React.FC = () => {
         {/* Left Column: Programme Directory (8 Cols on Desktop) */}
         <div className="lg:col-span-8 space-y-4">
           {/* Controls: Filter Pills & Search Input */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
-            {/* Filter Pills */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                onClick={() => setFilter("all")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  filter === "all"
-                    ? "bg-[#1657D9] text-white shadow-xs"
-                    : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200"
-                }`}
-              >
-                All Programmes ({counts.all})
-              </button>
-              <button
-                onClick={() => setFilter("ug")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  filter === "ug"
-                    ? "bg-[#1657D9] text-white shadow-xs"
-                    : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200"
-                }`}
-              >
-                Undergraduate ({counts.ug})
-              </button>
-              <button
-                onClick={() => setFilter("diploma")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  filter === "diploma"
-                    ? "bg-[#1657D9] text-white shadow-xs"
-                    : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200"
-                }`}
-              >
-                Diploma ({counts.diploma})
-              </button>
-              <button
-                onClick={() => setFilter("certificate")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  filter === "certificate"
-                    ? "bg-[#1657D9] text-white shadow-xs"
-                    : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200"
-                }`}
-              >
-                Certificates ({counts.certificate})
-              </button>
+          <div className="relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs group hover:border-[#1657D9]/40 transition-all">
+            {/* Subtle campus camouflage backdrop with hover zoom */}
+            <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-[0.05] transition-opacity duration-500 overflow-hidden pointer-events-none">
+              <Image
+                src="/images/campus-illuminated-sign.png"
+                alt=""
+                fill
+                sizes="800px"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+              />
             </div>
 
-            {/* Search Input */}
-            <div className="relative w-full sm:w-60">
-              <Icon
-                name="search"
-                className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400"
-              />
-              <input
-                type="text"
-                placeholder="Search programmes by name or code..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#1657D9]"
-              />
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+              {/* Filter Pills */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  onClick={() => setFilter("all")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    filter === "all"
+                      ? "bg-[#1657D9] text-white shadow-xs"
+                      : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200"
+                  }`}
+                >
+                  All Programmes ({counts.all})
+                </button>
+                <button
+                  onClick={() => setFilter("ug")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    filter === "ug"
+                      ? "bg-[#1657D9] text-white shadow-xs"
+                      : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200"
+                  }`}
+                >
+                  Undergraduate ({counts.ug})
+                </button>
+                <button
+                  onClick={() => setFilter("diploma")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    filter === "diploma"
+                      ? "bg-[#1657D9] text-white shadow-xs"
+                      : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200"
+                  }`}
+                >
+                  Diploma ({counts.diploma})
+                </button>
+                <button
+                  onClick={() => setFilter("certificate")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    filter === "certificate"
+                      ? "bg-[#1657D9] text-white shadow-xs"
+                      : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200"
+                  }`}
+                >
+                  Certificates ({counts.certificate})
+                </button>
+              </div>
+
+              {/* Search Input */}
+              <div className="relative w-full sm:w-60">
+                <Icon
+                  name="search"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400"
+                />
+                <input
+                  type="text"
+                  placeholder="Search programmes by name or code..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#1657D9]"
+                />
+              </div>
             </div>
           </div>
 
@@ -209,9 +238,20 @@ export const AcademicsView: React.FC = () => {
             {filteredProgrammes.map((prog) => (
               <div
                 key={prog.id}
-                className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-2xs hover:border-[#1657D9]/40 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="relative overflow-hidden rounded-2xl bg-white p-5 border border-slate-200/90 shadow-2xs hover:border-[#1657D9]/40 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
               >
-                <div className="space-y-1.5">
+                {/* Subtle campus camouflage backdrop with hover zoom */}
+                <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-[0.06] transition-opacity duration-500 overflow-hidden pointer-events-none">
+                  <Image
+                    src="/images/campus-illuminated-sign.png"
+                    alt=""
+                    fill
+                    sizes="600px"
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-115"
+                  />
+                </div>
+
+                <div className="relative z-10 space-y-1.5 flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono font-bold text-xs text-[#1657D9] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
                       {prog.code}
@@ -225,7 +265,7 @@ export const AcademicsView: React.FC = () => {
                     </span>
                   </div>
 
-                  <h3 className="text-base font-bold text-slate-900">
+                  <h3 className="text-base font-bold text-slate-900 group-hover:text-[#1657D9] transition-colors">
                     {prog.name}
                   </h3>
 
@@ -246,7 +286,7 @@ export const AcademicsView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                <div className="relative z-10 flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                   <div className="text-left sm:text-right">
                     <div className="text-xs font-bold text-slate-800">
                       {prog.currentEnrollment} Enrolled
@@ -277,14 +317,25 @@ export const AcademicsView: React.FC = () => {
         {/* Right Column: Institutional Overview & Accreditation (4 Cols on Desktop) */}
         <div className="lg:col-span-4 space-y-6">
           {/* Programme Overview Card matching reference image */}
-          <div className="rounded-2xl bg-white border border-slate-200/90 shadow-2xs overflow-hidden">
-            <div className="relative h-44 bg-slate-900">
+          <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/90 shadow-2xs group hover:border-[#1657D9]/40 hover:shadow-md transition-all">
+            {/* Subtle campus camouflage backdrop with hover zoom on the card body */}
+            <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-[0.04] transition-opacity duration-500 overflow-hidden pointer-events-none">
+              <Image
+                src="/images/campus-illuminated-sign.png"
+                alt=""
+                fill
+                sizes="400px"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+              />
+            </div>
+
+            <div className="relative h-44 bg-slate-900 overflow-hidden z-10">
               <Image
                 src="/images/campus-front-gate.jpg"
                 alt="R. P. Institute of Hospitality & Management Campus Gate & Affiliation Board"
                 fill
                 sizes="(max-width: 1024px) 100vw, 33vw"
-                className="object-cover object-center opacity-90 transition-transform duration-500 hover:scale-105"
+                className="object-cover object-center opacity-90 transition-transform duration-700 ease-out group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0B1528] via-[#0B1528]/40 to-transparent"></div>
               <div className="absolute bottom-3 left-4 right-4 text-white">
@@ -297,7 +348,7 @@ export const AcademicsView: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-5 space-y-4 text-xs">
+            <div className="relative z-10 p-5 space-y-4 text-xs">
               <div>
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                   Department Leadership
@@ -375,63 +426,79 @@ export const AcademicsView: React.FC = () => {
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs"
         >
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 border border-slate-200 shadow-xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="font-mono text-xs font-bold text-[#1657D9] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
-                  {selectedProgramme.code}
-                </span>
-                <h3 className="text-lg font-bold text-slate-900 mt-1">
-                  {selectedProgramme.name}
-                </h3>
-                <p className="text-xs text-slate-500">
-                  {selectedProgramme.department} • {selectedProgramme.duration}
-                </p>
+          <div className="relative overflow-hidden bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-xl space-y-4 animate-in fade-in zoom-in-95 duration-200 group">
+            {/* Header banner with camouflage backdrop & hover zoom */}
+            <div className="relative bg-[#0B1528] p-5 text-white overflow-hidden">
+              <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                <Image
+                  src="/images/campus-illuminated-sign.png"
+                  alt=""
+                  fill
+                  sizes="500px"
+                  className="object-cover opacity-30 transition-transform duration-700 ease-out group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-[#0B1528]/70 backdrop-blur-[1px]"></div>
               </div>
 
-              <button
-                onClick={() => setSelectedProgramme(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                <Icon name="x" className="h-5 w-5" />
-              </button>
-            </div>
+              <div className="relative z-10 flex items-start justify-between">
+                <div>
+                  <span className="font-mono text-xs font-bold text-white bg-blue-600/60 px-2 py-0.5 rounded-md border border-blue-400/40">
+                    {selectedProgramme.code}
+                  </span>
+                  <h3 className="text-lg font-bold text-white mt-1">
+                    {selectedProgramme.name}
+                  </h3>
+                  <p className="text-xs text-slate-300">
+                    {selectedProgramme.department} • {selectedProgramme.duration}
+                  </p>
+                </div>
 
-            <div className="space-y-3 text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100">
-              <div className="flex justify-between py-1 border-b border-slate-200/60">
-                <span className="text-slate-500">Degree Classification:</span>
-                <span className="font-semibold text-slate-800">{selectedProgramme.degreeType}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-200/60">
-                <span className="text-slate-500">Affiliated University:</span>
-                <span className="font-semibold text-slate-800">{selectedProgramme.affiliatedBody}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-200/60">
-                <span className="text-slate-500">Active Enrollment:</span>
-                <span className="font-semibold text-slate-800">{selectedProgramme.currentEnrollment} Students</span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500">Curriculum Scheme:</span>
-                <span className="font-semibold text-slate-800">Choice Based Credit System (CBCS)</span>
+                <button
+                  onClick={() => setSelectedProgramme(null)}
+                  className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
+                >
+                  <Icon name="x" className="h-5 w-5" />
+                </button>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                onClick={() => setSelectedProgramme(null)}
-                className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer"
-              >
-                Close
-              </button>
-              <button
-                onClick={() => {
-                  alert(`Simulated Action: Opening curriculum modules for ${selectedProgramme.name}.`);
-                  setSelectedProgramme(null);
-                }}
-                className="px-4 py-2 text-xs font-semibold rounded-xl bg-[#1657D9] text-white hover:bg-blue-700 cursor-pointer"
-              >
-                Open Syllabus Dossier
-              </button>
+            <div className="p-6 pt-0 space-y-4">
+              <div className="space-y-3 text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div className="flex justify-between py-1 border-b border-slate-200/60">
+                  <span className="text-slate-500">Degree Classification:</span>
+                  <span className="font-semibold text-slate-800">{selectedProgramme.degreeType}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-200/60">
+                  <span className="text-slate-500">Affiliated University:</span>
+                  <span className="font-semibold text-slate-800">{selectedProgramme.affiliatedBody}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-200/60">
+                  <span className="text-slate-500">Active Enrollment:</span>
+                  <span className="font-semibold text-slate-800">{selectedProgramme.currentEnrollment} Students</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500">Curriculum Scheme:</span>
+                  <span className="font-semibold text-slate-800">Choice Based Credit System (CBCS)</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={() => setSelectedProgramme(null)}
+                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    alert(`Simulated Action: Opening curriculum modules for ${selectedProgramme.name}.`);
+                    setSelectedProgramme(null);
+                  }}
+                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-[#1657D9] text-white hover:bg-blue-700 cursor-pointer"
+                >
+                  Open Syllabus Dossier
+                </button>
+              </div>
             </div>
           </div>
         </div>

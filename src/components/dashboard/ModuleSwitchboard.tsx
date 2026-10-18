@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Icon } from "@/components/common/Icon";
 import { AnimatedReveal } from "@/components/common/AnimatedReveal";
 import { MODULES_LIST } from "@/data/mockData";
@@ -49,9 +50,20 @@ export const ModuleSwitchboard: React.FC = () => {
             <Link
               key={module.slug}
               href={`/modules/${module.slug}`}
-              className="rounded-xl bg-white p-4 border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-[#1657D9]/50 transition-all flex items-center justify-between group"
+              className="relative overflow-hidden rounded-xl bg-white p-4 border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-[#1657D9]/50 transition-all flex items-center justify-between group"
             >
-              <div className="flex items-start space-x-3.5 min-w-0 pr-2">
+              {/* Subtle campus camouflage backdrop with hover zoom */}
+              <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 overflow-hidden pointer-events-none">
+                <Image
+                  src="/images/campus-illuminated-sign.png"
+                  alt=""
+                  fill
+                  sizes="300px"
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-115"
+                />
+              </div>
+
+              <div className="relative z-10 flex items-start space-x-3.5 min-w-0 pr-2">
                 <div className="p-2.5 rounded-xl bg-blue-50 text-[#1657D9] border border-blue-100 group-hover:bg-[#1657D9] group-hover:text-white transition-colors shrink-0">
                   <Icon name={module.icon} className="h-5 w-5" />
                 </div>

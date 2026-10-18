@@ -23,12 +23,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
 
   return (
     <div className="flex h-full w-full flex-col bg-[#0B1528] text-slate-300 select-none text-[15px]">
-      {/* Brand & Official Logo Header */}
-      <div className="px-5 py-5 border-b border-[#16243E] bg-[#070E1C]/90">
+      {/* Brand & Official Logo Header with Camouflage Backdrop & Hover Zoom */}
+      <div className="relative overflow-hidden px-5 py-5 border-b border-[#16243E] bg-[#070E1C] group">
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-20 group-hover:opacity-35 transition-opacity duration-500">
+          <Image
+            src="/images/campus-illuminated-sign.png"
+            alt=""
+            fill
+            sizes="300px"
+            className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-115"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#070E1C]/75 via-[#070E1C]/85 to-[#070E1C] backdrop-blur-[1px]"></div>
+        </div>
+
         <Link
           href="/"
           onClick={onNavigate}
-          className="flex flex-col gap-2 group focus:outline-none"
+          className="relative z-10 flex flex-col gap-2 focus:outline-none"
         >
           {/* Official Logo without white box */}
           <div className="py-1 px-0.5 transition-all">
@@ -152,16 +163,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
         </div>
       </div>
 
-      {/* Institutional System Footer */}
-      <div className="p-3.5 border-t border-[#16243E] bg-[#070E1C]">
-        <div className="flex items-center space-x-2 text-xs font-medium text-slate-300">
-          <span className="font-semibold text-white">RPIHM CampusOS</span>
-          <span className="text-slate-500">•</span>
-          <span className="text-slate-400">v0.1.0</span>
+      {/* Institutional System Footer with Camouflage Backdrop & Hover Zoom */}
+      <div className="relative overflow-hidden p-3.5 border-t border-[#16243E] bg-[#070E1C] group">
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-0 group-hover:opacity-20 transition-opacity duration-500">
+          <Image
+            src="/images/campus-illuminated-sign.png"
+            alt=""
+            fill
+            sizes="300px"
+            className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-115"
+          />
+          <div className="absolute inset-0 bg-[#070E1C]/80 backdrop-blur-[1px]"></div>
         </div>
-        <p className="text-[11px] text-slate-400 mt-1 leading-tight">
-          Vasai, Maharashtra • Affiliated to Univ. of Mumbai
-        </p>
+
+        <div className="relative z-10">
+          <div className="flex items-center space-x-2 text-xs font-medium text-slate-300">
+            <span className="font-semibold text-white">RPIHM CampusOS</span>
+            <span className="text-slate-500">•</span>
+            <span className="text-slate-400">v0.1.0</span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1 leading-tight">
+            Vasai, Maharashtra • Affiliated to Univ. of Mumbai
+          </p>
+        </div>
       </div>
     </div>
   );

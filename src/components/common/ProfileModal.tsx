@@ -34,34 +34,58 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
         className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 border border-slate-200 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Navy Header Banner */}
-        <div className="bg-[#0B1528] p-6 text-white border-b border-[#16243E] relative">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 cursor-pointer"
-            aria-label="Close profile modal"
-          >
-            <Icon name="x-mark" className="w-5 h-5" />
-          </button>
-          
-          <div className="flex items-center space-x-4">
-            <div className="w-14 h-14 rounded-full bg-[#1657D9] text-white flex items-center justify-center font-bold text-lg shadow-md border-2 border-white/20">
-              KS
-            </div>
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/20 text-blue-200 border border-blue-400/30 mb-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                Institutional Designation
+        {/* Navy Header Banner with Camouflage Background & Hover Zoom */}
+        <div className="bg-[#0B1528] p-6 text-white border-b border-[#16243E] relative overflow-hidden group">
+          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            <Image
+              src="/images/campus-illuminated-sign.png"
+              alt="R. P. Institute of Hospitality & Management Campus Signage"
+              fill
+              sizes="500px"
+              className="object-cover object-center opacity-35 transition-transform duration-700 ease-out group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-[#0B1528]/70 backdrop-blur-[1px]"></div>
+          </div>
+
+          <div className="relative z-10">
+            <button
+              onClick={onClose}
+              className="absolute top-0 right-0 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 cursor-pointer"
+              aria-label="Close profile modal"
+            >
+              <Icon name="x-mark" className="w-5 h-5" />
+            </button>
+            
+            <div className="flex items-center space-x-4">
+              <div className="w-14 h-14 rounded-full bg-[#1657D9] text-white flex items-center justify-center font-bold text-lg shadow-md border-2 border-white/20">
+                KS
               </div>
-              <h2 className="text-xl font-bold tracking-tight text-white">{FICTIONAL_USER.name}</h2>
-              <p className="text-xs text-slate-300">{FICTIONAL_USER.designation}</p>
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/20 text-blue-200 border border-blue-400/30 mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                  Institutional Designation
+                </div>
+                <h2 className="text-xl font-bold tracking-tight text-white">{FICTIONAL_USER.name}</h2>
+                <p className="text-xs text-slate-300">{FICTIONAL_USER.designation}</p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Profile Details Content */}
-        <div className="p-6 space-y-4 text-sm">
-          <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="relative overflow-hidden p-6 space-y-4 text-sm group/body">
+          {/* Subtle campus camouflage backdrop with hover zoom */}
+          <div className="absolute inset-0 z-0 opacity-0 group-hover/body:opacity-[0.04] transition-opacity duration-500 overflow-hidden pointer-events-none">
+            <Image
+              src="/images/campus-illuminated-sign.png"
+              alt=""
+              fill
+              sizes="500px"
+              className="object-cover transition-transform duration-700 ease-out group-hover/body:scale-108"
+            />
+          </div>
+
+          <div className="relative z-10 grid grid-cols-2 gap-3 text-xs">
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
               <span className="text-slate-400 block mb-0.5">Institution</span>
               <span className="font-semibold text-slate-800">{FICTIONAL_USER.institution}</span>
@@ -80,14 +104,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="relative z-10 flex items-center space-x-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200 group/loc hover:border-[#1657D9]/40 hover:shadow-2xs transition-all">
             <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-slate-200">
               <Image
                 src="/images/campus-front-gate.jpg"
                 alt="RPIHM Campus Vasai"
                 fill
                 sizes="48px"
-                className="object-cover"
+                className="object-cover transition-transform duration-700 ease-out group-hover/loc:scale-115"
               />
             </div>
             <div className="min-w-0">
@@ -103,7 +127,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
             </div>
           </div>
 
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 leading-relaxed">
+          <div className="relative z-10 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 leading-relaxed">
             <strong className="text-slate-800 font-semibold block mb-1">Institutional Administration:</strong>
             CampusOS authentication and role-based permissions will be integrated in a subsequent milestone. Sample departmental records are currently displayed.
           </div>

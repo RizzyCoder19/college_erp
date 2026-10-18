@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/common/Icon";
 import { MODULES_LIST, ACADEMIC_PROGRAMMES } from "@/data/mockData";
@@ -129,11 +130,22 @@ interface PersonnelItem {
       aria-label="Institutional Search"
     >
       <div
-        className="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 border border-slate-200"
+        className="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 border border-slate-200 group hover:border-[#1657D9]/40 transition-all"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Subtle campus camouflage backdrop with hover zoom */}
+        <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-[0.04] transition-opacity duration-500 overflow-hidden pointer-events-none">
+          <Image
+            src="/images/campus-illuminated-sign.png"
+            alt=""
+            fill
+            sizes="700px"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-108"
+          />
+        </div>
+
         {/* Search Input Bar with Glowing Active Ring */}
-        <div className="flex items-center border-b border-slate-200 px-4 py-3.5 bg-slate-50">
+        <div className="relative z-10 flex items-center border-b border-slate-200 px-4 py-3.5 bg-slate-50/90 backdrop-blur-xs">
           <Icon name="search" className="h-5 w-5 text-[#1657D9] mr-3 shrink-0" />
           <input
             ref={inputRef}
@@ -158,7 +170,7 @@ interface PersonnelItem {
         </div>
 
         {/* Results Area */}
-        <div className="max-h-[60vh] overflow-y-auto p-4 space-y-4 text-xs">
+        <div className="relative z-10 max-h-[60vh] overflow-y-auto p-4 space-y-4 text-xs">
           {/* Institutional Note & Keyboard Hint */}
           <div className="text-[11px] text-slate-500 bg-blue-50/60 p-2.5 rounded-lg border border-blue-100 flex items-center justify-between">
             <span>RPIHM Instant Institutional Search</span>
