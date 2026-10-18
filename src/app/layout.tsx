@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RPIHM CampusOS | Academic & Hospitality ERP",
-  description: "Enterprise institutional operating system for Rajendra Prasad Institute of Hotel Management.",
+  title: "RPIHM CampusOS | R. P. Institute of Hospitality & Management, Vasai",
+  description: "Academic & Administrative ERP for R. P. Institute of Hospitality & Management, Vasai (Affiliated to University of Mumbai).",
   icons: {
     icon: "/favicon.ico",
   },
@@ -30,7 +30,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 selection:bg-amber-100 selection:text-slate-900">
+      <body className="min-h-full flex flex-col bg-[#F4F6F9] text-slate-900 selection:bg-blue-100 selection:text-[#1657D9]">
         {children}
       </body>
     </html>

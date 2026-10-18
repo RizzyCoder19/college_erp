@@ -25,39 +25,39 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
       <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-xs text-slate-500">
         <Link
           href="/"
-          className="hover:text-amber-700 dark:hover:text-amber-400 flex items-center space-x-1"
+          className="hover:text-[#1657D9] flex items-center space-x-1 font-medium"
         >
           <Icon name="arrow-left" className="h-3.5 w-3.5" />
-          <span>Dashboard Overview</span>
+          <span>Dashboard</span>
         </Link>
         <span>/</span>
         <span className="text-slate-400">Modules</span>
         <span>/</span>
-        <span className="font-semibold text-slate-800 dark:text-slate-200">
+        <span className="font-bold text-slate-900">
           {module.title}
         </span>
       </nav>
 
       {/* Module Banner Header */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#0A192F] via-[#0F233D] to-[#162D4C] p-6 text-white shadow-xl border border-amber-500/20">
+      <div className="rounded-2xl bg-white p-6 sm:p-8 border border-slate-200 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start space-x-4">
-            <div className="p-3.5 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-400/40 shrink-0">
+            <div className="p-3.5 rounded-2xl bg-blue-50 text-[#1657D9] border border-blue-100 shrink-0">
               <Icon name={module.icon} className="h-8 w-8" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-amber-300">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#1657D9]">
                   {module.department}
                 </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                   {module.status}
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-serif mt-1">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-serif mt-1">
                 {module.title}
               </h1>
-              <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+              <p className="text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
                 {module.description}
               </p>
             </div>
@@ -66,22 +66,22 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
           <div className="shrink-0 flex items-center space-x-2">
             <Link
               href="/"
-              className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-sm transition-all border border-white/10"
+              className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all border border-slate-200"
             >
               <Icon name="arrow-left" className="h-4 w-4" />
-              <span>Back to Overview</span>
+              <span>Back to Dashboard</span>
             </Link>
           </div>
         </div>
 
-        {/* Live Module Stats strip */}
-        <div className="mt-6 pt-4 border-t border-white/10 grid grid-cols-3 gap-4 text-center sm:text-left">
+        {/* Live Module Stats Strip */}
+        <div className="mt-6 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {module.stats.map((stat, idx) => (
-            <div key={idx} className="bg-white/5 p-3 rounded-xl border border-white/5">
-              <div className="text-[11px] text-slate-400 uppercase tracking-wider">
+            <div key={idx} className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+              <div className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
                 {stat.label}
               </div>
-              <div className="text-lg sm:text-xl font-bold text-amber-300 mt-0.5 font-serif">
+              <div className="text-xl sm:text-2xl font-extrabold text-[#0F172A] mt-0.5 font-serif">
                 {stat.value}
               </div>
             </div>
@@ -90,57 +90,57 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
       </div>
 
       {/* Prominent Prototype Banner */}
-      <div className="rounded-xl bg-amber-50 dark:bg-amber-950/20 border-l-4 border-amber-500 p-4 text-xs text-amber-900 dark:text-amber-200">
+      <div className="rounded-xl bg-red-50 border-l-4 border-[#D92534] p-4 text-xs text-[#991B1B]">
         <div className="flex items-start space-x-3">
-          <div className="p-1 rounded bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 shrink-0">
-            <Icon name="award" className="h-4 w-4" />
-          </div>
+          <span className="w-5 h-5 rounded-full bg-[#D92534] text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+            i
+          </span>
           <div>
-            <h4 className="font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+            <h4 className="font-bold uppercase tracking-wider text-[#991B1B]">
               Module Prototype Placeholder (Milestone 2 Specification)
             </h4>
-            <p className="mt-1 leading-relaxed text-slate-700 dark:text-slate-300">
-              The full operational workflow and transactional persistence for{" "}
-              <strong>{module.title}</strong> is scheduled for subsequent milestones. Below is an interactive demonstration preview showing anticipated data structures, planned system features, and simulated sample records.
+            <p className="mt-1 leading-relaxed text-slate-700">
+              The operational workflow and backend database integration for{" "}
+              <strong>{module.title}</strong> will be implemented in subsequent development phases. Below is a demonstration interface with anticipated data schemas and fictional sample records for R. P. Institute of Hospitality & Management.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Tab Switcher: Mock Records vs Planned Specifications */}
-      <div className="flex items-center space-x-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+      {/* Tab Switcher: Demonstration Records vs Planned Specifications */}
+      <div className="flex items-center space-x-2 border-b border-slate-200 pb-2">
         <button
           onClick={() => setActiveTab("records")}
-          className={`px-4 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === "records"
-              ? "bg-[#0A192F] text-amber-300 shadow-sm"
-              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              ? "bg-[#1657D9] text-white shadow-xs"
+              : "text-slate-600 hover:bg-slate-200"
           }`}
         >
           Demonstration Records ({module.mockRecords.rows.length})
         </button>
         <button
           onClick={() => setActiveTab("specs")}
-          className={`px-4 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === "specs"
-              ? "bg-[#0A192F] text-amber-300 shadow-sm"
-              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              ? "bg-[#1657D9] text-white shadow-xs"
+              : "text-slate-600 hover:bg-slate-200"
           }`}
         >
-          Planned Specifications & Roadmap
+          Planned Specifications & University Scheme
         </button>
       </div>
 
       {/* Tab 1: Mock Records Table */}
       {activeTab === "records" && (
-        <div className="rounded-2xl bg-white dark:bg-slate-900 p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+        <div className="rounded-2xl bg-white p-6 border border-slate-200 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              <h3 className="text-base font-bold text-slate-900">
                 Simulated {module.title} Register
               </h3>
               <p className="text-xs text-slate-500">
-                Demonstration sample records for UI/UX testing
+                Demonstration sample records for UI testing
               </p>
             </div>
 
@@ -154,14 +154,14 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
                 placeholder="Filter table rows..."
                 value={tableSearch}
                 onChange={(e) => setTableSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#1657D9]"
               />
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-slate-800">
+              <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
                 <tr>
                   {module.mockRecords.columns.map((col, idx) => (
                     <th key={idx} scope="col" className="px-4 py-3">
@@ -173,17 +173,17 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100">
                 {filteredRows.map((row, rIdx) => (
                   <tr
                     key={rIdx}
-                    className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
+                    className="hover:bg-blue-50/40 transition-colors"
                   >
                     {row.map((cell, cIdx) => (
                       <td
                         key={cIdx}
-                        className={`px-4 py-3 text-slate-800 dark:text-slate-200 ${
-                          cIdx === 0 ? "font-mono font-medium text-amber-800 dark:text-amber-400" : ""
+                        className={`px-4 py-3 text-slate-800 ${
+                          cIdx === 0 ? "font-mono font-bold text-[#1657D9]" : ""
                         }`}
                       >
                         {cell}
@@ -192,9 +192,9 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() =>
-                          alert(`Simulated Action: Viewing record "${row[0]}" in ${module.title}.`)
+                          alert(`Simulated Action: Inspecting record "${row[0]}" in ${module.title}.`)
                         }
-                        className="px-2.5 py-1 text-[11px] font-semibold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 transition-colors cursor-pointer"
+                        className="px-2.5 py-1 text-[11px] font-semibold text-[#1657D9] hover:text-white bg-blue-50 hover:bg-[#1657D9] rounded-lg border border-blue-200 transition-colors cursor-pointer"
                       >
                         Inspect
                       </button>
@@ -223,13 +223,13 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
 
       {/* Tab 2: Planned Specifications */}
       {activeTab === "specs" && (
-        <div className="rounded-2xl bg-white dark:bg-slate-900 p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+        <div className="rounded-2xl bg-white p-6 border border-slate-200 shadow-xs space-y-4">
           <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              Planned Architecture & Feature Roadmap
+            <h3 className="text-base font-bold text-slate-900">
+              Planned Architecture & Feature Specifications
             </h3>
             <p className="text-xs text-slate-500">
-              Functional capabilities specified for future production deployment
+              Capabilities scheduled for full implementation under University of Mumbai guidelines
             </p>
           </div>
 
@@ -237,17 +237,17 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
             {module.plannedFeatures.map((feat, idx) => (
               <div
                 key={idx}
-                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-start space-x-3"
+                className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 flex items-start space-x-3"
               >
-                <div className="p-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 shrink-0 mt-0.5">
+                <div className="p-1 rounded-full bg-blue-100 text-[#1657D9] shrink-0 mt-0.5">
                   <Icon name="check-circle" className="h-4 w-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-semibold text-slate-900 dark:text-white">
+                  <h4 className="text-xs font-bold text-slate-900">
                     {feat}
                   </h4>
                   <p className="text-[11px] text-slate-500 mt-1">
-                    Staged for data model design and API routing in Milestone 3.
+                    Scheduled for transactional data modeling and API integration.
                   </p>
                 </div>
               </div>

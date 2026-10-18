@@ -15,7 +15,8 @@ export interface ModuleData {
   department: string;
   description: string;
   icon: string;
-  status: "Prototype Stub" | "Ready for Spec" | "Planned Phase 3";
+  category: "main" | "system";
+  status: "Prototype Stub" | "Ready for Spec" | "Active Preview";
   stats: { label: string; value: string }[];
   plannedFeatures: string[];
   mockRecords: {
@@ -24,10 +25,22 @@ export interface ModuleData {
   };
 }
 
+export interface AcademicProgramme {
+  id: string;
+  code: string;
+  name: string;
+  department: "Technology & Computing" | "Hospitality & Culinary Arts";
+  degreeType: "Undergraduate (UG)" | "Diploma" | "Certificate";
+  duration: string;
+  currentEnrollment: number;
+  affiliatedBody: string;
+}
+
 export interface LabFacility {
   id: string;
   name: string;
   code: string;
+  category: "Culinary" | "Bakery" | "F&B Service" | "Accommodation" | "Computing & AI";
   capacity: number;
   currentOccupancy: number;
   status: "In Session" | "Available" | "Sanitization" | "Maintenance";
@@ -36,28 +49,38 @@ export interface LabFacility {
   nextSessionTime?: string;
 }
 
-export interface ActivityLogItem {
+export interface AcademicActivityItem {
   id: string;
-  timestamp: string;
-  category: "Academics" | "Admissions" | "Facilities" | "Examination" | "Finance";
-  actor: string;
-  role: string;
-  description: string;
+  time: string;
+  title: string;
+  category: string;
+  details: string;
+  status: "Ongoing" | "Completed" | "Scheduled";
 }
 
-export interface CampusNotice {
+export interface TodayScheduleItem {
+  id: string;
+  timeRange: string;
+  title: string;
+  location: string;
+  cohort: string;
+  type: "Lab Session" | "Meeting" | "Examination" | "Event";
+}
+
+export interface CampusNoticeItem {
   id: string;
   date: string;
   title: string;
-  priority: "High" | "Standard" | "Urgent";
-  targetAudience: string;
   excerpt: string;
+  priority?: "High" | "Standard" | "Urgent";
+  linkText?: string;
 }
 
 export interface FictionalUserProfile {
   name: string;
   designation: string;
   department: string;
+  office: string;
   institution: string;
   employeeId: string;
   email: string;

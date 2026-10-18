@@ -49,10 +49,10 @@ export default function ModulePage(props: PageProps) {
     <AppShell>
       <Suspense
         fallback={
-          <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 text-xs text-slate-500 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 text-xs text-slate-500 shadow-xs">
             <span className="flex items-center space-x-2">
-              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-              <span>Loading RPIHM module console...</span>
+              <span className="h-2 w-2 rounded-full bg-[#1657D9] animate-pulse"></span>
+              <span className="text-slate-600 font-medium">Loading RPIHM module console...</span>
             </span>
           </div>
         }

@@ -2,38 +2,41 @@
 
 @layer base {
   :root {
-    --navy-primary: #0a192f;
-    --navy-deep: #071224;
-    --navy-surface: #0f233d;
-    --navy-border: #1e3a5f;
+    --navy-sidebar: #0B1528;
+    --navy-sidebar-darker: #070E1C;
+    --navy-sidebar-border: #16243E;
     
-    --gold-primary: #c5a059;
-    --gold-bright: #dfb15b;
-    --gold-light: #fbf7ee;
-    --gold-border: #dfcaa2;
-    --gold-muted: #8c733e;
+    --royal-blue: #1657D9;
+    --royal-blue-hover: #1248B8;
+    --royal-blue-light: #EBF2FE;
     
-    --surface-bg: #f8fafc;
-    --surface-card: #ffffff;
-    --surface-muted: #f1f5f9;
-    --border-subtle: #e2e8f0;
+    --accent-red: #D92534;
+    --accent-red-hover: #B91C2A;
+    --accent-red-light: #FDF2F2;
     
-    --text-primary: #0f172a;
+    --workspace-bg: #F4F6F9;
+    --card-bg: #FFFFFF;
+    --border-subtle: #E2E8F0;
+    --border-card: #E5E9F0;
+    
+    --text-primary: #0F172A;
     --text-secondary: #475569;
-    --text-muted: #64748b;
+    --text-muted: #64748B;
   }
 }
 
 body {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--workspace-bg);
+  color: var(--text-primary);
   min-height: 100dvh;
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom refined scrollbars */
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -49,8 +52,77 @@ body {
   background: #94a3b8;
 }
 
-/* Accessible focus visible outlines */
+/* Focus visibility */
 :focus-visible {
-  outline: 2px solid #c5a059;
+  outline: 2px solid #1657D9;
   outline-offset: 2px;
+}
+
+/* Glowing Search border keyframe animation (adapted from Glowing-Animated-Search-bar) */
+@keyframes glowingConicRotate {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.glowing-search-frame {
+  position: relative;
+  border-radius: 12px;
+  background: #FFFFFF;
+}
+
+.glowing-search-frame:focus-within::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 500px;
+  height: 500px;
+  background-image: conic-gradient(
+    transparent,
+    rgba(22, 87, 217, 0.6),
+    rgba(217, 37, 52, 0.4),
+    transparent 40%
+  );
+  animation: glowingConicRotate 4s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Magic Navigation active item transition */
+.magic-nav-item {
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.magic-nav-active {
+  background-color: #1657D9;
+  color: #FFFFFF !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(22, 87, 217, 0.25);
+}
+
+.magic-nav-active::before {
+  content: "";
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 20px;
+  background-color: #D92534;
+  border-radius: 2px 0 0 2px;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .glowing-search-frame:focus-within::before {
+    animation: none;
+  }
+  .magic-nav-item {
+    transition: none;
+  }
 }

@@ -2,138 +2,171 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { InstituteCrest } from "@/components/brand/InstituteCrest";
 import { Icon } from "@/components/common/Icon";
 import { MODULES_LIST } from "@/data/mockData";
 
 interface SidebarProps {
   onNavigate?: () => void;
+  onOpenHelp?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
   const pathname = usePathname();
 
-  const isOverview = pathname === "/";
+  const isDashboard = pathname === "/";
+
+  // Filter modules into main navigation and system navigation
+  const mainModules = MODULES_LIST.filter((m) => m.category === "main");
+  const systemModules = MODULES_LIST.filter((m) => m.category === "system");
 
   return (
-    <aside className="flex h-full w-64 flex-col bg-[#0A192F] text-slate-200 border-r border-[#1E3A5F] select-none">
-      {/* Brand Header */}
-      <div className="flex items-center space-x-3 px-5 py-5 border-b border-[#1E3A5F]/80 bg-[#071224]">
-        <InstituteCrest size={40} />
-        <div>
-          <div className="flex items-center space-x-1.5">
-            <span className="text-base font-extrabold tracking-tight text-white font-serif">
-              RPIHM
-            </span>
-            <span className="text-xs font-semibold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">
-              CampusOS
-            </span>
+    <aside className="flex h-full w-64 flex-col bg-[#0B1528] text-slate-300 border-r border-[#16243E] select-none text-[15px]">
+      {/* Brand & Official Logo Header */}
+      <div className="px-5 py-5 border-b border-[#16243E] bg-[#070E1C]/80">
+        <Link
+          href="/"
+          onClick={onNavigate}
+          className="flex flex-col gap-2 group focus:outline-none"
+        >
+          {/* Official Logo */}
+          <div className="bg-white/95 rounded-lg p-2 shadow-xs border border-white/20 transition-all group-hover:bg-white">
+            <Image
+              src="/images/rpihm-logo.webp"
+              alt="R. P. Institute of Hospitality & Management"
+              width={210}
+              height={42}
+              className="h-auto w-full object-contain"
+              priority
+            />
           </div>
-          <p className="text-[10px] text-amber-200/70 tracking-wider uppercase font-medium mt-0.5">
-            Academic & Hospitality ERP
-          </p>
-        </div>
+
+          <div className="mt-1">
+            <div className="flex items-center space-x-1.5">
+              <span className="text-base font-bold text-white tracking-tight">
+                CampusOS
+              </span>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                ERP
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 font-medium">
+              Academic & Administrative ERP
+            </p>
+          </div>
+        </Link>
       </div>
 
-      {/* Navigation List */}
+      {/* Navigation Scrollable Body */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-        {/* Core Institutional Navigation */}
-        <div>
-          <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400/80 mb-2">
-            Executive Cockpit
-          </div>
-          <nav className="space-y-1">
-            <Link
-              href="/"
-              onClick={onNavigate}
-              className={`flex items-center space-x-3 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all ${
-                isOverview
-                  ? "bg-gradient-to-r from-amber-500/20 to-amber-500/5 text-amber-300 border-l-4 border-amber-400 shadow-sm"
-                  : "text-slate-300 hover:bg-slate-800/60 hover:text-white"
+        {/* Dashboard Link */}
+        <nav className="space-y-1">
+          <Link
+            href="/"
+            onClick={onNavigate}
+            className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 transition-all ${
+              isDashboard
+                ? "magic-nav-active"
+                : "text-slate-300 hover:bg-[#13223E] hover:text-white"
+            }`}
+          >
+            <Icon
+              name="dashboard"
+              className={`h-5 w-5 shrink-0 ${
+                isDashboard ? "text-white" : "text-slate-400"
               }`}
-            >
-              <Icon
-                name="chart-bar"
-                className={`h-4 w-4 shrink-0 ${
-                  isOverview ? "text-amber-400" : "text-slate-400"
+            />
+            <span className="font-medium">Dashboard</span>
+          </Link>
+        </nav>
+
+        {/* Core Academic & Administrative Modules */}
+        <nav className="space-y-1">
+          {mainModules.map((module) => {
+            const isActive = pathname === `/modules/${module.slug}`;
+            return (
+              <Link
+                key={module.slug}
+                href={`/modules/${module.slug}`}
+                onClick={onNavigate}
+                className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2 transition-all ${
+                  isActive
+                    ? "magic-nav-active"
+                    : "text-slate-300 hover:bg-[#13223E] hover:text-white"
                 }`}
-              />
-              <span>Executive Overview</span>
-            </Link>
+              >
+                <Icon
+                  name={module.icon}
+                  className={`h-5 w-5 shrink-0 ${
+                    isActive ? "text-white" : "text-slate-400"
+                  }`}
+                />
+                <span className="truncate">{module.title}</span>
+              </Link>
+            );
+          })}
+        </nav>
 
-            <Link
-              href="/#switchboard"
-              onClick={onNavigate}
-              className="flex items-center space-x-3 rounded-xl px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800/60 hover:text-white transition-colors"
-            >
-              <Icon name="briefcase" className="h-4 w-4 shrink-0 text-slate-400" />
-              <span>Module Switchboard</span>
-            </Link>
-          </nav>
-        </div>
-
-        {/* 8 Core ERP Modules */}
+        {/* System Group */}
         <div>
-          <div className="flex items-center justify-between px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400/80 mb-2">
-            <span>Enterprise Modules</span>
-            <span className="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-amber-300/80 font-mono">
-              8 Systems
-            </span>
+          <div className="px-3.5 text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+            SYSTEM
           </div>
           <nav className="space-y-1">
-            {MODULES_LIST.map((module) => {
+            {systemModules.map((module) => {
               const isActive = pathname === `/modules/${module.slug}`;
               return (
                 <Link
                   key={module.slug}
                   href={`/modules/${module.slug}`}
                   onClick={onNavigate}
-                  className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition-all group ${
+                  className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2 transition-all ${
                     isActive
-                      ? "bg-gradient-to-r from-amber-500/20 to-amber-500/5 text-amber-300 border-l-4 border-amber-400 font-semibold shadow-sm"
-                      : "text-slate-300 hover:bg-slate-800/60 hover:text-white"
+                      ? "magic-nav-active"
+                      : "text-slate-300 hover:bg-[#13223E] hover:text-white"
                   }`}
                 >
-                  <div className="flex items-center space-x-3 truncate">
-                    <Icon
-                      name={module.icon}
-                      className={`h-4 w-4 shrink-0 ${
-                        isActive
-                          ? "text-amber-400"
-                          : "text-slate-400 group-hover:text-amber-300"
-                      }`}
-                    />
-                    <span className="truncate">{module.title}</span>
-                  </div>
-                  {isActive && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
-                  )}
+                  <Icon
+                    name={module.icon}
+                    className={`h-5 w-5 shrink-0 ${
+                      isActive ? "text-white" : "text-slate-400"
+                    }`}
+                  />
+                  <span>{module.title}</span>
                 </Link>
               );
             })}
+
+            <button
+              onClick={() => {
+                if (onOpenHelp) onOpenHelp();
+                if (onNavigate) onNavigate();
+              }}
+              className="w-full text-left flex items-center space-x-3 rounded-lg px-3.5 py-2 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all cursor-pointer"
+            >
+              <Icon name="question-mark-circle" className="h-5 w-5 shrink-0 text-slate-400" />
+              <span>Help & Support</span>
+            </button>
           </nav>
         </div>
       </div>
 
-      {/* Demonstration Sandbox Notice Footer */}
-      <div className="p-3.5 border-t border-[#1E3A5F]/80 bg-[#071224]/80">
-        <div className="rounded-xl bg-[#0F233D] border border-amber-500/30 p-2.5">
-          <div className="flex items-center space-x-2">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
-            </span>
-            <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wide">
-              Demonstration Mode
-            </span>
-          </div>
-          <p className="text-[10px] text-slate-300 mt-1 leading-relaxed">
-            Fictional institutional dataset. Stage 2 dashboard shell.
-          </p>
-          <div className="mt-2 pt-1.5 border-t border-slate-700/60 flex items-center justify-between text-[9px] text-slate-400 font-mono">
-            <span>Stack: Next.js 16</span>
-            <span className="text-emerald-400">Turbopack</span>
+      {/* Footer Demonstration Status */}
+      <div className="p-3.5 border-t border-[#16243E] bg-[#070E1C]">
+        <div className="flex items-center space-x-2 text-xs font-medium text-slate-300">
+          <span className="font-semibold text-white">RPIHM CampusOS</span>
+          <span className="text-slate-500">•</span>
+          <span className="text-slate-400">Version 0.1.0 (Demo)</span>
+        </div>
+
+        <div className="mt-2 flex items-start space-x-2 p-2 rounded-lg bg-red-950/40 border border-red-800/40 text-[11px] text-red-200">
+          <span className="w-2 h-2 rounded-full bg-red-500 shrink-0 mt-0.5"></span>
+          <div>
+            <strong className="font-bold text-red-400">Demonstration Mode</strong>
+            <p className="text-slate-400 text-[10px] leading-tight mt-0.5">
+              Fictional data for UI/UX showcase only
+            </p>
           </div>
         </div>
       </div>
