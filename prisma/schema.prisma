@@ -1,0 +1,202 @@
+// RPIHM CampusOS -- Foundational Relational Data Model (Phase 1)
+// Designed for R. P. Institute of Hospitality & Management
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -------------------------------------------------------------
+// 1. Academic Master Data
+// -------------------------------------------------------------
+
+model AcademicYear {
+  id          String         @id @default(uuid())
+  code        String         @unique // e.g. 2026-27
+  name        String         // e.g. Academic Year 2026-2027
+  startDate   DateTime
+  endDate     DateTime
+  isCurrent   Boolean        @default(false)
+  terms       AcademicTerm[]
+  enrolments  Enrolment[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model AcademicTerm {
+  id             String       @id @default(uuid())
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  termType       String       // ODD, EVEN, ANNUAL
+  name           String       // e.g. Odd Semester Term
+  startDate      DateTime
+  endDate        DateTime
+  isCurrent      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([academicYearId])
+}
+
+model Department {
+  id          String      @id @default(uuid())
+  code        String      @unique // e.g. CUL, HOSP, MGMT
+  name        String      // e.g. Department of Culinary Arts
+  hodStaffId  String?     @unique
+  programmes  Programme[]
+  staff       Staff[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Programme {
+  id            String       @id @default(uuid())
+  code          String       @unique // e.g. BSC-HS, BA-CUL
+  name          String       // e.g. B.Sc. in Hospitality Studies
+  degreeLevel   String       // UNDERGRADUATE, POSTGRADUATE, DIPLOMA
+  durationYears Int          @default(3)
+  departmentId  String
+  department    Department   @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  semesters     Semester[]
+  enrolments    Enrolment[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([departmentId])
+}
+
+model Semester {
+  id             String       @id @default(uuid())
+  programmeId    String
+  programme      Programme    @relation(fields: [programmeId], references: [id], onDelete: Cascade)
+  semesterNumber Int          // 1 to 6
+  termType       String       // ODD, EVEN
+  subjects       Subject[]
+  divisions      Division[]
+  enrolments     Enrolment[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([programmeId, semesterNumber])
+  @@index([programmeId])
+}
+
+model Subject {
+  id                  String               @id @default(uuid())
+  code                String               @unique // e.g. FP-101, FBM-201
+  title               String               // e.g. Food Production I
+  credits             Float                @default(4.0)
+  subjectType         String               @default("THEORY") // THEORY, PRACTICAL_KITCHEN
+  semesterId          String
+  semester            Semester             @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  teachingAssignments TeachingAssignment[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@index([semesterId])
+}
+
+model Division {
+  id                  String               @id @default(uuid())
+  name                String               // e.g. Division A, Batch K1
+  semesterId          String
+  semester            Semester             @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  maxCapacity         Int                  @default(60)
+  enrolments          Enrolment[]
+  teachingAssignments TeachingAssignment[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@unique([semesterId, name])
+  @@index([semesterId])
+}
+
+// -------------------------------------------------------------
+// 2. Student & Staff Entities
+// -------------------------------------------------------------
+
+model Student {
+  id              String      @id @default(uuid())
+  rollNumber      String      @unique // e.g. RPIHM-2026-001
+  prn             String      @unique // Permanent Registration Number: 202601640001001
+  fullName        String
+  email           String      @unique
+  phone           String
+  dob             DateTime
+  gender          String?     // MALE, FEMALE, OTHER
+  bloodGroup      String?
+  status          String      @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, ALUMNI
+  currentSemester Int         @default(1)
+  enrolments      Enrolment[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([status])
+}
+
+model Staff {
+  id                  String               @id @default(uuid())
+  employeeId          String               @unique // e.g. RPIHM-FAC-001
+  fullName            String
+  email               String               @unique
+  phone               String
+  designation         String               // e.g. Executive Chef Instructor
+  category            String               // TEACHING, TECHNICAL, ADMINISTRATIVE
+  departmentId        String
+  department          Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  dateOfJoining       DateTime
+  status              String               @default("ACTIVE") // ACTIVE, ON_LEAVE
+  teachingAssignments TeachingAssignment[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@index([departmentId])
+  @@index([category])
+}
+
+// -------------------------------------------------------------
+// 3. Junction & Operational Entities
+// -------------------------------------------------------------
+
+model Enrolment {
+  id             String       @id @default(uuid())
+  studentId      String
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  programmeId    String
+  programme      Programme    @relation(fields: [programmeId], references: [id], onDelete: Restrict)
+  semesterId     String
+  semester       Semester     @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  divisionId     String
+  division       Division     @relation(fields: [divisionId], references: [id], onDelete: Restrict)
+  status         String       @default("ENROLLED") // ENROLLED, PROMOTED, DETAINED
+  enrolledAt     DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([studentId, academicYearId, semesterId])
+  @@index([academicYearId])
+  @@index([programmeId])
+  @@index([divisionId])
+}
+
+model TeachingAssignment {
+  id          String    @id @default(uuid())
+  staffId     String
+  staff       Staff     @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  subjectId   String
+  subject     Subject   @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  divisionId  String?
+  division    Division? @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  weeklyHours Int       @default(4)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([staffId, subjectId, divisionId])
+  @@index([staffId])
+  @@index([subjectId])
+}
