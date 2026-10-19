@@ -6,6 +6,7 @@ import { NotificationPopover } from "@/components/common/NotificationPopover";
 import { ProfileModal } from "@/components/common/ProfileModal";
 import { GlobalSearchModal } from "@/components/common/GlobalSearchModal";
 import { FICTIONAL_USER } from "@/data/mockData";
+import { getCurrentUserAction } from "@/lib/actions/auth";
 
 interface TopBarProps {
   onToggleMobileSidebar: () => void;
@@ -21,6 +22,15 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ fullName: string; role: string } | null>(null);
+
+  useEffect(() => {
+    getCurrentUserAction().then((res) => {
+      if (res.success && res.data) {
+        setCurrentUser(res.data);
+      }
+    });
+  }, []);
 
   useEffect(() => {
 
@@ -210,10 +220,10 @@ export const TopBar: React.FC<TopBarProps> = ({
             </div>
             <div className="hidden xl:block">
               <div className="text-[13px] font-bold text-slate-800 leading-tight">
-                {FICTIONAL_USER.name}
+                {currentUser ? currentUser.fullName : FICTIONAL_USER.name}
               </div>
               <div className="text-[11px] text-slate-400 font-medium">
-                {FICTIONAL_USER.designation}
+                {currentUser ? `Authorized (${currentUser.role})` : FICTIONAL_USER.designation}
               </div>
             </div>
             <Icon name="chevron-down" className="h-4 w-4 text-slate-400 hidden xl:block" />

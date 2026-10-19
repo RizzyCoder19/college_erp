@@ -1,6 +1,7 @@
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { getCurrentUser } from "@/lib/auth/guards";
 import { AppShell } from "@/components/layout/AppShell";
 import { ModulePlaceholder } from "@/components/modules/ModulePlaceholder";
 import { MODULES_LIST } from "@/data/mockData";
@@ -44,21 +45,32 @@ async function ModuleContent({ params }: PageProps) {
   return <ModulePlaceholder module={moduleData} />;
 }
 
-export default function ModulePage(props: PageProps) {
+async function AuthenticatedModule(props: PageProps) {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+
   return (
     <AppShell>
-      <Suspense
-        fallback={
-          <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 text-xs text-slate-500 shadow-xs">
-            <span className="flex items-center space-x-2">
-              <span className="h-2 w-2 rounded-full bg-[#1657D9] animate-pulse"></span>
-              <span className="text-slate-600 font-medium">Loading RPIHM module console...</span>
-            </span>
-          </div>
-        }
-      >
-        <ModuleContent {...props} />
-      </Suspense>
+      <ModuleContent {...props} />
     </AppShell>
+  );
+}
+
+export default function ModulePage(props: PageProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 text-xs text-slate-500 shadow-xs">
+          <span className="flex items-center space-x-2">
+            <span className="h-2 w-2 rounded-full bg-[#1657D9] animate-pulse"></span>
+            <span className="text-slate-600 font-medium">Loading RPIHM module console...</span>
+          </span>
+        </div>
+      }
+    >
+      <AuthenticatedModule {...props} />
+    </Suspense>
   );
 }

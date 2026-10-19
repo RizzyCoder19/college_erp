@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useTransition } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Icon } from "@/components/common/Icon";
 import { FICTIONAL_USER } from "@/data/mockData";
 import { loginAction, logoutAction, getCurrentUserAction } from "@/lib/actions/auth";
@@ -13,6 +14,7 @@ interface ProfileModalProps {
 }
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
+  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -75,7 +77,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
     startTransition(async () => {
       await logoutAction();
       setCurrentUser(null);
-      setAuthSuccess("Session terminated successfully.");
+      router.push('/login'); router.refresh();
     });
   };
 
