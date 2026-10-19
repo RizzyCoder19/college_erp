@@ -1,4 +1,4 @@
-﻿import prisma from "@/lib/db";
+import prisma from "@/lib/db";
 import { Student, Enrolment, Prisma } from "@prisma/client";
 import { Result, PaginatedResult } from "./types";
 
@@ -19,11 +19,18 @@ export interface CreateStudentDTO {
 
 export interface UpdateStudentDTO {
   fullName?: string;
+  prn?: string;
+  rollNumber?: string;
   phone?: string;
   email?: string;
+  dob?: Date;
   gender?: string;
   bloodGroup?: string;
   status?: string;
+  programmeId?: string;
+  semesterId?: string;
+  divisionId?: string;
+  academicYearId?: string;
 }
 
 export interface StudentFilterParams {
@@ -126,7 +133,7 @@ export class StudentRepository {
    */
   static async getStudentById(id: string): Promise<Result<StudentWithEnrolment>> {
     try {
-      const student = await prisma.student.findUnique({
+      let student = await prisma.student.findUnique({
         where: { id },
         include: {
           enrolments: {
@@ -142,7 +149,26 @@ export class StudentRepository {
       });
 
       if (!student) {
-        return { success: false, error: "Student not found", code: "NOT_FOUND" };
+        student = await prisma.student.findFirst({
+          where: {
+            OR: [{ prn: id }, { rollNumber: id }],
+          },
+          include: {
+            enrolments: {
+              include: {
+                academicYear: true,
+                programme: true,
+                semester: true,
+                division: true,
+              },
+              orderBy: { enrolledAt: "desc" },
+            },
+          },
+        });
+      }
+
+      if (!student) {
+        return { success: false, error: "Student not found in institutional database", code: "NOT_FOUND" };
       }
 
       return { success: true, data: student };
@@ -158,35 +184,39 @@ export class StudentRepository {
    */
   static async createStudentWithEnrolment(dto: CreateStudentDTO): Promise<Result<StudentCreationResult>> {
     try {
+      const cleanPrn = dto.prn.trim().toUpperCase();
+      const cleanEmail = dto.email.trim().toLowerCase();
+      const cleanRoll = dto.rollNumber.trim();
+
       const existing = await prisma.student.findFirst({
         where: {
-          OR: [{ rollNumber: dto.rollNumber }, { prn: dto.prn }, { email: dto.email }],
+          OR: [{ rollNumber: cleanRoll }, { prn: cleanPrn }, { email: cleanEmail }],
         },
       });
 
       if (existing) {
-        if (existing.rollNumber === dto.rollNumber) {
-          return { success: false, error: `Roll number ${dto.rollNumber} is already registered.`, code: "DUPLICATE_ROLL" };
+        if (existing.rollNumber === cleanRoll) {
+          return { success: false, error: `Roll number ${cleanRoll} is already registered.`, code: "DUPLICATE_ROLL" };
         }
-        if (existing.prn === dto.prn) {
-          return { success: false, error: `PRN ${dto.prn} is already registered.`, code: "DUPLICATE_PRN" };
+        if (existing.prn === cleanPrn) {
+          return { success: false, error: `PRN ${cleanPrn} is already registered.`, code: "DUPLICATE_PRN" };
         }
-        if (existing.email === dto.email) {
-          return { success: false, error: `Email ${dto.email} is already registered.`, code: "DUPLICATE_EMAIL" };
+        if (existing.email.toLowerCase() === cleanEmail) {
+          return { success: false, error: `Email ${cleanEmail} is already registered.`, code: "DUPLICATE_EMAIL" };
         }
       }
 
       const result = await prisma.$transaction(async (tx) => {
         const student = await tx.student.create({
           data: {
-            rollNumber: dto.rollNumber,
-            prn: dto.prn,
-            fullName: dto.fullName,
-            email: dto.email,
-            phone: dto.phone,
+            rollNumber: cleanRoll,
+            prn: cleanPrn,
+            fullName: dto.fullName.trim(),
+            email: cleanEmail,
+            phone: dto.phone.trim(),
             dob: dto.dob,
-            gender: dto.gender,
-            bloodGroup: dto.bloodGroup,
+            gender: dto.gender || "MALE",
+            bloodGroup: dto.bloodGroup || "B+",
             status: "ACTIVE",
             currentSemester: 1,
           },
@@ -214,17 +244,162 @@ export class StudentRepository {
   }
 
   /**
-   * Updates student details.
+   * Updates student details and academic enrolment with conflict detection.
+   * Resolves stable identities by ID or unique PRN/Email fallback.
    */
-  static async updateStudent(id: string, data: UpdateStudentDTO): Promise<Result<Student>> {
+  static async updateStudent(id: string, data: UpdateStudentDTO): Promise<Result<StudentWithEnrolment>> {
     try {
-      const updated = await prisma.student.update({
+      // 1. Resolve student by ID or fallback to stable unique identifiers
+      let student = await prisma.student.findUnique({
         where: { id },
-        data,
       });
+
+      if (!student) {
+        student = await prisma.student.findFirst({
+          where: {
+            OR: [
+              { prn: id },
+              { rollNumber: id },
+              data.prn ? { prn: data.prn.trim().toUpperCase() } : undefined,
+              data.email ? { email: data.email.trim().toLowerCase() } : undefined,
+            ].filter(Boolean) as Prisma.StudentWhereInput[],
+          },
+        });
+      }
+
+      if (!student) {
+        return { success: false, error: "Student record not found in institutional database.", code: "NOT_FOUND" };
+      }
+
+      const targetId = student.id;
+
+      // 2. Validate uniqueness constraints against other students
+      const conflictConditions: Prisma.StudentWhereInput[] = [];
+      const cleanPrn = data.prn ? data.prn.trim().toUpperCase() : undefined;
+      const cleanEmail = data.email ? data.email.trim().toLowerCase() : undefined;
+      const cleanRoll = data.rollNumber ? data.rollNumber.trim() : undefined;
+
+      if (cleanPrn && cleanPrn !== student.prn) {
+        conflictConditions.push({ prn: cleanPrn });
+      }
+      if (cleanEmail && cleanEmail !== student.email.toLowerCase()) {
+        conflictConditions.push({ email: cleanEmail });
+      }
+      if (cleanRoll && cleanRoll !== student.rollNumber) {
+        conflictConditions.push({ rollNumber: cleanRoll });
+      }
+
+      if (conflictConditions.length > 0) {
+        const conflict = await prisma.student.findFirst({
+          where: {
+            id: { not: targetId },
+            OR: conflictConditions,
+          },
+        });
+
+        if (conflict) {
+          if (cleanPrn && conflict.prn === cleanPrn) {
+            return {
+              success: false,
+              error: `PRN "${cleanPrn}" is already registered to student "${conflict.fullName}".`,
+              code: "DUPLICATE_PRN",
+            };
+          }
+          if (cleanEmail && conflict.email.toLowerCase() === cleanEmail) {
+            return {
+              success: false,
+              error: `Email address "${cleanEmail}" is already in use by student "${conflict.fullName}".`,
+              code: "DUPLICATE_EMAIL",
+            };
+          }
+          if (cleanRoll && conflict.rollNumber === cleanRoll) {
+            return {
+              success: false,
+              error: `Roll number "${cleanRoll}" is already assigned to student "${conflict.fullName}".`,
+              code: "DUPLICATE_ROLL",
+            };
+          }
+        }
+      }
+
+      // 3. Atomically update student record and their active enrolment
+      const updated = await prisma.$transaction(async (tx) => {
+        const studentUpdate: Prisma.StudentUpdateInput = {};
+        if (data.fullName !== undefined) studentUpdate.fullName = data.fullName.trim();
+        if (cleanPrn !== undefined) studentUpdate.prn = cleanPrn;
+        if (cleanRoll !== undefined) studentUpdate.rollNumber = cleanRoll;
+        if (data.phone !== undefined) studentUpdate.phone = data.phone.trim();
+        if (cleanEmail !== undefined) studentUpdate.email = cleanEmail;
+        if (data.dob !== undefined) studentUpdate.dob = data.dob;
+        if (data.gender !== undefined) studentUpdate.gender = data.gender;
+        if (data.bloodGroup !== undefined) studentUpdate.bloodGroup = data.bloodGroup;
+        if (data.status !== undefined) studentUpdate.status = data.status.toUpperCase();
+
+        // If academic placement changed, update latest enrolment
+        if (data.programmeId || data.semesterId || data.divisionId) {
+          const latestEnrolment = await tx.enrolment.findFirst({
+            where: { studentId: targetId },
+            orderBy: { enrolledAt: "desc" },
+          });
+
+          if (latestEnrolment) {
+            await tx.enrolment.update({
+              where: { id: latestEnrolment.id },
+              data: {
+                programmeId: data.programmeId || latestEnrolment.programmeId,
+                semesterId: data.semesterId || latestEnrolment.semesterId,
+                divisionId: data.divisionId || latestEnrolment.divisionId,
+                academicYearId: data.academicYearId || latestEnrolment.academicYearId,
+              },
+            });
+          } else if (data.programmeId && data.semesterId && data.divisionId) {
+            let ayId = data.academicYearId;
+            if (!ayId) {
+              const currentAy = await tx.academicYear.findFirst({ where: { isCurrent: true } });
+              ayId = currentAy ? currentAy.id : (await tx.academicYear.findFirst())?.id;
+            }
+            if (ayId) {
+              await tx.enrolment.create({
+                data: {
+                  studentId: targetId,
+                  academicYearId: ayId,
+                  programmeId: data.programmeId,
+                  semesterId: data.semesterId,
+                  divisionId: data.divisionId,
+                  status: "ENROLLED",
+                },
+              });
+            }
+          }
+        }
+
+        if (data.semesterId) {
+          const sem = await tx.semester.findUnique({ where: { id: data.semesterId } });
+          if (sem) {
+            studentUpdate.currentSemester = sem.semesterNumber;
+          }
+        }
+
+        return tx.student.update({
+          where: { id: targetId },
+          data: studentUpdate,
+          include: {
+            enrolments: {
+              include: {
+                academicYear: true,
+                programme: true,
+                semester: true,
+                division: true,
+              },
+              orderBy: { enrolledAt: "desc" },
+            },
+          },
+        });
+      });
+
       return { success: true, data: updated };
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to update student";
+      const message = error instanceof Error ? error.message : "Failed to update student record";
       return { success: false, error: message };
     }
   }
@@ -234,9 +409,21 @@ export class StudentRepository {
    */
   static async deleteStudent(id: string): Promise<Result<boolean>> {
     try {
+      let student = await prisma.student.findUnique({ where: { id } });
+      if (!student) {
+        student = await prisma.student.findFirst({
+          where: { OR: [{ prn: id }, { rollNumber: id }] },
+        });
+      }
+      if (!student) {
+        return { success: false, error: "Student not found", code: "NOT_FOUND" };
+      }
+
+      const targetId = student.id;
+
       await prisma.$transaction(async (tx) => {
-        await tx.enrolment.deleteMany({ where: { studentId: id } });
-        await tx.student.delete({ where: { id } });
+        await tx.enrolment.deleteMany({ where: { studentId: targetId } });
+        await tx.student.delete({ where: { id: targetId } });
       });
       return { success: true, data: true };
     } catch (error: unknown) {

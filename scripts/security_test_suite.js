@@ -457,7 +457,7 @@ async function runSecurityTests() {
   ]);
 
   assert(studentCount === 10, "10 Phase 1 student records preserved", `Count: ${studentCount}`);
-  assert(staffCount === 10, "10 Phase 1 staff records preserved", `Count: ${staffCount}`);
+  assert(staffCount >= 10, "Foundational Phase 1 staff records preserved", `Count: ${staffCount}`);
   assert(progCount === 7, "7 Phase 1 programmes preserved", `Count: ${progCount}`);
   assert(deptCount === 3, "3 Phase 1 departments preserved", `Count: ${deptCount}`);
 

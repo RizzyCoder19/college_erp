@@ -1,4 +1,4 @@
-﻿import prisma from "@/lib/db";
+import prisma from "@/lib/db";
 import { Staff, TeachingAssignment, Prisma } from "@prisma/client";
 import { Result, PaginatedResult } from "./types";
 
@@ -16,9 +16,12 @@ export interface CreateStaffDTO {
 
 export interface UpdateStaffDTO {
   fullName?: string;
+  employeeId?: string;
   phone?: string;
   email?: string;
   designation?: string;
+  category?: string;
+  departmentId?: string;
   status?: string;
 }
 
@@ -112,7 +115,7 @@ export class FacultyRepository {
    */
   static async getStaffById(id: string): Promise<Result<StaffWithRelations>> {
     try {
-      const staff = await prisma.staff.findUnique({
+      let staff = await prisma.staff.findUnique({
         where: { id },
         include: {
           department: true,
@@ -126,7 +129,22 @@ export class FacultyRepository {
       });
 
       if (!staff) {
-        return { success: false, error: "Staff member not found", code: "NOT_FOUND" };
+        staff = await prisma.staff.findFirst({
+          where: { employeeId: id },
+          include: {
+            department: true,
+            teachingAssignments: {
+              include: {
+                subject: true,
+                division: true,
+              },
+            },
+          },
+        });
+      }
+
+      if (!staff) {
+        return { success: false, error: "Staff member not found in institutional database", code: "NOT_FOUND" };
       }
 
       return { success: true, data: staff };
@@ -141,18 +159,21 @@ export class FacultyRepository {
    */
   static async createStaff(dto: CreateStaffDTO): Promise<Result<Staff>> {
     try {
+      const cleanEmpId = dto.employeeId.trim().toUpperCase();
+      const cleanEmail = dto.email.trim().toLowerCase();
+
       const existing = await prisma.staff.findFirst({
         where: {
-          OR: [{ employeeId: dto.employeeId }, { email: dto.email }],
+          OR: [{ employeeId: cleanEmpId }, { email: cleanEmail }],
         },
       });
 
       if (existing) {
-        if (existing.employeeId === dto.employeeId) {
-          return { success: false, error: `Employee ID ${dto.employeeId} is already registered.`, code: "DUPLICATE_EMPLOYEE_ID" };
+        if (existing.employeeId === cleanEmpId) {
+          return { success: false, error: `Employee ID ${cleanEmpId} is already registered.`, code: "DUPLICATE_EMPLOYEE_ID" };
         }
-        if (existing.email === dto.email) {
-          return { success: false, error: `Email ${dto.email} is already in use.`, code: "DUPLICATE_EMAIL" };
+        if (existing.email.toLowerCase() === cleanEmail) {
+          return { success: false, error: `Email ${cleanEmail} is already in use by another staff member.`, code: "DUPLICATE_EMAIL" };
         }
       }
 
@@ -165,11 +186,11 @@ export class FacultyRepository {
 
       const staff = await prisma.staff.create({
         data: {
-          employeeId: dto.employeeId,
-          fullName: dto.fullName,
-          email: dto.email,
-          phone: dto.phone,
-          designation: dto.designation,
+          employeeId: cleanEmpId,
+          fullName: dto.fullName.trim(),
+          email: cleanEmail,
+          phone: dto.phone.trim(),
+          designation: dto.designation.trim(),
           category: dto.category,
           departmentId: dto.departmentId,
           dateOfJoining: dto.dateOfJoining,
@@ -221,14 +242,100 @@ export class FacultyRepository {
   }
 
   /**
-   * Updates staff details.
+   * Updates staff details and department relation with uniqueness checks.
    */
-  static async updateStaff(id: string, data: UpdateStaffDTO): Promise<Result<Staff>> {
+  static async updateStaff(id: string, data: UpdateStaffDTO): Promise<Result<StaffWithRelations>> {
     try {
+      let staff = await prisma.staff.findUnique({ where: { id } });
+      if (!staff) {
+        staff = await prisma.staff.findFirst({
+          where: {
+            OR: [
+              { employeeId: id },
+              data.employeeId ? { employeeId: data.employeeId.trim().toUpperCase() } : undefined,
+              data.email ? { email: data.email.trim().toLowerCase() } : undefined,
+            ].filter(Boolean) as Prisma.StaffWhereInput[],
+          },
+        });
+      }
+
+      if (!staff) {
+        return { success: false, error: "Staff member record not found in database.", code: "NOT_FOUND" };
+      }
+
+      const targetId = staff.id;
+
+      // Validate uniqueness
+      const conflictConditions: Prisma.StaffWhereInput[] = [];
+      const cleanEmpId = data.employeeId ? data.employeeId.trim().toUpperCase() : undefined;
+      const cleanEmail = data.email ? data.email.trim().toLowerCase() : undefined;
+
+      if (cleanEmpId && cleanEmpId !== staff.employeeId) {
+        conflictConditions.push({ employeeId: cleanEmpId });
+      }
+      if (cleanEmail && cleanEmail !== staff.email.toLowerCase()) {
+        conflictConditions.push({ email: cleanEmail });
+      }
+
+      if (conflictConditions.length > 0) {
+        const conflict = await prisma.staff.findFirst({
+          where: {
+            id: { not: targetId },
+            OR: conflictConditions,
+          },
+        });
+
+        if (conflict) {
+          if (cleanEmpId && conflict.employeeId === cleanEmpId) {
+            return {
+              success: false,
+              error: `Employee ID "${cleanEmpId}" is already registered to "${conflict.fullName}".`,
+              code: "DUPLICATE_EMPLOYEE_ID",
+            };
+          }
+          if (cleanEmail && conflict.email.toLowerCase() === cleanEmail) {
+            return {
+              success: false,
+              error: `Email address "${cleanEmail}" is already registered to "${conflict.fullName}".`,
+              code: "DUPLICATE_EMAIL",
+            };
+          }
+        }
+      }
+
+      if (data.departmentId) {
+        const dept = await prisma.department.findUnique({ where: { id: data.departmentId } });
+        if (!dept) {
+          return { success: false, error: "Specified department does not exist.", code: "INVALID_DEPARTMENT" };
+        }
+      }
+
+      const staffUpdate: Prisma.StaffUpdateInput = {};
+      if (data.fullName !== undefined) staffUpdate.fullName = data.fullName.trim();
+      if (cleanEmpId !== undefined) staffUpdate.employeeId = cleanEmpId;
+      if (cleanEmail !== undefined) staffUpdate.email = cleanEmail;
+      if (data.phone !== undefined) staffUpdate.phone = data.phone.trim();
+      if (data.designation !== undefined) staffUpdate.designation = data.designation.trim();
+      if (data.category !== undefined) staffUpdate.category = data.category;
+      if (data.status !== undefined) staffUpdate.status = data.status.toUpperCase();
+      if (data.departmentId !== undefined) {
+        staffUpdate.department = { connect: { id: data.departmentId } };
+      }
+
       const updated = await prisma.staff.update({
-        where: { id },
-        data,
+        where: { id: targetId },
+        data: staffUpdate,
+        include: {
+          department: true,
+          teachingAssignments: {
+            include: {
+              subject: true,
+              division: true,
+            },
+          },
+        },
       });
+
       return { success: true, data: updated };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to update staff member";
@@ -241,9 +348,19 @@ export class FacultyRepository {
    */
   static async deleteStaff(id: string): Promise<Result<boolean>> {
     try {
+      let staff = await prisma.staff.findUnique({ where: { id } });
+      if (!staff) {
+        staff = await prisma.staff.findFirst({ where: { employeeId: id } });
+      }
+      if (!staff) {
+        return { success: false, error: "Staff member not found", code: "NOT_FOUND" };
+      }
+
+      const targetId = staff.id;
+
       await prisma.$transaction(async (tx) => {
-        await tx.teachingAssignment.deleteMany({ where: { staffId: id } });
-        await tx.staff.delete({ where: { id } });
+        await tx.teachingAssignment.deleteMany({ where: { staffId: targetId } });
+        await tx.staff.delete({ where: { id: targetId } });
       });
       return { success: true, data: true };
     } catch (error: unknown) {

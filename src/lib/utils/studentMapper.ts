@@ -1,4 +1,4 @@
-﻿import { StudentWithEnrolment } from "@/lib/dal/studentRepository";
+import { StudentWithEnrolment } from "@/lib/dal/studentRepository";
 import { StudentRecord, StudentStatus, FeeStatus } from "@/types/student";
 
 export function mapStudentDbToRecord(dbStudent: StudentWithEnrolment): StudentRecord {
@@ -10,13 +10,15 @@ export function mapStudentDbToRecord(dbStudent: StudentWithEnrolment): StudentRe
   let enrollmentStatus: StudentStatus = "Active";
   const stUpper = (dbStudent.status || "ACTIVE").toUpperCase();
   if (stUpper === "ACTIVE") enrollmentStatus = "Active";
-  else if (stUpper === "INACTIVE" || stUpper === "ON LEAVE") enrollmentStatus = "On Leave";
-  else if (stUpper === "SUSPENDED" || stUpper === "PENDING VERIFICATION") enrollmentStatus = "Pending Verification";
-  else if (stUpper === "ALUMNI" || stUpper === "GRADUATED") enrollmentStatus = "Graduated";
+  else if (stUpper === "ON_LEAVE" || stUpper === "ON LEAVE" || stUpper === "INACTIVE") enrollmentStatus = "On Leave";
+  else if (stUpper === "GRADUATED" || stUpper === "ALUMNI") enrollmentStatus = "Graduated";
+  else if (stUpper === "PENDING_VERIFICATION" || stUpper === "PENDING VERIFICATION" || stUpper === "SUSPENDED") enrollmentStatus = "Pending Verification";
 
   const progCode = latestEnrolment?.programme?.code || "";
   const isHospitality = progCode.includes("HS") || progCode.includes("CUL") || progCode.includes("FP") || progCode.includes("BC");
-  const department = isHospitality ? "Hospitality & Culinary Arts" : "Technology & Computing";
+  const department = latestEnrolment?.programme
+    ? (isHospitality ? "Hospitality & Culinary Arts" : "Technology & Computing")
+    : "General Academics";
 
   const formattedAdmissionDate = latestEnrolment?.enrolledAt
     ? new Date(latestEnrolment.enrolledAt).toLocaleDateString("en-IN", {
@@ -24,11 +26,11 @@ export function mapStudentDbToRecord(dbStudent: StudentWithEnrolment): StudentRe
         month: "short",
         year: "numeric",
       })
-    : "15 Jul 2026";
+    : "Admitted";
 
   const formattedDob = dbStudent.dob
     ? new Date(dbStudent.dob).toISOString().split("T")[0]
-    : "2006-04-12";
+    : "2006-05-15";
 
   return {
     id: dbStudent.id,
@@ -45,8 +47,8 @@ export function mapStudentDbToRecord(dbStudent: StudentWithEnrolment): StudentRe
     admissionDate: formattedAdmissionDate,
     enrollmentStatus,
     feeStatus: "Paid" as FeeStatus,
-    attendanceRate: 91.5,
-    gpa: 8.7,
+    attendanceRate: 88.5,
+    gpa: 8.5,
     mentorFaculty: isHospitality ? "Chef Vikramaditya Kapoor" : "Prof. Snehal Kulkarni",
     guardianName: "Parent / Guardian",
     guardianRelationship: "Father",

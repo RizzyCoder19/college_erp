@@ -213,6 +213,13 @@ export const FacultyView: React.FC = () => {
     }
 
     if (imported > 0) {
+      try {
+        const remaining = prototypeRecords.filter((p) => !importableItems.some((i) => i.id === p.id));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+        setPrototypeRecords(remaining);
+      } catch {
+        // LocalStorage fallback
+      }
       await loadData();
     }
     return { imported, failed };
@@ -262,7 +269,6 @@ export const FacultyView: React.FC = () => {
 
   // Handlers for Database Mutations
   const handleAddFaculty = async (record: FacultyRecord) => {
-    
     try {
       let departmentId = departments.length > 0 ? departments[0].id : "";
       const matchedDept = departments.find(
@@ -289,46 +295,83 @@ export const FacultyView: React.FC = () => {
       });
 
       if (!res.success) {
-        showToast("Error creating staff: " + (res.error || "Permission denied"));
-        return;
+        return { success: false, error: res.error || "Permission denied or invalid staff data." };
       }
 
       showToast(`Staff member "${record.fullName}" registered in database.`);
       setFormModalOpen(false);
       await loadData();
+      return { success: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to create staff record";
-      showToast("Error: " + msg);
-    } finally {
-      
+      return { success: false, error: msg };
     }
   };
 
   const handleEditFaculty = async (record: FacultyRecord) => {
-    
     try {
+      let departmentId = departments.length > 0 ? departments[0].id : "";
+      const matchedDept = departments.find(
+        (d) =>
+          d.name.toLowerCase() === record.department.toLowerCase() ||
+          d.code.toLowerCase() === record.department.toLowerCase()
+      );
+      if (matchedDept) departmentId = matchedDept.id;
+
+      let category = "TEACHING";
+      if (record.category === "Technical Lab Staff") category = "TECHNICAL";
+      else if (record.category === "Administrative Staff") category = "ADMINISTRATIVE";
+
       const res = await updateStaffAction(record.id, {
         fullName: record.fullName.trim(),
+        employeeId: record.staffId.trim().toUpperCase(),
         phone: record.phone.trim(),
         email: record.email.trim().toLowerCase(),
         designation: record.designation.trim(),
+        category,
+        departmentId,
         status: record.status.toUpperCase() === "ON LEAVE" ? "ON_LEAVE" : "ACTIVE",
       });
 
-      if (!res.success) {
-        showToast("Error updating staff: " + (res.error || "Permission denied"));
-        return;
+      if (!res.success || !res.data) {
+        return { success: false, error: res.error || "Permission denied or staff update failed." };
       }
 
-      showToast(`Staff record for "${record.fullName}" updated in database.`);
+      const updatedRecord = mapStaffDbToRecord(res.data);
+
+      // Immediate state update
+      setFacultyList((prev: FacultyRecord[]) =>
+        prev.map((s) => (s.id === updatedRecord.id || s.staffId === updatedRecord.staffId ? updatedRecord : s))
+      );
+
+      // Immediate dossier update if currently viewed
+      setDetailFaculty((curr) =>
+        curr && (curr.id === updatedRecord.id || curr.staffId === updatedRecord.staffId) ? updatedRecord : curr
+      );
+
+      // Filter check
+      const matchesSearch =
+        searchQuery.trim() === "" ||
+        updatedRecord.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        updatedRecord.staffId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        updatedRecord.designation.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        updatedRecord.email.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesDept = selectedDepartment === "all" || updatedRecord.department === selectedDepartment;
+      const matchesCat = selectedCategory === "all" || updatedRecord.category === selectedCategory;
+
+      if (!matchesSearch || !matchesDept || !matchesCat) {
+        showToast(`Staff record for "${record.fullName}" updated in database. (Note: Record hidden by active filters).`);
+      } else {
+        showToast(`Staff record for "${record.fullName}" updated successfully in database.`);
+      }
+
       setFormModalOpen(false);
       setFormFaculty(null);
-      await loadData();
+      loadData(); // Background sync
+      return { success: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to update staff record";
-      showToast("Error: " + msg);
-    } finally {
-      
+      return { success: false, error: msg };
     }
   };
 
@@ -995,11 +1038,11 @@ export const FacultyView: React.FC = () => {
           setFormModalOpen(false);
           setFormFaculty(null);
         }}
-        onSave={(record) => {
+        onSave={async (record) => {
           if (formMode === "add") {
-            handleAddFaculty(record);
+            return await handleAddFaculty(record);
           } else {
-            handleEditFaculty(record);
+            return await handleEditFaculty(record);
           }
         }}
       />

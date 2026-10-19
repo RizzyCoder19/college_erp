@@ -1,6 +1,6 @@
 "use server";
 
-import { FacultyRepository, CreateStaffDTO, UpdateStaffDTO, StaffFilterParams } from "@/lib/dal/facultyRepository";
+import { FacultyRepository, CreateStaffDTO, UpdateStaffDTO, StaffFilterParams, StaffWithRelations } from "@/lib/dal/facultyRepository";
 import { requirePermission } from "@/lib/auth/guards";
 import { Result } from "@/lib/dal/types";
 
@@ -22,7 +22,7 @@ export async function createStaffAction(dto: CreateStaffDTO) {
   return FacultyRepository.createStaff(dto);
 }
 
-export async function updateStaffAction(id: string, data: UpdateStaffDTO) {
+export async function updateStaffAction(id: string, data: UpdateStaffDTO): Promise<Result<StaffWithRelations>> {
   const guard = await requirePermission("WRITE_FACULTY");
   if (!guard.success) return guard as Result<never>;
   return FacultyRepository.updateStaff(id, data);

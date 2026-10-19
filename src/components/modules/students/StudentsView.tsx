@@ -235,6 +235,13 @@ export const StudentsView: React.FC = () => {
     }
 
     if (imported > 0) {
+      try {
+        const remaining = prototypeRecords.filter((p) => !importableItems.some((i) => i.id === p.id));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+        setPrototypeRecords(remaining);
+      } catch {
+        // LocalStorage fallback
+      }
       await loadData();
     }
     return { imported, failed };
@@ -295,7 +302,6 @@ export const StudentsView: React.FC = () => {
 
   // Handlers for Database Mutations
   const handleAddStudent = async (record: StudentRecord) => {
-    
     try {
       const ayRes = await getCurrentAcademicYearAction();
       const academicYearId = ayRes.success && ayRes.data ? ayRes.data.id : "";
@@ -355,46 +361,106 @@ export const StudentsView: React.FC = () => {
       });
 
       if (!res.success) {
-        showToast("Error creating student: " + (res.error || "Permission denied"));
-        return;
+        return { success: false, error: res.error || "Permission denied or invalid student data." };
       }
 
       showToast(`Student dossier for "${record.fullName}" enrolled in database.`);
       setFormModalOpen(false);
       await loadData();
+      return { success: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to create student";
-      showToast("Error: " + msg);
-    } finally {
-      
+      return { success: false, error: msg };
     }
   };
 
   const handleEditStudent = async (record: StudentRecord) => {
-    
     try {
+      let targetProgId = record.programmeId;
+      if (!targetProgId && programmes.length > 0) {
+        targetProgId = programmes[0].id;
+      }
+
+      let semesterId = "";
+      let divisionId = "";
+      if (targetProgId) {
+        const progRes = await getProgrammeDetailsAction(targetProgId);
+        if (progRes.success && progRes.data && progRes.data.semesters?.length > 0) {
+          const sem =
+            progRes.data.semesters.find((s) => s.semesterNumber === Number(record.semester)) ||
+            progRes.data.semesters[0];
+          semesterId = sem.id;
+          if (sem.divisions?.length > 0) {
+            const div =
+              sem.divisions.find((d) => d.name === record.division) || sem.divisions[0];
+            divisionId = div.id;
+          }
+        }
+      }
+
+      const cleanPrn = record.prn.trim().toUpperCase();
+      const rollNumber = cleanPrn.startsWith("RPIHM-") ? cleanPrn : `RPIHM-${cleanPrn}`;
+
+      let dbStatus = "ACTIVE";
+      if (record.enrollmentStatus === "On Leave") dbStatus = "ON_LEAVE";
+      else if (record.enrollmentStatus === "Graduated") dbStatus = "GRADUATED";
+      else if (record.enrollmentStatus === "Pending Verification") dbStatus = "PENDING_VERIFICATION";
+
       const res = await updateStudentAction(record.id, {
         fullName: record.fullName.trim(),
+        prn: cleanPrn,
+        rollNumber,
         phone: record.phone.trim(),
         email: record.email.trim().toLowerCase(),
         bloodGroup: record.bloodGroup,
-        status: record.enrollmentStatus.toUpperCase() === "ACTIVE" ? "ACTIVE" : "INACTIVE",
+        dob: record.dateOfBirth ? new Date(record.dateOfBirth) : undefined,
+        status: dbStatus,
+        programmeId: targetProgId,
+        semesterId,
+        divisionId,
       });
 
-      if (!res.success) {
-        showToast("Error updating student: " + (res.error || "Permission denied"));
-        return;
+      if (!res.success || !res.data) {
+        return { success: false, error: res.error || "Permission denied or record update failed." };
       }
 
-      showToast(`Student record for "${record.fullName}" updated in database.`);
+      const updatedRecord = mapStudentDbToRecord(res.data);
+
+      // Immediate UI update
+      setStudents((prev) =>
+        prev.map((s) => (s.id === updatedRecord.id || s.prn === updatedRecord.prn ? updatedRecord : s))
+      );
+
+      // Immediate dossier update if currently viewed
+      setDetailStudent((curr) =>
+        curr && (curr.id === updatedRecord.id || curr.prn === updatedRecord.prn) ? updatedRecord : curr
+      );
+
+      // Check whether record is visible under active search/filters
+      const matchesSearch =
+        searchQuery.trim() === "" ||
+        updatedRecord.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        updatedRecord.prn.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        updatedRecord.programmeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        updatedRecord.email.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesProg = selectedProgramme === "all" || updatedRecord.programmeId === selectedProgramme;
+      const matchesSem = selectedSemester === "all" || String(updatedRecord.semester) === selectedSemester;
+      const matchesSt = selectedStatus === "all" || updatedRecord.enrollmentStatus === selectedStatus;
+      const matchesF = selectedFee === "all" || updatedRecord.feeStatus === selectedFee;
+
+      if (!matchesSearch || !matchesProg || !matchesSem || !matchesSt || !matchesF) {
+        showToast(`Student record for "${record.fullName}" updated in database. (Note: Record hidden by active filters).`);
+      } else {
+        showToast(`Student record for "${record.fullName}" updated successfully in database.`);
+      }
+
       setFormModalOpen(false);
       setFormStudent(null);
-      await loadData();
+      loadData(); // Sync background
+      return { success: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to update student";
-      showToast("Error: " + msg);
-    } finally {
-      
+      return { success: false, error: msg };
     }
   };
 
@@ -1042,11 +1108,11 @@ export const StudentsView: React.FC = () => {
           setFormModalOpen(false);
           setFormStudent(null);
         }}
-        onSave={(record) => {
+        onSave={async (record) => {
           if (formMode === "add") {
-            handleAddStudent(record);
+            return await handleAddStudent(record);
           } else {
-            handleEditStudent(record);
+            return await handleEditStudent(record);
           }
         }}
       />

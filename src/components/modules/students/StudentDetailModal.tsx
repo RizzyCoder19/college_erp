@@ -135,9 +135,14 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
           {/* Quick Metrics Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-                Attendance Rate
-              </span>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[10px] uppercase font-bold text-slate-400">
+                  Attendance
+                </span>
+                <span className="text-[9px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                  Sample Metric
+                </span>
+              </div>
               <span
                 className={`text-base font-extrabold font-serif ${
                   student.attendanceRate >= 85
@@ -150,14 +155,19 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                 {student.attendanceRate}%
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">
-                {student.attendanceRate >= 75 ? "Eligible for exams" : "Attendance warning"}
+                Ledger sync pending
               </span>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-                Cumulative GPA
-              </span>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[10px] uppercase font-bold text-slate-400">
+                  Cumulative GPA
+                </span>
+                <span className="text-[9px] font-medium text-slate-600 bg-slate-200/60 px-1.5 py-0.5 rounded border border-slate-300/60">
+                  Demo
+                </span>
+              </div>
               <span className="text-base font-extrabold text-slate-900 font-serif">
                 {student.gpa ? `${student.gpa} / 10.0` : "Evaluation Pending"}
               </span>

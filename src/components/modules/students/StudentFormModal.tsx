@@ -11,7 +11,7 @@ interface StudentFormModalProps {
   initialData?: StudentRecord | null;
   programmes?: Array<{ id: string; code: string; name: string; departmentName?: string }>;
   onClose: () => void;
-  onSave: (student: StudentRecord) => void;
+  onSave: (student: StudentRecord) => Promise<{ success: boolean; error?: string } | boolean | void>;
 }
 
 interface FormErrors {
@@ -46,7 +46,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   const [enrollmentStatus, setEnrollmentStatus] = useState<StudentStatus>(initialData?.enrollmentStatus || "Active");
   const [feeStatus, setFeeStatus] = useState<FeeStatus>(initialData?.feeStatus || "Paid");
   const [attendanceRate, setAttendanceRate] = useState<number>(initialData?.attendanceRate ?? 88);
-  const [gpa, setGpa] = useState<string>(initialData?.gpa ? String(initialData.gpa) : "8.5");
+  const [gpa] = useState<string>(initialData?.gpa ? String(initialData.gpa) : "8.5");
   const [mentorFaculty, setMentorFaculty] = useState(initialData?.mentorFaculty || "Prof. Snehal Kulkarni");
   const [guardianName, setGuardianName] = useState(initialData?.guardianName || "");
   const [guardianRelationship, setGuardianRelationship] = useState(initialData?.guardianRelationship || "Father");
@@ -55,16 +55,18 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   const [bloodGroup, setBloodGroup] = useState(initialData?.bloodGroup || "B+");
 
   const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
+      if (e.key === "Escape" && isOpen && !isSubmitting) {
         onClose();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isSubmitting]);
 
   if (!isOpen) return null;
 
@@ -105,52 +107,76 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!validate()) return;
 
-    const selectedProg = effectiveProgrammes.find((p) => p.id === programmeId);
-    const deptName =
-      selectedProg && "departmentName" in selectedProg && typeof selectedProg.departmentName === "string"
-        ? selectedProg.departmentName
-        : selectedProg && "department" in selectedProg && typeof selectedProg.department === "string"
-        ? selectedProg.department
-        : "Technology & Computing";
+    setServerError(null);
+    setIsSubmitting(true);
 
-    const record: StudentRecord = {
-      id: initialData?.id || `std-${Date.now()}`,
-      prn: prn.trim().toUpperCase(),
-      fullName: fullName.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone.trim(),
-      programmeId,
-      programmeName: selectedProg ? selectedProg.name : "Undergraduate Programme",
-      department: deptName,
-      semester: Number(semester),
-      yearGroup,
-      division,
-      admissionDate: initialData?.admissionDate || "24 Jul 2026",
-      enrollmentStatus,
-      feeStatus,
-      attendanceRate: Number(attendanceRate),
-      gpa: gpa ? parseFloat(gpa) : undefined,
-      mentorFaculty,
-      guardianName: guardianName.trim(),
-      guardianRelationship,
-      guardianPhone: guardianPhone.trim(),
-      dateOfBirth,
-      bloodGroup,
-      isFictionalSample: true,
-    };
+    try {
+      const selectedProg = effectiveProgrammes.find((p) => p.id === programmeId);
+      const deptName =
+        selectedProg && "departmentName" in selectedProg && typeof selectedProg.departmentName === "string"
+          ? selectedProg.departmentName
+          : selectedProg && "department" in selectedProg && typeof selectedProg.department === "string"
+          ? selectedProg.department
+          : "Technology & Computing";
 
-    onSave(record);
-    onClose();
+      const record: StudentRecord = {
+        id: initialData?.id || `std-${Date.now()}`,
+        prn: prn.trim().toUpperCase(),
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        programmeId,
+        programmeName: selectedProg ? selectedProg.name : "Undergraduate Programme",
+        department: deptName,
+        semester: Number(semester),
+        yearGroup,
+        division,
+        admissionDate: initialData?.admissionDate || "24 Jul 2026",
+        enrollmentStatus,
+        feeStatus,
+        attendanceRate: Number(attendanceRate),
+        gpa: gpa ? parseFloat(gpa) : undefined,
+        mentorFaculty,
+        guardianName: guardianName.trim(),
+        guardianRelationship,
+        guardianPhone: guardianPhone.trim(),
+        dateOfBirth,
+        bloodGroup,
+        isFictionalSample: false,
+      };
+
+      const result = await onSave(record);
+
+      if (typeof result === "object" && result !== null && "success" in result) {
+        if (!result.success) {
+          setServerError(result.error || "Failed to persist student record. Please verify entered data.");
+          return;
+        }
+      } else if (result === false) {
+        setServerError("Failed to persist student record. Please verify entered data.");
+        return;
+      }
+
+      onClose();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "An unexpected error occurred while saving.";
+      setServerError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
-      onClick={onClose}
+      onClick={() => {
+        if (!isSubmitting) onClose();
+      }}
       role="dialog"
       aria-modal="true"
       aria-label={mode === "add" ? "Add Student" : "Edit Student"}
@@ -170,14 +196,15 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 {mode === "add" ? "Enroll New Student Dossier" : "Update Student Record"}
               </h3>
               <p className="text-[11px] text-slate-300">
-                Academic Session 2026–27 • Student Management
+                Academic Session 2026?27 ? Student Management
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+            disabled={isSubmitting}
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="Close"
           >
             <Icon name="x-mark" className="w-5 h-5" />
@@ -186,6 +213,17 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
 
         {/* Scrollable Form Body */}
         <form id="student-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-xs text-slate-800">
+          {/* Actionable Server Error Banner */}
+          {serverError && (
+            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-[#D92534] flex items-start space-x-2.5 animate-in fade-in">
+              <Icon name="exclamation-circle" className="h-5 w-5 shrink-0 mt-0.5 text-[#D92534]" />
+              <div className="flex-1">
+                <p className="font-bold text-xs text-red-900">Unable to Save Student Record</p>
+                <p className="text-[11px] text-red-700 mt-0.5 leading-relaxed">{serverError}</p>
+              </div>
+            </div>
+          )}
+
           {/* Section 1: Core Academic Information */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#1657D9] flex items-center space-x-1.5 border-b border-slate-100 pb-1.5">
@@ -201,11 +239,12 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 <input
                   type="text"
                   value={fullName}
+                  disabled={isSubmitting}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Aarav Sharma"
                   className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
                     errors.fullName ? "border-[#D92534] ring-1 ring-[#D92534]" : "border-slate-200"
-                  } text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs`}
+                  } text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60`}
                 />
                 {errors.fullName && (
                   <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.fullName}</p>
@@ -219,11 +258,12 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 <input
                   type="text"
                   value={prn}
+                  disabled={isSubmitting}
                   onChange={(e) => setPrn(e.target.value)}
                   placeholder="e.g. 2026DS041"
                   className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
                     errors.prn ? "border-[#D92534] ring-1 ring-[#D92534]" : "border-slate-200"
-                  } font-mono font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs`}
+                  } font-mono font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60`}
                 />
                 {errors.prn && (
                   <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.prn}</p>
@@ -236,8 +276,9 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 </label>
                 <select
                   value={programmeId}
+                  disabled={isSubmitting}
                   onChange={(e) => setProgrammeId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium disabled:opacity-60"
                 >
                   {effectiveProgrammes.map((prog) => (
                     <option key={prog.id} value={prog.id}>
@@ -252,27 +293,26 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 <div className="grid grid-cols-2 gap-2">
                   <select
                     value={semester}
+                    disabled={isSubmitting}
                     onChange={(e) => {
                       const sem = Number(e.target.value);
                       setSemester(sem);
-                      if (sem <= 2) setYearGroup("FY");
-                      else if (sem <= 4) setYearGroup("SY");
-                      else setYearGroup("TY");
+                      setYearGroup(sem <= 2 ? "FY" : sem <= 4 ? "SY" : "TY");
                     }}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium disabled:opacity-60"
                   >
-                    <option value={1}>Semester 1</option>
-                    <option value={2}>Semester 2</option>
-                    <option value={3}>Semester 3</option>
-                    <option value={4}>Semester 4</option>
-                    <option value={5}>Semester 5</option>
-                    <option value={6}>Semester 6</option>
+                    {[1, 2, 3, 4, 5, 6].map((s) => (
+                      <option key={s} value={s}>
+                        Semester {s}
+                      </option>
+                    ))}
                   </select>
 
                   <select
                     value={division}
+                    disabled={isSubmitting}
                     onChange={(e) => setDivision(e.target.value as "Div A" | "Div B" | "Div C")}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium disabled:opacity-60"
                   >
                     <option value="Div A">Div A</option>
                     <option value="Div B">Div B</option>
@@ -285,38 +325,40 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 <label className="block text-slate-600 font-semibold mb-1">Enrolment Status</label>
                 <select
                   value={enrollmentStatus}
+                  disabled={isSubmitting}
                   onChange={(e) => setEnrollmentStatus(e.target.value as StudentStatus)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium disabled:opacity-60"
                 >
-                  <option value="Active">Active Enrolled</option>
-                  <option value="On Leave">On Leave / Internship</option>
-                  <option value="Pending Verification">Pending Verification</option>
+                  <option value="Active">Active</option>
+                  <option value="On Leave">On Leave</option>
                   <option value="Graduated">Graduated</option>
+                  <option value="Pending Verification">Pending Verification</option>
                 </select>
               </div>
             </div>
           </div>
 
-          {/* Section 2: Contact Information */}
-          <div className="space-y-3 pt-2">
+          {/* Section 2: Contact & Identification */}
+          <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#1657D9] flex items-center space-x-1.5 border-b border-slate-100 pb-1.5">
-              <Icon name="users" className="h-4 w-4" />
-              <span>2. Contact & Identity</span>
+              <Icon name="identification" className="h-4 w-4" />
+              <span>2. Contact & Identity Information</span>
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
                 <label className="block text-slate-600 font-semibold mb-1">
-                  Institutional Email <span className="text-[#D92534]">*</span>
+                  Institutional / Student Email <span className="text-[#D92534]">*</span>
                 </label>
                 <input
                   type="email"
                   value={email}
+                  disabled={isSubmitting}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="student@rpihm.ac.in"
+                  placeholder="student.name@rpihm.ac.in"
                   className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
                     errors.email ? "border-[#D92534] ring-1 ring-[#D92534]" : "border-slate-200"
-                  } text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs`}
+                  } text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60`}
                 />
                 {errors.email && (
                   <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.email}</p>
@@ -325,16 +367,17 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
 
               <div>
                 <label className="block text-slate-600 font-semibold mb-1">
-                  Contact Phone No. <span className="text-[#D92534]">*</span>
+                  Primary Mobile Phone <span className="text-[#D92534]">*</span>
                 </label>
                 <input
                   type="text"
                   value={phone}
+                  disabled={isSubmitting}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98201 XXXXX"
+                  placeholder="+91 98200 12345"
                   className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
                     errors.phone ? "border-[#D92534] ring-1 ring-[#D92534]" : "border-slate-200"
-                  } text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs`}
+                  } font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60`}
                 />
                 {errors.phone && (
                   <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.phone}</p>
@@ -346,8 +389,9 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 <input
                   type="date"
                   value={dateOfBirth}
+                  disabled={isSubmitting}
                   onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60"
                 />
               </div>
 
@@ -355,89 +399,25 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 <label className="block text-slate-600 font-semibold mb-1">Blood Group</label>
                 <select
                   value={bloodGroup}
+                  disabled={isSubmitting}
                   onChange={(e) => setBloodGroup(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium disabled:opacity-60"
                 >
-                  <option value="A+">A+</option>
-                  <option value="A-">A-</option>
-                  <option value="B+">B+</option>
-                  <option value="B-">B-</option>
-                  <option value="AB+">AB+</option>
-                  <option value="AB-">AB-</option>
-                  <option value="O+">O+</option>
-                  <option value="O-">O-</option>
+                  {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
+                    <option key={bg} value={bg}>
+                      {bg}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
           </div>
 
-          {/* Section 3: Institutional Ledger & Mentor */}
-          <div className="space-y-3 pt-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#1657D9] flex items-center space-x-1.5 border-b border-slate-100 pb-1.5">
-              <Icon name="calendar" className="h-4 w-4" />
-              <span>3. Metrics & Ledger</span>
-            </h4>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-              <div>
-                <label className="block text-slate-600 font-semibold mb-1">Attendance Rate (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={attendanceRate}
-                  onChange={(e) => setAttendanceRate(Number(e.target.value))}
-                  className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
-                    errors.attendanceRate ? "border-[#D92534]" : "border-slate-200"
-                  } text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs`}
-                />
-                {errors.attendanceRate && (
-                  <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.attendanceRate}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-slate-600 font-semibold mb-1">Fee Status</label>
-                <select
-                  value={feeStatus}
-                  onChange={(e) => setFeeStatus(e.target.value as FeeStatus)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium"
-                >
-                  <option value="Paid">Paid Full</option>
-                  <option value="Partial">Partial Installment</option>
-                  <option value="Pending">Pending Due</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-600 font-semibold mb-1">Cumulative GPA (10 pt)</label>
-                <input
-                  type="text"
-                  value={gpa}
-                  onChange={(e) => setGpa(e.target.value)}
-                  placeholder="e.g. 8.6"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs"
-                />
-              </div>
-
-              <div className="sm:col-span-3">
-                <label className="block text-slate-600 font-semibold mb-1">Mentor Faculty Guide</label>
-                <input
-                  type="text"
-                  value={mentorFaculty}
-                  onChange={(e) => setMentorFaculty(e.target.value)}
-                  placeholder="e.g. Prof. Snehal Kulkarni"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: Guardian & Emergency Contact */}
-          <div className="space-y-3 pt-2">
+          {/* Section 3: Guardian & Emergency Contact */}
+          <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#1657D9] flex items-center space-x-1.5 border-b border-slate-100 pb-1.5">
               <Icon name="phone" className="h-4 w-4" />
-              <span>4. Guardian & Emergency Contact</span>
+              <span>3. Guardian & Emergency Contact</span>
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
@@ -448,11 +428,12 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 <input
                   type="text"
                   value={guardianName}
+                  disabled={isSubmitting}
                   onChange={(e) => setGuardianName(e.target.value)}
-                  placeholder="Parent / Guardian Name"
+                  placeholder="e.g. Ramesh Sharma"
                   className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
-                    errors.guardianName ? "border-[#D92534]" : "border-slate-200"
-                  } text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs`}
+                    errors.guardianName ? "border-[#D92534] ring-1 ring-[#D92534]" : "border-slate-200"
+                  } text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60`}
                 />
                 {errors.guardianName && (
                   <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.guardianName}</p>
@@ -463,28 +444,30 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 <label className="block text-slate-600 font-semibold mb-1">Relationship</label>
                 <select
                   value={guardianRelationship}
+                  disabled={isSubmitting}
                   onChange={(e) => setGuardianRelationship(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium disabled:opacity-60"
                 >
                   <option value="Father">Father</option>
                   <option value="Mother">Mother</option>
-                  <option value="Legal Guardian">Legal Guardian</option>
-                  <option value="Sibling">Sibling</option>
+                  <option value="Guardian">Legal Guardian</option>
+                  <option value="Sibling">Elder Sibling</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-slate-600 font-semibold mb-1">
-                  Emergency Phone <span className="text-[#D92534]">*</span>
+                  Guardian Phone <span className="text-[#D92534]">*</span>
                 </label>
                 <input
                   type="text"
                   value={guardianPhone}
+                  disabled={isSubmitting}
                   onChange={(e) => setGuardianPhone(e.target.value)}
-                  placeholder="+91 98201 XXXXX"
+                  placeholder="+91 98200 54321"
                   className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
-                    errors.guardianPhone ? "border-[#D92534]" : "border-slate-200"
-                  } text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs`}
+                    errors.guardianPhone ? "border-[#D92534] ring-1 ring-[#D92534]" : "border-slate-200"
+                  } font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60`}
                 />
                 {errors.guardianPhone && (
                   <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.guardianPhone}</p>
@@ -492,27 +475,85 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Section 4: Operational & Mentor Details */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#1657D9] flex items-center space-x-1.5 border-b border-slate-100 pb-1.5">
+              <Icon name="document-text" className="h-4 w-4" />
+              <span>4. Operational & Mentor Details</span>
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Institutional Fee Ledger</label>
+                <select
+                  value={feeStatus}
+                  disabled={isSubmitting}
+                  onChange={(e) => setFeeStatus(e.target.value as FeeStatus)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium disabled:opacity-60"
+                >
+                  <option value="Paid">Paid in Full</option>
+                  <option value="Partial">Partial Installment</option>
+                  <option value="Pending">Payment Pending</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Attendance Rate (%)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={attendanceRate}
+                  disabled={isSubmitting}
+                  onChange={(e) => setAttendanceRate(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs font-semibold disabled:opacity-60"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Assigned Faculty Mentor</label>
+                <input
+                  type="text"
+                  value={mentorFaculty}
+                  disabled={isSubmitting}
+                  onChange={(e) => setMentorFaculty(e.target.value)}
+                  placeholder="e.g. Prof. Snehal Kulkarni"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60"
+                />
+              </div>
+            </div>
+          </div>
         </form>
 
-        {/* Modal Actions Footer */}
+        {/* Footer Actions */}
         <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between shrink-0">
-          <span className="text-[11px] text-slate-400">
-            * Indicates mandatory institutional field
-          </span>
+          <p className="text-[11px] text-slate-400">
+            {isSubmitting ? "Persisting record to institutional database..." : "All changes are saved to the persistent institutional database."}
+          </p>
           <div className="flex items-center space-x-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               type="submit"
               form="student-form"
-              className="px-5 py-2 bg-[#1657D9] hover:bg-[#1248B8] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              className="px-5 py-2 text-xs font-semibold text-white bg-[#1657D9] hover:bg-[#1248B8] disabled:opacity-60 disabled:cursor-not-allowed rounded-xl transition-all shadow-xs flex items-center space-x-2 cursor-pointer"
             >
-              {mode === "add" ? "Enroll Student" : "Save Changes"}
+              {isSubmitting && (
+                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              )}
+              <span>
+                {isSubmitting
+                  ? (mode === "add" ? "Enrolling..." : "Saving Changes...")
+                  : (mode === "add" ? "Enroll Student" : "Save Changes")}
+              </span>
             </button>
           </div>
         </div>

@@ -10,7 +10,7 @@ interface FacultyFormModalProps {
   initialData: FacultyRecord | null;
   departments?: Array<{ id: string; code: string; name: string }>;
   onClose: () => void;
-  onSave: (record: FacultyRecord) => void;
+  onSave: (record: FacultyRecord) => Promise<{ success: boolean; error?: string } | boolean | void>;
 }
 
 interface FormErrors {
@@ -56,16 +56,18 @@ export const FacultyFormModal: React.FC<FacultyFormModalProps> = ({
   );
 
   const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
+      if (e.key === "Escape" && isOpen && !isSubmitting) {
         onClose();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isSubmitting]);
 
   if (!isOpen) return null;
 
@@ -107,45 +109,67 @@ export const FacultyFormModal: React.FC<FacultyFormModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!validate()) return;
 
-    const subjects = teachingSubjectsInput
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+    setServerError(null);
+    setIsSubmitting(true);
 
-    const programmes = assignedProgrammesInput
-      .split(",")
-      .map((p) => p.trim())
-      .filter((p) => p.length > 0);
+    try {
+      const subjects = teachingSubjectsInput
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
 
-    const record: FacultyRecord = {
-      id: initialData?.id || `fac-${Date.now()}`,
-      staffId: staffId.trim(),
-      fullName: fullName.trim(),
-      designation: designation.trim(),
-      department: department.trim(),
-      category,
-      employmentType,
-      email: email.trim(),
-      phone: phone.trim(),
-      officeLocation: officeLocation.trim(),
-      workloadHours: Number(workloadHours),
-      status,
-      qualification: qualification.trim(),
-      specialization: specialization.trim(),
-      joinedDate: initialData?.joinedDate || new Date().toISOString().split("T")[0],
-      teachingSubjects: subjects.length > 0 ? subjects : ["Foundational Orientation"],
-      assignedProgrammes: programmes.length > 0 ? programmes : ["General Undergraduate Studies"],
-      avatarInitial: fullName.trim().charAt(0).toUpperCase(),
-      isSampleRecord: true,
-    };
+      const programmes = assignedProgrammesInput
+        .split(",")
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0);
 
-    onSave(record);
+      const record: FacultyRecord = {
+        id: initialData?.id || `fac-${Date.now()}`,
+        staffId: staffId.trim().toUpperCase(),
+        fullName: fullName.trim(),
+        designation: designation.trim(),
+        department: department.trim(),
+        category,
+        employmentType,
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        officeLocation: officeLocation.trim(),
+        workloadHours: Number(workloadHours),
+        status,
+        qualification: qualification.trim(),
+        specialization: specialization.trim(),
+        joinedDate: initialData?.joinedDate || new Date().toISOString().split("T")[0],
+        teachingSubjects: subjects.length > 0 ? subjects : ["Foundational Orientation"],
+        assignedProgrammes: programmes.length > 0 ? programmes : ["General Undergraduate Studies"],
+        avatarInitial: fullName.trim().charAt(0).toUpperCase(),
+        isSampleRecord: false,
+      };
+
+      const result = await onSave(record);
+
+      if (typeof result === "object" && result !== null && "success" in result) {
+        if (!result.success) {
+          setServerError(result.error || "Failed to persist staff record.");
+          return;
+        }
+      } else if (result === false) {
+        setServerError("Failed to persist staff record.");
+        return;
+      }
+
+      onClose();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "An unexpected error occurred while saving.";
+      setServerError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
   return (
     <div
       role="dialog"
@@ -187,6 +211,15 @@ export const FacultyFormModal: React.FC<FacultyFormModalProps> = ({
 
         {/* Scrollable Form Body */}
         <form id="faculty-form" onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
+          {serverError && (
+            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-[#D92534] flex items-start space-x-2.5 animate-in fade-in">
+              <Icon name="exclamation-circle" className="h-5 w-5 shrink-0 mt-0.5 text-[#D92534]" />
+              <div className="flex-1">
+                <p className="font-bold text-xs text-red-900">Unable to Save Staff Record</p>
+                <p className="text-[11px] text-red-700 mt-0.5 leading-relaxed">{serverError}</p>
+              </div>
+            </div>
+          )}
           {/* Basic Identity */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1.5">
@@ -474,16 +507,25 @@ export const FacultyFormModal: React.FC<FacultyFormModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 rounded-xl transition-colors border border-slate-200 shadow-2xs"
+            disabled={isSubmitting}
+            className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors border border-slate-200 shadow-2xs cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
             form="faculty-form"
-            className="px-5 py-2 text-xs font-semibold text-white bg-[#1657D9] hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
+            disabled={isSubmitting}
+            className="px-5 py-2 text-xs font-semibold text-white bg-[#1657D9] hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed rounded-xl transition-colors shadow-sm flex items-center space-x-2 cursor-pointer"
           >
-            {mode === "add" ? "Create Staff Record" : "Save Changes"}
+            {isSubmitting && (
+              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            )}
+            <span>
+              {isSubmitting
+                ? (mode === "add" ? "Registering Staff..." : "Saving Changes...")
+                : (mode === "add" ? "Create Staff Record" : "Save Changes")}
+            </span>
           </button>
         </div>
       </div>

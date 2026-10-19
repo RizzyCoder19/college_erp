@@ -1,6 +1,6 @@
 "use server";
 
-import { StudentRepository, CreateStudentDTO, UpdateStudentDTO, StudentFilterParams } from "@/lib/dal/studentRepository";
+import { StudentRepository, CreateStudentDTO, UpdateStudentDTO, StudentFilterParams, StudentWithEnrolment } from "@/lib/dal/studentRepository";
 import { requirePermission } from "@/lib/auth/guards";
 import { Result } from "@/lib/dal/types";
 
@@ -22,7 +22,7 @@ export async function createStudentAction(dto: CreateStudentDTO) {
   return StudentRepository.createStudentWithEnrolment(dto);
 }
 
-export async function updateStudentAction(id: string, data: UpdateStudentDTO) {
+export async function updateStudentAction(id: string, data: UpdateStudentDTO): Promise<Result<StudentWithEnrolment>> {
   const guard = await requirePermission("WRITE_STUDENTS");
   if (!guard.success) return guard as Result<never>;
   return StudentRepository.updateStudent(id, data);

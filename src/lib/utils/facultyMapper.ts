@@ -1,8 +1,7 @@
-﻿import { StaffWithRelations } from "@/lib/dal/facultyRepository";
+import { StaffWithRelations } from "@/lib/dal/facultyRepository";
 import { FacultyRecord, StaffCategory, StaffStatus, EmploymentType } from "@/types/faculty";
 
 export function mapStaffDbToRecord(dbStaff: StaffWithRelations): FacultyRecord {
-  // Category mapping
   let category: StaffCategory = "Teaching Faculty";
   if (dbStaff.category === "TECHNICAL") category = "Technical Lab Staff";
   else if (dbStaff.category === "ADMINISTRATIVE") category = "Administrative Staff";
@@ -12,12 +11,15 @@ export function mapStaffDbToRecord(dbStaff: StaffWithRelations): FacultyRecord {
     category = "Teaching Faculty";
   }
 
-  // Status mapping
   let status: StaffStatus = "Active";
   const stUpper = (dbStaff.status || "ACTIVE").toUpperCase();
   if (stUpper === "ACTIVE") {
     status = category === "Culinary Instructor" ? "In Lab / Kitchen" : "Active";
   } else if (stUpper === "ON_LEAVE" || stUpper === "ON LEAVE") {
+    status = "On Leave";
+  } else if (stUpper === "RESIGNED") {
+    status = "On Leave";
+  } else if (stUpper === "RETIRED") {
     status = "On Leave";
   }
 
@@ -42,11 +44,11 @@ export function mapStaffDbToRecord(dbStaff: StaffWithRelations): FacultyRecord {
     email: dbStaff.email,
     phone: dbStaff.phone,
     officeLocation: dbStaff.department?.code === "CUL"
-      ? "Culinary Complex • Master Production Kitchen"
-      : "Academic Block A • Faculty Cabin",
+      ? "Culinary Complex ? Master Production Kitchen"
+      : "Academic Block A ? Faculty Cabin",
     workloadHours: totalWeeklyHours > 0 ? totalWeeklyHours : 18,
     status,
-    qualification: dbStaff.designation.includes("Dr.") ? "Ph.D. / Master of Science" : "Master of Science / Grand Diplôme",
+    qualification: dbStaff.designation.includes("Dr.") ? "Ph.D. / Master of Science" : "Master of Science / Grand Diplome",
     specialization: dbStaff.department?.name || "Hospitality & Management",
     joinedDate,
     teachingSubjects: teachingSubjects.length > 0 ? teachingSubjects : ["Academic Foundations & Practicum"],
