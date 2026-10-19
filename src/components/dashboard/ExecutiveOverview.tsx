@@ -59,7 +59,7 @@ export const ExecutiveOverview: React.FC = () => {
               {/* 5 Quick Action Module Pills matching reference */}
               <div className="mt-6 flex flex-wrap items-center gap-2">
                 <Link
-                  href="/modules/admissions"
+                  href="/modules/students"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white/90 hover:bg-blue-50 text-slate-700 hover:text-[#1657D9] border border-slate-200/90 hover:border-blue-200 shadow-2xs transition-all cursor-pointer backdrop-blur-xs"
                 >
                   <Icon name="users" className="h-3.5 w-3.5 text-[#1657D9]" />

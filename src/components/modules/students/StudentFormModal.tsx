@@ -9,6 +9,7 @@ interface StudentFormModalProps {
   isOpen: boolean;
   mode: "add" | "edit";
   initialData?: StudentRecord | null;
+  programmes?: Array<{ id: string; code: string; name: string; departmentName?: string }>;
   onClose: () => void;
   onSave: (student: StudentRecord) => void;
 }
@@ -27,12 +28,16 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   isOpen,
   mode,
   initialData,
+  programmes,
   onClose,
   onSave,
 }) => {
   const [fullName, setFullName] = useState(initialData?.fullName || "");
   const [prn, setPrn] = useState(initialData?.prn || "");
-  const [programmeId, setProgrammeId] = useState(initialData?.programmeId || "prog-ds");
+  const effectiveProgrammes = programmes && programmes.length > 0 ? programmes : ACADEMIC_PROGRAMMES;
+  const [programmeId, setProgrammeId] = useState(
+    initialData?.programmeId || (effectiveProgrammes.length > 0 ? effectiveProgrammes[0].id : "prog-ds")
+  );
   const [semester, setSemester] = useState<number>(initialData?.semester || 1);
   const [yearGroup, setYearGroup] = useState<"FY" | "SY" | "TY">(initialData?.yearGroup || "FY");
   const [division, setDivision] = useState<"Div A" | "Div B" | "Div C">(initialData?.division || "Div A");
@@ -104,7 +109,13 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
     e.preventDefault();
     if (!validate()) return;
 
-    const selectedProg = ACADEMIC_PROGRAMMES.find((p) => p.id === programmeId);
+    const selectedProg = effectiveProgrammes.find((p) => p.id === programmeId);
+    const deptName =
+      selectedProg && "departmentName" in selectedProg && typeof selectedProg.departmentName === "string"
+        ? selectedProg.departmentName
+        : selectedProg && "department" in selectedProg && typeof selectedProg.department === "string"
+        ? selectedProg.department
+        : "Technology & Computing";
 
     const record: StudentRecord = {
       id: initialData?.id || `std-${Date.now()}`,
@@ -114,7 +125,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       phone: phone.trim(),
       programmeId,
       programmeName: selectedProg ? selectedProg.name : "Undergraduate Programme",
-      department: selectedProg ? selectedProg.department : "Technology & Computing",
+      department: deptName,
       semester: Number(semester),
       yearGroup,
       division,
@@ -228,9 +239,9 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                   onChange={(e) => setProgrammeId(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium"
                 >
-                  {ACADEMIC_PROGRAMMES.map((prog) => (
+                  {effectiveProgrammes.map((prog) => (
                     <option key={prog.id} value={prog.id}>
-                      {prog.name} ({prog.code}) • {prog.department}
+                      {prog.name} ({prog.code})
                     </option>
                   ))}
                 </select>

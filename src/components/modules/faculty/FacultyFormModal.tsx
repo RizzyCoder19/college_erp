@@ -8,6 +8,7 @@ interface FacultyFormModalProps {
   isOpen: boolean;
   mode: "add" | "edit";
   initialData: FacultyRecord | null;
+  departments?: Array<{ id: string; code: string; name: string }>;
   onClose: () => void;
   onSave: (record: FacultyRecord) => void;
 }
@@ -29,13 +30,15 @@ export const FacultyFormModal: React.FC<FacultyFormModalProps> = ({
   isOpen,
   mode,
   initialData,
+  departments,
   onClose,
   onSave,
 }) => {
   const [fullName, setFullName] = useState(initialData?.fullName || "");
   const [staffId, setStaffId] = useState(initialData?.staffId || "");
   const [designation, setDesignation] = useState(initialData?.designation || "");
-  const [department, setDepartment] = useState(initialData?.department || "Hospitality & Culinary Arts");
+  const defaultDept = departments && departments.length > 0 ? departments[0].name : "Hospitality & Culinary Arts";
+  const [department, setDepartment] = useState(initialData?.department || defaultDept);
   const [category, setCategory] = useState<StaffCategory>(initialData?.category || "Teaching Faculty");
   const [employmentType, setEmploymentType] = useState<EmploymentType>(initialData?.employmentType || "Full-Time Permanent");
   const [email, setEmail] = useState(initialData?.email || "");
@@ -251,11 +254,19 @@ export const FacultyFormModal: React.FC<FacultyFormModalProps> = ({
                   onChange={(e) => setDepartment(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#1657D9]"
                 >
-                  <option value="Hospitality & Culinary Arts">Hospitality & Culinary Arts</option>
-                  <option value="Computing & Data Science">Computing & Data Science</option>
-                  <option value="F&B Service & Operations">F&B Service & Operations</option>
-                  <option value="Bakery & Confectionery">Bakery & Confectionery</option>
-                  <option value="Administrative & Student Affairs">Administrative & Student Affairs</option>
+                  {departments && departments.length > 0 ? (
+                    departments.map((d) => (
+                      <option key={d.id} value={d.name}>
+                        {d.name} ({d.code})
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Hospitality & Culinary Arts">Hospitality & Culinary Arts</option>
+                      <option value="Technology & Computing">Technology & Computing</option>
+                      <option value="Administrative & Student Affairs">Administrative & Student Affairs</option>
+                    </>
+                  )}
                 </select>
               </div>
             </div>

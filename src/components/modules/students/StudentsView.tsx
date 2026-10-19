@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { getStudentsAction, createStudentAction, updateStudentAction, deleteStudentAction } from "@/lib/actions/students";
+import { getProgrammesAction, getCurrentAcademicYearAction, getProgrammeDetailsAction } from "@/lib/actions/academics";
+import { AcademicProgrammeDTO } from "@/lib/dal/academicRepository";
+import { mapStudentDbToRecord } from "@/lib/utils/studentMapper";
+import { PrototypeReconciliationModal, PrototypeComparisonItem } from "@/components/common/PrototypeReconciliationModal";
 import Link from "next/link";
 import Image from "next/image";
 import { Icon } from "@/components/common/Icon";
 import { AnimatedReveal } from "@/components/common/AnimatedReveal";
 import { StudentRecord, StudentStatus, FeeStatus } from "@/types/student";
-import { INITIAL_STUDENT_RECORDS } from "@/data/mockStudents";
 import { ACADEMIC_PROGRAMMES } from "@/data/mockData";
 import { StudentDetailModal } from "./StudentDetailModal";
 import { StudentFormModal } from "./StudentFormModal";
@@ -15,28 +19,100 @@ import { DeleteConfirmModal } from "./DeleteConfirmModal";
 const STORAGE_KEY = "rpihm_student_records_v1";
 
 export const StudentsView: React.FC = () => {
-  const [students, setStudents] = useState<StudentRecord[]>(INITIAL_STUDENT_RECORDS);
+  const [students, setStudents] = useState<StudentRecord[]>([]);
+  const [programmes, setProgrammes] = useState<AcademicProgrammeDTO[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [serverError, setServerError] = useState<string | null>(null);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProgramme, setSelectedProgramme] = useState("all");
   const [selectedSemester, setSelectedSemester] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedFee, setSelectedFee] = useState("all");
 
-  // Hydrate from localStorage after mount to prevent SSR hydration mismatch
-  useEffect(() => {
+  // Prototype Data Inspection & Reconciliation State
+  const [prototypeRecords, setPrototypeRecords] = useState<StudentRecord[]>([]);
+  const [showReconcileBanner, setShowReconcileBanner] = useState(true);
+  const [reconcileModalOpen, setReconcileModalOpen] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setServerError(null);
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          requestAnimationFrame(() => {
-            setStudents(parsed);
-          });
-        }
+      const res = await getStudentsAction({ pageSize: 100 });
+      if (!res.success || !res.data) {
+        setServerError(res.error || "Failed to load students from database.");
+      } else {
+        const mapped = res.data.items.map(mapStudentDbToRecord);
+        setStudents(mapped);
       }
-    } catch {
-      // LocalStorage error fallback
+
+      const progRes = await getProgrammesAction();
+      if (progRes.success && progRes.data) {
+        setProgrammes(progRes.data);
+      }
+
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setPrototypeRecords(parsed);
+          }
+        }
+      } catch {
+        // LocalStorage fallback
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to connect to database";
+      setServerError(msg);
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const init = async () => {
+      try {
+        const res = await getStudentsAction({ pageSize: 100 });
+        if (!active) return;
+        if (!res.success || !res.data) {
+          setServerError(res.error || "Failed to load students from database.");
+        } else {
+          setStudents(res.data.items.map(mapStudentDbToRecord));
+        }
+
+        const progRes = await getProgrammesAction();
+        if (!active) return;
+        if (progRes.success && progRes.data) {
+          setProgrammes(progRes.data);
+        }
+
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved && active) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setPrototypeRecords(parsed);
+            }
+          }
+        } catch {
+          // LocalStorage fallback
+        }
+      } catch (err) {
+        if (!active) return;
+        const msg = err instanceof Error ? err.message : "Failed to connect to database";
+        setServerError(msg);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    init();
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Modals state
@@ -47,14 +123,121 @@ export const StudentsView: React.FC = () => {
   const [deleteStudent, setDeleteStudent] = useState<StudentRecord | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Sync to localStorage
-  const saveStudents = (newStudents: StudentRecord[]) => {
-    setStudents(newStudents);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newStudents));
-    } catch {
-      // ignore storage error
+  // Reconciliation Comparison Items
+  const reconciliationItems: PrototypeComparisonItem[] = useMemo(() => {
+    return prototypeRecords.map((proto) => {
+      const dbMatch = students.find(
+        (s) =>
+          s.prn.trim().toLowerCase() === proto.prn.trim().toLowerCase() ||
+          s.email.trim().toLowerCase() === proto.email.trim().toLowerCase()
+      );
+
+      if (dbMatch) {
+        const isConflict =
+          dbMatch.fullName.trim().toLowerCase() !== proto.fullName.trim().toLowerCase();
+        if (isConflict) {
+          return {
+            id: proto.id,
+            primaryKey: proto.prn,
+            name: proto.fullName,
+            email: proto.email,
+            secondaryInfo: proto.programmeName,
+            status: "conflict",
+            statusReason: `Conflict: PRN matches database record for "${dbMatch.fullName}"`,
+            rawRecord: proto,
+          };
+        }
+        return {
+          id: proto.id,
+          primaryKey: proto.prn,
+          name: proto.fullName,
+          email: proto.email,
+          secondaryInfo: proto.programmeName,
+          status: "duplicate",
+          statusReason: "Already present in SQLite database",
+          rawRecord: proto,
+        };
+      }
+
+      return {
+        id: proto.id,
+        primaryKey: proto.prn,
+        name: proto.fullName,
+        email: proto.email,
+        secondaryInfo: proto.programmeName,
+        status: "importable",
+        statusReason: "New prototype student ready to import into database",
+        rawRecord: proto,
+      };
+    });
+  }, [prototypeRecords, students]);
+
+  // Safe Prototype Reconciliation Import Handler
+  const handleReconcileImport = async (importableItems: PrototypeComparisonItem[]) => {
+    let imported = 0;
+    let failed = 0;
+
+    for (const item of importableItems) {
+      const std = item.rawRecord as StudentRecord;
+      try {
+        const ayRes = await getCurrentAcademicYearAction();
+        const academicYearId = ayRes.success && ayRes.data ? ayRes.data.id : "";
+
+        let programmeId = programmes.length > 0 ? programmes[0].id : "";
+        const matchedProg = programmes.find(
+          (p) =>
+            p.name.toLowerCase() === std.programmeName.toLowerCase() ||
+            p.id === std.programmeId
+        );
+        if (matchedProg) programmeId = matchedProg.id;
+
+        const progDetails = await getProgrammeDetailsAction(programmeId);
+        let semesterId = "";
+        let divisionId = "";
+        if (progDetails.success && progDetails.data && progDetails.data.semesters?.length > 0) {
+          const sem =
+            progDetails.data.semesters.find((s) => s.semesterNumber === Number(std.semester)) ||
+            progDetails.data.semesters[0];
+          semesterId = sem.id;
+          if (sem.divisions?.length > 0) {
+            const div =
+              sem.divisions.find((d) => d.name === std.division) || sem.divisions[0];
+            divisionId = div.id;
+          }
+        }
+
+        const cleanPrn = std.prn.trim().toUpperCase();
+        const rollNumber = cleanPrn.startsWith("RPIHM-") ? cleanPrn : `RPIHM-${cleanPrn}`;
+
+        const res = await createStudentAction({
+          rollNumber,
+          prn: cleanPrn,
+          fullName: std.fullName.trim(),
+          email: std.email.trim().toLowerCase(),
+          phone: std.phone.trim(),
+          dob: std.dateOfBirth ? new Date(std.dateOfBirth) : new Date("2006-05-15"),
+          bloodGroup: std.bloodGroup || "B+",
+          gender: "MALE",
+          programmeId,
+          semesterId,
+          divisionId,
+          academicYearId,
+        });
+
+        if (res.success) {
+          imported++;
+        } else {
+          failed++;
+        }
+      } catch {
+        failed++;
+      }
     }
+
+    if (imported > 0) {
+      await loadData();
+    }
+    return { imported, failed };
   };
 
   const showToast = (msg: string) => {
@@ -110,36 +293,130 @@ export const StudentsView: React.FC = () => {
     return { total, active, onLeave, feePending };
   }, [students]);
 
-  // Handlers
-  const handleAddStudent = (record: StudentRecord) => {
-    const updated = [record, ...students];
-    saveStudents(updated);
-    showToast(`Student dossier for "${record.fullName}" added successfully.`);
-  };
+  // Handlers for Database Mutations
+  const handleAddStudent = async (record: StudentRecord) => {
+    
+    try {
+      const ayRes = await getCurrentAcademicYearAction();
+      const academicYearId = ayRes.success && ayRes.data ? ayRes.data.id : "";
 
-  const handleEditStudent = (record: StudentRecord) => {
-    const updated = students.map((s) => (s.id === record.id ? record : s));
-    saveStudents(updated);
-    showToast(`Student record for "${record.fullName}" updated successfully.`);
-  };
+      let targetProgId = record.programmeId;
+      if (!targetProgId && programmes.length > 0) {
+        targetProgId = programmes[0].id;
+      }
 
-  const handleDeleteStudent = (id: string) => {
-    const target = students.find((s) => s.id === id);
-    const updated = students.filter((s) => s.id !== id);
-    saveStudents(updated);
-    if (target) {
-      showToast(`Record for "${target.fullName}" removed from register.`);
+      let semesterId = "";
+      let divisionId = "";
+      if (targetProgId) {
+        const progRes = await getProgrammeDetailsAction(targetProgId);
+        if (progRes.success && progRes.data && progRes.data.semesters?.length > 0) {
+          const sem =
+            progRes.data.semesters.find((s) => s.semesterNumber === Number(record.semester)) ||
+            progRes.data.semesters[0];
+          semesterId = sem.id;
+          if (sem.divisions?.length > 0) {
+            const div =
+              sem.divisions.find((d) => d.name === record.division) || sem.divisions[0];
+            divisionId = div.id;
+          }
+        }
+      }
+
+      if (!semesterId || !divisionId || !academicYearId) {
+        const progList = await getProgrammesAction();
+        if (progList.success && progList.data && progList.data.length > 0) {
+          const fallbackProg = await getProgrammeDetailsAction(progList.data[0].id);
+          if (fallbackProg.success && fallbackProg.data && fallbackProg.data.semesters?.length > 0) {
+            const sem = fallbackProg.data.semesters[0];
+            semesterId = sem.id;
+            if (sem.divisions?.length > 0) {
+              divisionId = sem.divisions[0].id;
+            }
+          }
+        }
+      }
+
+      const cleanPrn = record.prn.trim().toUpperCase();
+      const rollNumber = cleanPrn.startsWith("RPIHM-") ? cleanPrn : `RPIHM-${cleanPrn}`;
+
+      const res = await createStudentAction({
+        rollNumber,
+        prn: cleanPrn,
+        fullName: record.fullName.trim(),
+        email: record.email.trim().toLowerCase(),
+        phone: record.phone.trim(),
+        dob: record.dateOfBirth ? new Date(record.dateOfBirth) : new Date("2006-05-15"),
+        bloodGroup: record.bloodGroup || "B+",
+        gender: "MALE",
+        programmeId: targetProgId,
+        semesterId,
+        divisionId,
+        academicYearId,
+      });
+
+      if (!res.success) {
+        showToast("Error creating student: " + (res.error || "Permission denied"));
+        return;
+      }
+
+      showToast(`Student dossier for "${record.fullName}" enrolled in database.`);
+      setFormModalOpen(false);
+      await loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to create student";
+      showToast("Error: " + msg);
+    } finally {
+      
     }
   };
 
-  const handleResetSampleData = () => {
-    saveStudents(INITIAL_STUDENT_RECORDS);
-    setSearchQuery("");
-    setSelectedProgramme("all");
-    setSelectedSemester("all");
-    setSelectedStatus("all");
-    setSelectedFee("all");
-    showToast("Reset to default sample institutional records.");
+  const handleEditStudent = async (record: StudentRecord) => {
+    
+    try {
+      const res = await updateStudentAction(record.id, {
+        fullName: record.fullName.trim(),
+        phone: record.phone.trim(),
+        email: record.email.trim().toLowerCase(),
+        bloodGroup: record.bloodGroup,
+        status: record.enrollmentStatus.toUpperCase() === "ACTIVE" ? "ACTIVE" : "INACTIVE",
+      });
+
+      if (!res.success) {
+        showToast("Error updating student: " + (res.error || "Permission denied"));
+        return;
+      }
+
+      showToast(`Student record for "${record.fullName}" updated in database.`);
+      setFormModalOpen(false);
+      setFormStudent(null);
+      await loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to update student";
+      showToast("Error: " + msg);
+    } finally {
+      
+    }
+  };
+
+  const handleDeleteStudent = async (id: string) => {
+    
+    try {
+      const target = students.find((s) => s.id === id);
+      const res = await deleteStudentAction(id);
+      if (!res.success) {
+        showToast("Error removing student: " + (res.error || "Permission denied"));
+        return;
+      }
+
+      showToast(`Record for "${target?.fullName || id}" removed from database.`);
+      setDeleteStudent(null);
+      await loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to delete student";
+      showToast("Error: " + msg);
+    } finally {
+      
+    }
   };
 
   const clearFilters = () => {
@@ -237,7 +514,7 @@ export const StudentsView: React.FC = () => {
                       Student Affairs & Registrar Office
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Active Register • AY 2026 – 27
+                      Live SQLite Database • AY 2026 – 27
                     </span>
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-serif mt-1">
@@ -304,6 +581,65 @@ export const StudentsView: React.FC = () => {
         </div>
       </AnimatedReveal>
 
+      {/* Prototype Data Reconciliation Alert Banner */}
+      {prototypeRecords.length > 0 && showReconcileBanner && (
+        <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start space-x-3">
+            <div className="p-2 rounded-xl bg-amber-100 text-amber-800 shrink-0 mt-0.5">
+              <Icon name="archive-box" className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-amber-950">
+                Prototype Browser Records Detected ({prototypeRecords.length} records in localStorage)
+              </h4>
+              <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                The SQLite database is now active as the authoritative system of record. You can safely inspect and reconcile legacy prototype data. Browser storage will not be altered.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 shrink-0 self-end sm:self-center">
+            <button
+              type="button"
+              onClick={() => setReconcileModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-[#1657D9] hover:bg-[#1248B8] text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer flex items-center space-x-1"
+            >
+              <Icon name="arrow-path" className="h-3.5 w-3.5" />
+              <span>Review & Reconcile</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowReconcileBanner(false)}
+              className="p-1.5 rounded-lg text-amber-700 hover:text-amber-900 hover:bg-amber-100/60 transition-colors cursor-pointer"
+              title="Dismiss Banner"
+              aria-label="Dismiss banner"
+            >
+              <Icon name="x-mark" className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Server Connection Error Alert */}
+      {serverError && (
+        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 shadow-2xs flex items-center justify-between gap-3 text-red-900">
+          <div className="flex items-center space-x-3 text-xs">
+            <Icon name="exclamation-circle" className="h-5 w-5 text-red-600 shrink-0" />
+            <div>
+              <span className="font-bold">Database Connection Warning: </span>
+              <span>{serverError}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={loadData}
+            className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shrink-0 cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Main Student Register Console */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
         {/* Controls Bar: Search, Filters & Bulk Actions */}
@@ -339,11 +675,13 @@ export const StudentsView: React.FC = () => {
 
               <button
                 type="button"
-                onClick={handleResetSampleData}
+                onClick={loadData}
+                disabled={isLoading}
                 className="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all border border-slate-200 cursor-pointer flex items-center space-x-1"
-                title="Restore original sample records"
+                title="Refresh records from database"
               >
-                <span>Reset Demo Records</span>
+                <Icon name="arrow-path" className={`h-3.5 w-3.5 ${isLoading ? "animate-spin text-[#1657D9]" : ""}`} />
+                <span>Refresh Live Records</span>
               </button>
             </div>
           </div>
@@ -671,10 +1009,10 @@ export const StudentsView: React.FC = () => {
               {students.length === 0 && (
                 <button
                   type="button"
-                  onClick={handleResetSampleData}
+                  onClick={loadData}
                   className="px-4 py-2 text-xs font-semibold text-white bg-[#1657D9] hover:bg-[#1248B8] rounded-xl transition-all cursor-pointer shadow-xs"
                 >
-                  Restore Sample Records
+                  Reload Database Records
                 </button>
               )}
             </div>
@@ -699,6 +1037,7 @@ export const StudentsView: React.FC = () => {
         isOpen={formModalOpen}
         mode={formMode}
         initialData={formStudent}
+        programmes={programmes}
         onClose={() => {
           setFormModalOpen(false);
           setFormStudent(null);
@@ -717,6 +1056,16 @@ export const StudentsView: React.FC = () => {
         isOpen={!!deleteStudent}
         onClose={() => setDeleteStudent(null)}
         onConfirm={handleDeleteStudent}
+      />
+
+      {/* Prototype Data Reconciliation Modal */}
+      <PrototypeReconciliationModal
+        isOpen={reconcileModalOpen}
+        entityName="Student"
+        storageKey={STORAGE_KEY}
+        items={reconciliationItems}
+        onClose={() => setReconcileModalOpen(false)}
+        onImport={handleReconcileImport}
       />
     </div>
   );

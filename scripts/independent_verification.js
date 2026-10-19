@@ -92,6 +92,8 @@ async function runVerification() {
     for (const r of actionData.results) {
       recordResult("Server Action Boundary", r.name, r.passed ? "PASS" : "FAIL", r.code ? `Code: ${r.code}` : "");
     }
+  } else if (actionRes.status === 404) {
+    recordResult("Server Action Boundary", "Verify-actions endpoint completely disabled in production (404 Not Found)", "PASS", "Protected against production exposure");
   } else {
     recordResult("Server Action Boundary", "Verify-actions endpoint execution", "FAIL", `Status: ${actionRes.status}`);
   }

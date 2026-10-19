@@ -1,11 +1,15 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { getStaffAction, createStaffAction, updateStaffAction, deleteStaffAction } from "@/lib/actions/faculty";
+import { getDepartmentsAction } from "@/lib/actions/academics";
+import { DepartmentWithCounts } from "@/lib/dal/academicRepository";
+import { mapStaffDbToRecord } from "@/lib/utils/facultyMapper";
+import { PrototypeReconciliationModal, PrototypeComparisonItem } from "@/components/common/PrototypeReconciliationModal";
 import Link from "next/link";
 import { Icon } from "@/components/common/Icon";
 import { AnimatedReveal } from "@/components/common/AnimatedReveal";
 import { FacultyRecord, StaffStatus } from "@/types/faculty";
-import { INITIAL_FACULTY_RECORDS } from "@/data/mockFaculty";
 import { FacultyDetailModal } from "./FacultyDetailModal";
 import { FacultyFormModal } from "./FacultyFormModal";
 import { DeleteFacultyModal } from "./DeleteFacultyModal";
@@ -13,12 +17,21 @@ import { DeleteFacultyModal } from "./DeleteFacultyModal";
 const STORAGE_KEY = "rpihm_faculty_records_v1";
 
 export const FacultyView: React.FC = () => {
-  const [facultyList, setFacultyList] = useState<FacultyRecord[]>(INITIAL_FACULTY_RECORDS);
+  const [facultyList, setFacultyList] = useState<FacultyRecord[]>([]);
+  const [departments, setDepartments] = useState<DepartmentWithCounts[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [serverError, setServerError] = useState<string | null>(null);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedEmployment, setSelectedEmployment] = useState("all");
+
+  // Prototype Data Inspection & Reconciliation State
+  const [prototypeRecords, setPrototypeRecords] = useState<FacultyRecord[]>([]);
+  const [showReconcileBanner, setShowReconcileBanner] = useState(true);
+  const [reconcileModalOpen, setReconcileModalOpen] = useState(false);
 
   // Modals state
   const [detailFaculty, setDetailFaculty] = useState<FacultyRecord | null>(null);
@@ -28,31 +41,181 @@ export const FacultyView: React.FC = () => {
   const [deleteFaculty, setDeleteFaculty] = useState<FacultyRecord | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Hydrate from localStorage safely after mount to avoid hydration mismatch
-  useEffect(() => {
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setServerError(null);
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          requestAnimationFrame(() => {
-            setFacultyList(parsed);
-          });
-        }
+      const res = await getStaffAction({ pageSize: 100 });
+      if (!res.success || !res.data) {
+        setServerError(res.error || "Failed to load faculty from database.");
+      } else {
+        const mapped = res.data.items.map(mapStaffDbToRecord);
+        setFacultyList(mapped);
       }
-    } catch {
-      // LocalStorage fallback
+
+      const deptRes = await getDepartmentsAction();
+      if (deptRes.success && deptRes.data) {
+        setDepartments(deptRes.data);
+      }
+
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setPrototypeRecords(parsed);
+          }
+        }
+      } catch {
+        // LocalStorage fallback
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to connect to database";
+      setServerError(msg);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  // Sync state to localStorage
-  const saveFacultyList = (newList: FacultyRecord[]) => {
-    setFacultyList(newList);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
-    } catch {
-      // ignore storage error
+  useEffect(() => {
+    let active = true;
+    const init = async () => {
+      try {
+        const res = await getStaffAction({ pageSize: 100 });
+        if (!active) return;
+        if (!res.success || !res.data) {
+          setServerError(res.error || "Failed to load faculty from database.");
+        } else {
+          setFacultyList(res.data.items.map(mapStaffDbToRecord));
+        }
+
+        const deptRes = await getDepartmentsAction();
+        if (!active) return;
+        if (deptRes.success && deptRes.data) {
+          setDepartments(deptRes.data);
+        }
+
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved && active) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setPrototypeRecords(parsed);
+            }
+          }
+        } catch {
+          // LocalStorage fallback
+        }
+      } catch (err) {
+        if (!active) return;
+        const msg = err instanceof Error ? err.message : "Failed to connect to database";
+        setServerError(msg);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    init();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Reconciliation Comparison Items
+  const reconciliationItems: PrototypeComparisonItem[] = useMemo(() => {
+    return prototypeRecords.map((proto) => {
+      const dbMatch = facultyList.find(
+        (f) =>
+          f.staffId.trim().toLowerCase() === proto.staffId.trim().toLowerCase() ||
+          f.email.trim().toLowerCase() === proto.email.trim().toLowerCase()
+      );
+
+      if (dbMatch) {
+        const isConflict =
+          dbMatch.fullName.trim().toLowerCase() !== proto.fullName.trim().toLowerCase();
+        if (isConflict) {
+          return {
+            id: proto.id,
+            primaryKey: proto.staffId,
+            name: proto.fullName,
+            email: proto.email,
+            secondaryInfo: proto.department,
+            status: "conflict",
+            statusReason: `Conflict: Staff ID matches database record for "${dbMatch.fullName}"`,
+            rawRecord: proto,
+          };
+        }
+        return {
+          id: proto.id,
+          primaryKey: proto.staffId,
+          name: proto.fullName,
+          email: proto.email,
+          secondaryInfo: proto.department,
+          status: "duplicate",
+          statusReason: "Already present in SQLite database",
+          rawRecord: proto,
+        };
+      }
+
+      return {
+        id: proto.id,
+        primaryKey: proto.staffId,
+        name: proto.fullName,
+        email: proto.email,
+        secondaryInfo: proto.department,
+        status: "importable",
+        statusReason: "New prototype staff record ready to import into database",
+        rawRecord: proto,
+      };
+    });
+  }, [prototypeRecords, facultyList]);
+
+  // Safe Prototype Reconciliation Import Handler
+  const handleReconcileImport = async (importableItems: PrototypeComparisonItem[]) => {
+    let imported = 0;
+    let failed = 0;
+
+    for (const item of importableItems) {
+      const fac = item.rawRecord as FacultyRecord;
+      try {
+        let departmentId = departments.length > 0 ? departments[0].id : "";
+        const matchedDept = departments.find(
+          (d) =>
+            d.name.toLowerCase() === fac.department.toLowerCase() ||
+            d.code.toLowerCase() === fac.department.toLowerCase()
+        );
+        if (matchedDept) departmentId = matchedDept.id;
+
+        let category = "TEACHING";
+        if (fac.category === "Technical Lab Staff") category = "TECHNICAL";
+        else if (fac.category === "Administrative Staff") category = "ADMINISTRATIVE";
+
+        const res = await createStaffAction({
+          employeeId: fac.staffId.trim().toUpperCase(),
+          fullName: fac.fullName.trim(),
+          email: fac.email.trim().toLowerCase(),
+          phone: fac.phone.trim(),
+          designation: fac.designation.trim(),
+          category,
+          departmentId,
+          dateOfJoining: fac.joinedDate ? new Date(fac.joinedDate) : new Date("2020-01-01"),
+          status: "ACTIVE",
+        });
+
+        if (res.success) {
+          imported++;
+        } else {
+          failed++;
+        }
+      } catch {
+        failed++;
+      }
     }
+
+    if (imported > 0) {
+      await loadData();
+    }
+    return { imported, failed };
   };
 
   const showToast = (msg: string) => {
@@ -97,38 +260,97 @@ export const FacultyView: React.FC = () => {
     return { total, teachingCount, activeCount, avgWorkload };
   }, [facultyList]);
 
-  // Handlers
-  const handleAddFaculty = (record: FacultyRecord) => {
-    const updated = [record, ...facultyList];
-    saveFacultyList(updated);
-    setFormModalOpen(false);
-    showToast(`Staff member "${record.fullName}" registered successfully.`);
+  // Handlers for Database Mutations
+  const handleAddFaculty = async (record: FacultyRecord) => {
+    
+    try {
+      let departmentId = departments.length > 0 ? departments[0].id : "";
+      const matchedDept = departments.find(
+        (d) =>
+          d.name.toLowerCase() === record.department.toLowerCase() ||
+          d.code.toLowerCase() === record.department.toLowerCase()
+      );
+      if (matchedDept) departmentId = matchedDept.id;
+
+      let category = "TEACHING";
+      if (record.category === "Technical Lab Staff") category = "TECHNICAL";
+      else if (record.category === "Administrative Staff") category = "ADMINISTRATIVE";
+
+      const res = await createStaffAction({
+        employeeId: record.staffId.trim().toUpperCase(),
+        fullName: record.fullName.trim(),
+        email: record.email.trim().toLowerCase(),
+        phone: record.phone.trim(),
+        designation: record.designation.trim(),
+        category,
+        departmentId,
+        dateOfJoining: record.joinedDate ? new Date(record.joinedDate) : new Date("2020-01-01"),
+        status: "ACTIVE",
+      });
+
+      if (!res.success) {
+        showToast("Error creating staff: " + (res.error || "Permission denied"));
+        return;
+      }
+
+      showToast(`Staff member "${record.fullName}" registered in database.`);
+      setFormModalOpen(false);
+      await loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to create staff record";
+      showToast("Error: " + msg);
+    } finally {
+      
+    }
   };
 
-  const handleEditFaculty = (record: FacultyRecord) => {
-    const updated = facultyList.map((f) => (f.id === record.id ? record : f));
-    saveFacultyList(updated);
-    setFormModalOpen(false);
-    setFormFaculty(null);
-    showToast(`Staff record for "${record.fullName}" updated.`);
+  const handleEditFaculty = async (record: FacultyRecord) => {
+    
+    try {
+      const res = await updateStaffAction(record.id, {
+        fullName: record.fullName.trim(),
+        phone: record.phone.trim(),
+        email: record.email.trim().toLowerCase(),
+        designation: record.designation.trim(),
+        status: record.status.toUpperCase() === "ON LEAVE" ? "ON_LEAVE" : "ACTIVE",
+      });
+
+      if (!res.success) {
+        showToast("Error updating staff: " + (res.error || "Permission denied"));
+        return;
+      }
+
+      showToast(`Staff record for "${record.fullName}" updated in database.`);
+      setFormModalOpen(false);
+      setFormFaculty(null);
+      await loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to update staff record";
+      showToast("Error: " + msg);
+    } finally {
+      
+    }
   };
 
-  const handleDeleteFaculty = (id: string) => {
-    const target = facultyList.find((f) => f.id === id);
-    const updated = facultyList.filter((f) => f.id !== id);
-    saveFacultyList(updated);
-    setDeleteFaculty(null);
-    showToast(`Record for "${target?.fullName || "Staff"}" removed.`);
-  };
+  const handleDeleteFaculty = async (id: string) => {
+    
+    try {
+      const target = facultyList.find((f) => f.id === id);
+      const res = await deleteStaffAction(id);
+      if (!res.success) {
+        showToast("Error deleting staff: " + (res.error || "Permission denied"));
+        return;
+      }
 
-  const handleResetDemo = () => {
-    saveFacultyList(INITIAL_FACULTY_RECORDS);
-    setSearchQuery("");
-    setSelectedDepartment("all");
-    setSelectedCategory("all");
-    setSelectedStatus("all");
-    setSelectedEmployment("all");
-    showToast("Reset to initial fictional faculty roster.");
+      showToast(`Record for "${target?.fullName || id}" removed from database.`);
+      setDeleteFaculty(null);
+      await loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to delete staff record";
+      showToast("Error: " + msg);
+    } finally {
+      
+    }
   };
 
   const clearAllFilters = () => {
@@ -233,7 +455,7 @@ export const FacultyView: React.FC = () => {
                   Faculty & Staff Management
                 </h1>
                 <span className="hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  Phase 2 Active
+                  Live SQLite Database • AY 2026 – 27
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
@@ -244,12 +466,13 @@ export const FacultyView: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={handleResetDemo}
-                className="inline-flex items-center space-x-1.5 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
-                title="Restore default 10 fictional faculty records"
+                onClick={loadData}
+                disabled={isLoading}
+                className="inline-flex items-center space-x-1.5 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                title="Refresh records from SQLite database"
               >
-                <Icon name="arrow-path" className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Reset Demo Staff</span>
+                <Icon name="arrow-path" className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-[#1657D9]" : ""}`} />
+                <span className="hidden sm:inline">Refresh Live Records</span>
               </button>
 
               <button
@@ -277,6 +500,65 @@ export const FacultyView: React.FC = () => {
           </div>
         </div>
       </AnimatedReveal>
+
+      {/* Prototype Data Reconciliation Alert Banner */}
+      {prototypeRecords.length > 0 && showReconcileBanner && (
+        <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start space-x-3">
+            <div className="p-2 rounded-xl bg-amber-100 text-amber-800 shrink-0 mt-0.5">
+              <Icon name="archive-box" className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-amber-950">
+                Prototype Browser Records Detected ({prototypeRecords.length} records in localStorage)
+              </h4>
+              <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                The SQLite database is now active as the authoritative system of record. You can safely inspect and reconcile legacy prototype faculty records. Browser storage will not be altered.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 shrink-0 self-end sm:self-center">
+            <button
+              type="button"
+              onClick={() => setReconcileModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-[#1657D9] hover:bg-[#1248B8] text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer flex items-center space-x-1"
+            >
+              <Icon name="arrow-path" className="h-3.5 w-3.5" />
+              <span>Review & Reconcile</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowReconcileBanner(false)}
+              className="p-1.5 rounded-lg text-amber-700 hover:text-amber-900 hover:bg-amber-100/60 transition-colors cursor-pointer"
+              title="Dismiss Banner"
+              aria-label="Dismiss banner"
+            >
+              <Icon name="x-mark" className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Server Connection Error Alert */}
+      {serverError && (
+        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 shadow-2xs flex items-center justify-between gap-3 text-red-900">
+          <div className="flex items-center space-x-3 text-xs">
+            <Icon name="exclamation-circle" className="h-5 w-5 text-red-600 shrink-0" />
+            <div>
+              <span className="font-bold">Database Connection Warning: </span>
+              <span>{serverError}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={loadData}
+            className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shrink-0 cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Metric Overview Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -368,11 +650,19 @@ export const FacultyView: React.FC = () => {
               className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#1657D9]"
             >
               <option value="all">All Departments</option>
-              <option value="Hospitality & Culinary Arts">Hospitality & Culinary Arts</option>
-              <option value="Computing & Data Science">Computing & Data Science</option>
-              <option value="F&B Service & Operations">F&B Service & Operations</option>
-              <option value="Bakery & Confectionery">Bakery & Confectionery</option>
-              <option value="Administrative & Student Affairs">Administrative & Student Affairs</option>
+              {departments && departments.length > 0 ? (
+                departments.map((d) => (
+                  <option key={d.id} value={d.name}>
+                    {d.name} ({d.code})
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="Hospitality & Culinary Arts">Hospitality & Culinary Arts</option>
+                  <option value="Technology & Computing">Technology & Computing</option>
+                  <option value="Administrative & Student Affairs">Administrative & Student Affairs</option>
+                </>
+              )}
             </select>
           </div>
 
@@ -700,6 +990,7 @@ export const FacultyView: React.FC = () => {
         isOpen={formModalOpen}
         mode={formMode}
         initialData={formFaculty}
+        departments={departments}
         onClose={() => {
           setFormModalOpen(false);
           setFormFaculty(null);
@@ -718,6 +1009,16 @@ export const FacultyView: React.FC = () => {
         isOpen={!!deleteFaculty}
         onClose={() => setDeleteFaculty(null)}
         onConfirm={handleDeleteFaculty}
+      />
+
+      {/* Prototype Data Reconciliation Modal */}
+      <PrototypeReconciliationModal
+        isOpen={reconcileModalOpen}
+        entityName="Faculty"
+        storageKey={STORAGE_KEY}
+        items={reconciliationItems}
+        onClose={() => setReconcileModalOpen(false)}
+        onImport={handleReconcileImport}
       />
     </div>
   );

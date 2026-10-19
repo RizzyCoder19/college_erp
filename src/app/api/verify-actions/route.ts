@@ -14,7 +14,7 @@ const dummyStaff = {} as unknown as CreateStaffDTO;
 // Internal verification route - accessible in development mode only
 export async function GET() {
   if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "Disabled in production" }, { status: 403 });
+    return new NextResponse(null, { status: 404 });
   }
 
   const boundaryResults: Array<{ name: string; passed: boolean; code?: string; details?: string }> = [];
@@ -67,65 +67,74 @@ export async function GET() {
   });
 
   // --- 2. Role-based least privilege boundary enforcement with isolated test user ---
-  const testStudentUser = await prisma.userAccount.create({
-    data: {
-      email: `boundary.test.student.${Date.now()}@sample.rpihm.ac.in`,
-      fullName: "Boundary Test Student",
-      passwordHash: "x".repeat(128),
-      salt: "y".repeat(32),
-      role: "STUDENT_VIEWER",
-      isActive: true,
-    },
-  });
+  let testStudentUser: { id: string } | null = null;
+  let studentToken: string | null = null;
+  try {
+    testStudentUser = await prisma.userAccount.create({
+      data: {
+        email: `boundary.test.student.${Date.now()}@sample.rpihm.ac.in`,
+        fullName: "Boundary Test Student",
+        passwordHash: "x".repeat(128),
+        salt: "y".repeat(32),
+        role: "STUDENT_VIEWER",
+        isActive: true,
+      },
+    });
 
-  const { token: studentToken } = await createSession(testStudentUser.id);
-  cookieStore.set(SESSION_COOKIE_NAME, studentToken);
+    const sessionRes = await createSession(testStudentUser.id);
+    studentToken = sessionRes.token;
+    cookieStore.set(SESSION_COOKIE_NAME, studentToken);
 
-  // Authenticated as STUDENT_VIEWER:
-  // - READ_STUDENTS should succeed at the guard level
-  const studentReadRes = await getStudentsAction();
-  boundaryResults.push({
-    name: "STUDENT_VIEWER permitted to read students",
-    passed: studentReadRes.success === true,
-  });
+    // Authenticated as STUDENT_VIEWER:
+    // - READ_STUDENTS should succeed at the guard level
+    const studentReadRes = await getStudentsAction();
+    boundaryResults.push({
+      name: "STUDENT_VIEWER permitted to read students",
+      passed: studentReadRes.success === true,
+    });
 
-  // - WRITE_STUDENTS should be blocked with FORBIDDEN
-  const studentWriteRes = await createStudentAction(dummyStudent);
-  boundaryResults.push({
-    name: "STUDENT_VIEWER blocked from createStudentAction (FORBIDDEN)",
-    passed: !studentWriteRes.success && studentWriteRes.code === "FORBIDDEN",
-    code: studentWriteRes.code,
-  });
+    // - WRITE_STUDENTS should be blocked with FORBIDDEN
+    const studentWriteRes = await createStudentAction(dummyStudent);
+    boundaryResults.push({
+      name: "STUDENT_VIEWER blocked from createStudentAction (FORBIDDEN)",
+      passed: !studentWriteRes.success && studentWriteRes.code === "FORBIDDEN",
+      code: studentWriteRes.code,
+    });
 
-  // - DELETE_STUDENTS should be blocked with FORBIDDEN
-  const studentDeleteRes = await deleteStudentAction("test-id");
-  boundaryResults.push({
-    name: "STUDENT_VIEWER blocked from deleteStudentAction (FORBIDDEN)",
-    passed: !studentDeleteRes.success && studentDeleteRes.code === "FORBIDDEN",
-    code: studentDeleteRes.code,
-  });
+    // - DELETE_STUDENTS should be blocked with FORBIDDEN
+    const studentDeleteRes = await deleteStudentAction("test-id");
+    boundaryResults.push({
+      name: "STUDENT_VIEWER blocked from deleteStudentAction (FORBIDDEN)",
+      passed: !studentDeleteRes.success && studentDeleteRes.code === "FORBIDDEN",
+      code: studentDeleteRes.code,
+    });
 
-  // - WRITE_FACULTY should be blocked with FORBIDDEN
-  const studentStaffWriteRes = await createStaffAction(dummyStaff);
-  boundaryResults.push({
-    name: "STUDENT_VIEWER blocked from createStaffAction (FORBIDDEN)",
-    passed: !studentStaffWriteRes.success && studentStaffWriteRes.code === "FORBIDDEN",
-    code: studentStaffWriteRes.code,
-  });
+    // - WRITE_FACULTY should be blocked with FORBIDDEN
+    const studentStaffWriteRes = await createStaffAction(dummyStaff);
+    boundaryResults.push({
+      name: "STUDENT_VIEWER blocked from createStaffAction (FORBIDDEN)",
+      passed: !studentStaffWriteRes.success && studentStaffWriteRes.code === "FORBIDDEN",
+      code: studentStaffWriteRes.code,
+    });
 
-  // - DELETE_FACULTY should be blocked with FORBIDDEN
-  const studentStaffDeleteRes = await deleteStaffAction("test-id");
-  boundaryResults.push({
-    name: "STUDENT_VIEWER blocked from deleteStaffAction (FORBIDDEN)",
-    passed: !studentStaffDeleteRes.success && studentStaffDeleteRes.code === "FORBIDDEN",
-    code: studentStaffDeleteRes.code,
-  });
-
-  // Clean up test user & session
-  await revokeSessionToken(studentToken);
-  await prisma.session.deleteMany({ where: { userId: testStudentUser.id } });
-  await prisma.userAccount.delete({ where: { id: testStudentUser.id } });
-  cookieStore.delete(SESSION_COOKIE_NAME);
+    // - DELETE_FACULTY should be blocked with FORBIDDEN
+    const studentStaffDeleteRes = await deleteStaffAction("test-id");
+    boundaryResults.push({
+      name: "STUDENT_VIEWER blocked from deleteStaffAction (FORBIDDEN)",
+      passed: !studentStaffDeleteRes.success && studentStaffDeleteRes.code === "FORBIDDEN",
+      code: studentStaffDeleteRes.code,
+    });
+  } finally {
+    // Guaranteed cleanup of test user & session
+    if (studentToken) {
+      await revokeSessionToken(studentToken);
+    }
+    if (testStudentUser) {
+      await prisma.session.deleteMany({ where: { userId: testStudentUser.id } });
+      await prisma.userAccount.delete({ where: { id: testStudentUser.id } });
+    }
+    cookieStore.delete(SESSION_COOKIE_NAME);
+  }
 
   return NextResponse.json({
     success: true,
