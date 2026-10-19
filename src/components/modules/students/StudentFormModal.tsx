@@ -59,6 +59,33 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isOpen) {
+      setFullName(initialData?.fullName || "");
+      setPrn(initialData?.prn || "");
+      setProgrammeId(
+        initialData?.programmeId || (effectiveProgrammes.length > 0 ? effectiveProgrammes[0].id : "prog-ds")
+      );
+      setSemester(initialData?.semester || 1);
+      setYearGroup(initialData?.yearGroup || "FY");
+      setDivision(initialData?.division || "Div A");
+      setEmail(initialData?.email || "");
+      setPhone(initialData?.phone || "+91 ");
+      setEnrollmentStatus(initialData?.enrollmentStatus || "Active");
+      setFeeStatus(initialData?.feeStatus || "Paid");
+      setAttendanceRate(initialData?.attendanceRate ?? 88);
+      setMentorFaculty(initialData?.mentorFaculty || "Prof. Snehal Kulkarni");
+      setGuardianName(initialData?.guardianName || "");
+      setGuardianRelationship(initialData?.guardianRelationship || "Father");
+      setGuardianPhone(initialData?.guardianPhone || "+91 ");
+      setDateOfBirth(initialData?.dateOfBirth || "2006-05-15");
+      setBloodGroup(initialData?.bloodGroup || "B+");
+      setErrors({});
+      setServerError(null);
+      setIsSubmitting(false);
+    }
+  }, [isOpen, initialData, effectiveProgrammes]);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen && !isSubmitting) {
         onClose();
@@ -107,8 +134,8 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (isSubmitting) return;
     if (!validate()) return;
 
@@ -543,6 +570,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
             <button
               type="submit"
               form="student-form"
+              onClick={handleSubmit}
               disabled={isSubmitting}
               className="px-5 py-2 text-xs font-semibold text-white bg-[#1657D9] hover:bg-[#1248B8] disabled:opacity-60 disabled:cursor-not-allowed rounded-xl transition-all shadow-xs flex items-center space-x-2 cursor-pointer"
             >
