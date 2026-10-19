@@ -20,18 +20,28 @@ export interface SessionVerificationResult {
 }
 
 /**
- * Creates a cryptographically random session token and persists the session to the database.
+ * Derives a deterministic SHA-256 hash of the raw session token for secure storage at rest.
+ * Prevents database leaks from yielding re-playable session tokens.
+ */
+export function hashSessionToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+/**
+ * Creates a cryptographically random session token (32 bytes / 64 hex characters),
+ * stores its SHA-256 hash at rest, and returns the raw token to be delivered via HTTP-only cookie.
  */
 export async function createSession(
   userId: string,
   metadata?: { ipAddress?: string; userAgent?: string }
 ): Promise<{ token: string; session: Session }> {
   const token = crypto.randomBytes(32).toString("hex");
+  const tokenHash = hashSessionToken(token);
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
   const session = await prisma.session.create({
     data: {
-      token,
+      tokenHash,
       userId,
       expiresAt,
       ipAddress: metadata?.ipAddress,
@@ -43,8 +53,8 @@ export async function createSession(
 }
 
 /**
- * Verifies a session token against the database.
- * Returns null if the token does not exist, has expired, or has been revoked.
+ * Verifies a raw session token against the database by checking its SHA-256 hash.
+ * Returns null if the token does not exist, has expired, has been revoked, or belongs to an inactive user.
  */
 export async function verifySessionToken(token: string): Promise<SessionVerificationResult | null> {
   if (!token || typeof token !== "string" || token.length !== 64) {
@@ -52,8 +62,9 @@ export async function verifySessionToken(token: string): Promise<SessionVerifica
   }
 
   try {
+    const tokenHash = hashSessionToken(token);
     const session = await prisma.session.findUnique({
-      where: { token },
+      where: { tokenHash },
       include: {
         user: true,
       },
@@ -94,13 +105,14 @@ export async function verifySessionToken(token: string): Promise<SessionVerifica
 }
 
 /**
- * Revokes an active session by token.
+ * Revokes an active session by matching its hashed token.
  */
 export async function revokeSessionToken(token: string): Promise<boolean> {
-  if (!token) return false;
+  if (!token || typeof token !== "string") return false;
   try {
+    const tokenHash = hashSessionToken(token);
     await prisma.session.updateMany({
-      where: { token, revokedAt: null },
+      where: { tokenHash, revokedAt: null },
       data: { revokedAt: new Date() },
     });
     return true;

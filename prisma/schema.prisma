@@ -229,7 +229,7 @@ model UserAccount {
 
 model Session {
   id        String      @id @default(uuid())
-  token     String      @unique
+  tokenHash String      @unique
   userId    String
   user      UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
@@ -239,6 +239,6 @@ model Session {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
-  @@index([token])
+  @@index([tokenHash])
   @@index([userId])
 }
