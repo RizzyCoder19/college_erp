@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Icon } from "@/components/common/Icon";
 import { StudentRecord, StudentStatus, FeeStatus } from "@/types/student";
 import { ACADEMIC_PROGRAMMES } from "@/data/mockData";
+import { getProgrammeDetailsAction } from "@/lib/actions/academics";
 
 interface StudentFormModalProps {
   isOpen: boolean;
@@ -50,7 +51,54 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
 
   const [semester, setSemester] = useState<number>(initialData?.semester || 1);
   const [yearGroup, setYearGroup] = useState<"FY" | "SY" | "TY">(initialData?.yearGroup || "FY");
-  const [division, setDivision] = useState<"Div A" | "Div B" | "Div C">(initialData?.division || "Div A");
+  const [division, setDivision] = useState<string>(initialData?.division || "Div A");
+  const [availableDivisions, setAvailableDivisions] = useState<Array<{ id: string; name: string; maxCapacity: number }>>([]);
+  const [isLoadingDivisions, setIsLoadingDivisions] = useState(false);
+
+  // Dynamically load real provisioned divisions for the selected programme and semester
+  useEffect(() => {
+    let active = true;
+    async function loadDivisions() {
+      if (!programmeId) return;
+      setIsLoadingDivisions(true);
+      try {
+        const res = await getProgrammeDetailsAction(programmeId);
+        if (active && res.success && res.data) {
+          const sem = res.data.semesters.find((s) => s.semesterNumber === Number(semester));
+          const divs = sem?.divisions || [];
+          setAvailableDivisions(divs);
+          // If current division not in list and we have valid divisions, update division
+          if (divs.length > 0 && !divs.some((d) => d.name === division)) {
+            // If editing an existing student, keep their division if unmodified, else snap to first
+            if (!initialData || initialData.programmeId !== programmeId || initialData.semester !== Number(semester)) {
+              setDivision(divs[0].name);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load semester divisions", err);
+      } finally {
+        if (active) setIsLoadingDivisions(false);
+      }
+    }
+    loadDivisions();
+    return () => {
+      active = false;
+    };
+  }, [programmeId, semester, initialData]);
+
+  // Compute placement change type
+  const isProgChanged = Boolean(initialData && initialData.programmeId && initialData.programmeId !== programmeId);
+  const isSemChanged = Boolean(initialData && initialData.semester !== Number(semester));
+  const isDivChanged = Boolean(initialData && initialData.division !== division);
+
+  const placementMode: "NEW" | "IDENTITY_ONLY" | "DIVISION_UPDATE" | "PROGRESSION" = !initialData
+    ? "NEW"
+    : !isProgChanged && !isSemChanged && !isDivChanged
+    ? "IDENTITY_ONLY"
+    : !isProgChanged && !isSemChanged && isDivChanged
+    ? "DIVISION_UPDATE"
+    : "PROGRESSION";
   const [email, setEmail] = useState(initialData?.email || "");
   const [phone, setPhone] = useState(initialData?.phone || "+91 ");
   const [enrollmentStatus, setEnrollmentStatus] = useState<StudentStatus>(initialData?.enrollmentStatus || "Active");
@@ -153,6 +201,13 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
     if (isSubmitting) return;
     if (!validate()) return;
 
+    if (placementMode !== "IDENTITY_ONLY" && !isLoadingDivisions && availableDivisions.length === 0) {
+      setServerError(
+        `Semester ${semester} of "${selectedProg?.name || 'the selected programme'}" has no divisions provisioned in the database. Academic administrators must provision a division before students can be placed in this semester.`
+      );
+      return;
+    }
+
     setServerError(null);
     setIsSubmitting(true);
 
@@ -176,7 +231,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
         department: deptName,
         semester: Number(semester),
         yearGroup,
-        division,
+        division: division as "Div A" | "Div B" | "Div C",
         admissionDate: initialData?.admissionDate || "24 Jul 2026",
         enrollmentStatus,
         feeStatus: "Not configured" as FeeStatus,
@@ -266,10 +321,56 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
 
           {/* Section 1: Academic Placement */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#1657D9] flex items-center space-x-1.5 border-b border-slate-100 pb-1.5">
-              <Icon name="academic-cap" className="h-4 w-4" />
-              <span>1. Institutional Academic Placement</span>
-            </h4>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#1657D9] flex items-center space-x-1.5">
+                <Icon name="academic-cap" className="h-4 w-4" />
+                <span>1. Institutional Academic Placement</span>
+              </h4>
+              {initialData && (
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                  placementMode === "IDENTITY_ONLY"
+                    ? "bg-slate-100 text-slate-600"
+                    : placementMode === "DIVISION_UPDATE"
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-amber-100 text-amber-800"
+                }`}>
+                  {placementMode === "IDENTITY_ONLY" && "Identity-Only Edit"}
+                  {placementMode === "DIVISION_UPDATE" && "Division Correction"}
+                  {placementMode === "PROGRESSION" && "Academic Progression"}
+                </span>
+              )}
+            </div>
+
+            {/* Placement Transition Indicator for Existing Students */}
+            {initialData && (
+              <div className={`p-3 rounded-xl border text-xs flex items-start space-x-2.5 ${
+                placementMode === "IDENTITY_ONLY"
+                  ? "bg-slate-50/80 border-slate-200 text-slate-600"
+                  : placementMode === "DIVISION_UPDATE"
+                  ? "bg-blue-50/80 border-blue-200 text-blue-800"
+                  : "bg-amber-50/80 border-amber-200 text-amber-900"
+              }`}>
+                <Icon
+                  name={placementMode === "IDENTITY_ONLY" ? "check-circle" : "academic-cap"}
+                  className="h-4 w-4 shrink-0 mt-0.5"
+                />
+                <div className="flex-1 space-y-0.5">
+                  <span className="font-bold block text-[11px]">
+                    {placementMode === "IDENTITY_ONLY" && "Academic Placement Unchanged:"}
+                    {placementMode === "DIVISION_UPDATE" && "Active Division Reassignment:"}
+                    {placementMode === "PROGRESSION" && "Academic Progression / Placement Transition:"}
+                  </span>
+                  <p className="text-[11px] leading-relaxed">
+                    {placementMode === "IDENTITY_ONLY" &&
+                      "Editing name, contact, guardian, or operations details preserves the existing enrolment record untouched."}
+                    {placementMode === "DIVISION_UPDATE" &&
+                      `Reassigning division from ${initialData.division} to ${division} within the active semester without archiving enrolment history.`}
+                    {placementMode === "PROGRESSION" &&
+                      `Student will advance from Semester ${initialData.semester} (${initialData.division}) to Semester ${semester} (${division}). Previous placement will be safely preserved in institutional history as COMPLETED.`}
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
@@ -289,7 +390,9 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-600 font-semibold mb-1">Semester & Cohort</label>
+                <label className="block text-slate-600 font-semibold mb-1">
+                  Semester & Cohort {isLoadingDivisions && <span className="text-slate-400 font-normal">(verifying...)</span>}
+                </label>
                 <div className="grid grid-cols-2 gap-2">
                   <select
                     value={semester}
@@ -310,15 +413,27 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
 
                   <select
                     value={division}
-                    disabled={isSubmitting}
-                    onChange={(e) => setDivision(e.target.value as "Div A" | "Div B" | "Div C")}
+                    disabled={isSubmitting || availableDivisions.length === 0}
+                    onChange={(e) => setDivision(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium disabled:opacity-60"
                   >
-                    <option value="Div A">Div A</option>
-                    <option value="Div B">Div B</option>
-                    <option value="Div C">Div C</option>
+                    {availableDivisions.length > 0 ? (
+                      availableDivisions.map((d) => (
+                        <option key={d.id} value={d.name}>
+                          {d.name} (Cap: {d.maxCapacity})
+                        </option>
+                      ))
+                    ) : (
+                      <option value={division}>{division} (No divisions provisioned)</option>
+                    )}
                   </select>
                 </div>
+                {availableDivisions.length === 0 && !isLoadingDivisions && (
+                  <p className="text-[10px] text-amber-700 mt-1 flex items-center space-x-1">
+                    <Icon name="exclamation-circle" className="h-3 w-3 shrink-0" />
+                    <span>No divisions provisioned for Semester {semester}. Progression blocked until division exists.</span>
+                  </p>
+                )}
               </div>
 
               <div>

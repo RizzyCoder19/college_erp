@@ -225,37 +225,98 @@ export class FacultyRepository {
   }
 
   /**
-   * Assigns a teaching subject to a faculty member with atomic consistency.
+   * Assigns a teaching subject to a faculty member with relational integrity and compatibility verification.
+   * Enforces that:
+   * 1. Staff exists in institutional database.
+   * 2. Subject exists in curriculum database.
+   * 3. If divisionId is provided, the division belongs to the exact same semester as the subject.
    */
   static async assignTeachingSubject(
     staffId: string,
     subjectId: string,
-    divisionId: string,
+    divisionId?: string | null,
     weeklyHours: number = 4
   ): Promise<Result<TeachingAssignment>> {
     try {
-      const assignment = await prisma.teachingAssignment.upsert({
+      // 1. Verify staff exists
+      const staff = await prisma.staff.findUnique({ where: { id: staffId } });
+      if (!staff) {
+        return { success: false, error: "Staff member not found in database.", code: "STAFF_NOT_FOUND" };
+      }
+
+      // 2. Verify subject exists
+      const subject = await prisma.subject.findUnique({
+        where: { id: subjectId },
+        include: { semester: { include: { programme: true } } },
+      });
+      if (!subject) {
+        return { success: false, error: "Subject not found in curriculum database.", code: "SUBJECT_NOT_FOUND" };
+      }
+
+      // 3. Verify division compatibility
+      const cleanDivisionId: string | null = divisionId || null;
+      if (cleanDivisionId) {
+        const division = await prisma.division.findUnique({
+          where: { id: cleanDivisionId },
+          include: { semester: true },
+        });
+        if (!division) {
+          return { success: false, error: "Specified division not found in database.", code: "DIVISION_NOT_FOUND" };
+        }
+        if (division.semesterId !== subject.semesterId) {
+          return {
+            success: false,
+            error: `Relational incompatibility: Division "${division.name}" belongs to Semester ${division.semester.semesterNumber}, whereas Subject "${subject.title}" (${subject.code}) belongs to Semester ${subject.semester.semesterNumber}.`,
+            code: "SUBJECT_DIVISION_SEMESTER_MISMATCH",
+          };
+        }
+      }
+
+      const existing = await prisma.teachingAssignment.findFirst({
         where: {
-          staffId_subjectId_divisionId: {
-            staffId,
-            subjectId,
-            divisionId,
-          },
-        },
-        update: {
-          weeklyHours,
-        },
-        create: {
           staffId,
           subjectId,
-          divisionId,
-          weeklyHours,
+          divisionId: cleanDivisionId,
         },
       });
+
+      let assignment: TeachingAssignment;
+      if (existing) {
+        assignment = await prisma.teachingAssignment.update({
+          where: { id: existing.id },
+          data: { weeklyHours },
+        });
+      } else {
+        assignment = await prisma.teachingAssignment.create({
+          data: {
+            staffId,
+            subjectId,
+            divisionId: cleanDivisionId,
+            weeklyHours,
+          },
+        });
+      }
 
       return { success: true, data: assignment };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to assign teaching subject";
+      return { success: false, error: message };
+    }
+  }
+
+  /**
+   * Removes a teaching assignment by ID.
+   */
+  static async removeTeachingAssignment(id: string): Promise<Result<boolean>> {
+    try {
+      const existing = await prisma.teachingAssignment.findUnique({ where: { id } });
+      if (!existing) {
+        return { success: false, error: "Teaching assignment not found.", code: "NOT_FOUND" };
+      }
+      await prisma.teachingAssignment.delete({ where: { id } });
+      return { success: true, data: true };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to remove teaching assignment";
       return { success: false, error: message };
     }
   }

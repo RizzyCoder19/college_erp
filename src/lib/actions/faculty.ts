@@ -31,12 +31,18 @@ export async function updateStaffAction(id: string, data: UpdateStaffDTO): Promi
 export async function assignTeachingSubjectAction(
   staffId: string,
   subjectId: string,
-  divisionId: string,
+  divisionId?: string | null,
   weeklyHours?: number
 ) {
   const guard = await requirePermission("WRITE_FACULTY");
   if (!guard.success) return guard as Result<never>;
   return FacultyRepository.assignTeachingSubject(staffId, subjectId, divisionId, weeklyHours);
+}
+
+export async function removeTeachingAssignmentAction(assignmentId: string) {
+  const guard = await requirePermission("WRITE_FACULTY");
+  if (!guard.success) return guard as Result<never>;
+  return FacultyRepository.removeTeachingAssignment(assignmentId);
 }
 
 export async function deleteStaffAction(id: string) {

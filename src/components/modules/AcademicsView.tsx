@@ -12,6 +12,11 @@ import {
   getCurrentAcademicYearAction,
 } from "@/lib/actions/academics";
 import {
+  getStaffAction,
+  assignTeachingSubjectAction,
+  removeTeachingAssignmentAction,
+} from "@/lib/actions/faculty";
+import {
   AcademicProgrammeDTO,
   ProgrammeDetails,
   DepartmentWithCounts,
@@ -37,16 +42,33 @@ export const AcademicsView: React.FC = () => {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [selectedSemesterIndex, setSelectedSemesterIndex] = useState(0);
 
+  // Administrative Faculty Teaching Assignment Workflow
+  const [staffList, setStaffList] = useState<Array<{ id: string; fullName: string; designation: string; department?: { name: string } | null }>>([]);
+  const [assignModalSubject, setAssignModalSubject] = useState<{ id: string; code: string; title: string; semesterId: string } | null>(null);
+  const [assignModalSemesterNumber, setAssignModalSemesterNumber] = useState<number>(1);
+  const [assignModalDivisions, setAssignModalDivisions] = useState<Array<{ id: string; name: string; maxCapacity: number }>>([]);
+  const [selectedStaffId, setSelectedStaffId] = useState<string>("");
+  const [selectedDivisionId, setSelectedDivisionId] = useState<string>("");
+  const [weeklyHours, setWeeklyHours] = useState<number>(4);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [assignError, setAssignError] = useState<string | null>(null);
+  const [actionSuccessToast, setActionSuccessToast] = useState<string | null>(null);
+
   // Load live programmes and departments from SQLite
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setServerError(null);
     try {
-      const [progRes, deptRes, ayRes] = await Promise.all([
+      const [progRes, deptRes, ayRes, staffRes] = await Promise.all([
         getProgrammesAction(),
         getDepartmentsAction(),
         getCurrentAcademicYearAction(),
+        getStaffAction(),
       ]);
+
+      if (staffRes.success && staffRes.data) {
+        setStaffList(staffRes.data.items);
+      }
 
       if (!progRes.success) {
         setServerError(progRes.error || "Failed to load academic programmes.");
@@ -72,6 +94,78 @@ export const AcademicsView: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Faculty Assignment Handlers
+  const handleOpenAssignModal = (
+    subj: { id: string; code: string; title: string; semesterId: string },
+    sem: { semesterNumber: number; divisions?: Array<{ id: string; name: string; maxCapacity: number }> }
+  ) => {
+    setAssignModalSubject(subj);
+    setAssignModalSemesterNumber(sem.semesterNumber);
+    setAssignModalDivisions(sem.divisions || []);
+    setSelectedStaffId(staffList.length > 0 ? staffList[0].id : "");
+    setSelectedDivisionId(""); // Default to all divisions / lecture
+    setWeeklyHours(4);
+    setAssignError(null);
+  };
+
+  const handleCloseAssignModal = () => {
+    setAssignModalSubject(null);
+    setAssignError(null);
+  };
+
+  const handleSaveAssignment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignModalSubject || !selectedStaffId) return;
+
+    setIsAssigning(true);
+    setAssignError(null);
+
+    try {
+      const res = await assignTeachingSubjectAction(
+        selectedStaffId,
+        assignModalSubject.id,
+        selectedDivisionId || null,
+        weeklyHours
+      );
+
+      if (!res.success) {
+        setAssignError(res.error || "Failed to create teaching assignment.");
+      } else {
+        setActionSuccessToast(`Teaching assignment registered for ${assignModalSubject.code}.`);
+        handleCloseAssignModal();
+        if (selectedProgrammeId) {
+          handleInspectProgramme(selectedProgrammeId);
+        }
+        setTimeout(() => setActionSuccessToast(null), 4000);
+      }
+    } catch (err) {
+      setAssignError(err instanceof Error ? err.message : "Database connection error.");
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleRemoveAssignment = async (taId: string, staffName: string, subjectTitle: string) => {
+    if (!confirm(`Are you sure you want to remove ${staffName} from teaching ${subjectTitle}?`)) {
+      return;
+    }
+
+    try {
+      const res = await removeTeachingAssignmentAction(taId);
+      if (!res.success) {
+        alert(res.error || "Failed to remove teaching assignment.");
+      } else {
+        setActionSuccessToast(`Removed faculty assignment for ${staffName}.`);
+        if (selectedProgrammeId) {
+          handleInspectProgramme(selectedProgrammeId);
+        }
+        setTimeout(() => setActionSuccessToast(null), 4000);
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Error removing assignment.");
+    }
+  };
 
   // Load detailed structure when a programme is selected
   const handleInspectProgramme = useCallback(async (id: string) => {
@@ -838,8 +932,22 @@ export const AcademicsView: React.FC = () => {
                                       </div>
                                     </div>
 
-                                    {/* Assigned Faculty */}
-                                    <div className="pt-2 border-t border-slate-100">
+                                    {/* Assigned Faculty Header & Administrative Assign Action */}
+                                    <div className="pt-2 border-t border-slate-100 space-y-2">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1">
+                                          <Icon name="users" className="w-3 h-3 text-[#1657D9]" />
+                                          <span>Faculty Assignments</span>
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenAssignModal(subj, activeSem)}
+                                          className="px-2 py-0.5 rounded text-[10px] font-bold text-[#1657D9] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center space-x-1 cursor-pointer"
+                                        >
+                                          <span>+ Assign Faculty</span>
+                                        </button>
+                                      </div>
+
                                       {subj.teachingAssignments && subj.teachingAssignments.length > 0 ? (
                                         <div className="space-y-1.5">
                                           {subj.teachingAssignments.map((ta) => (
@@ -850,22 +958,43 @@ export const AcademicsView: React.FC = () => {
                                                 </div>
                                                 <div>
                                                   <span className="font-semibold text-slate-800 block text-xs">{ta.staff.fullName}</span>
-                                                  <span className="text-[10px] text-slate-400">{ta.staff.designation} • {ta.weeklyHours} hrs/wk</span>
+                                                  <span className="text-[10px] text-slate-500">
+                                                    {ta.division ? `Div ${ta.division.name}` : "All Divisions / Theory"} • {ta.weeklyHours} hrs/wk
+                                                  </span>
                                                 </div>
                                               </div>
-                                              <a
-                                                href={`/modules/faculty?staffId=${ta.staff.id}`}
-                                                className="px-2 py-1 rounded text-[11px] font-medium text-[#1657D9] bg-white border border-blue-200 hover:bg-blue-50 transition-colors"
-                                              >
-                                                View Faculty
-                                              </a>
+                                              <div className="flex items-center space-x-1.5">
+                                                <a
+                                                  href={`/modules/faculty?staffId=${ta.staff.id}`}
+                                                  className="px-2 py-1 rounded text-[10px] font-medium text-[#1657D9] bg-white border border-blue-200 hover:bg-blue-50 transition-colors"
+                                                >
+                                                  Profile
+                                                </a>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleRemoveAssignment(ta.id, ta.staff.fullName, subj.title)}
+                                                  className="px-2 py-1 rounded text-[10px] font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 transition-colors cursor-pointer"
+                                                  title="Unassign Faculty"
+                                                >
+                                                  Remove
+                                                </button>
+                                              </div>
                                             </div>
                                           ))}
                                         </div>
                                       ) : (
-                                        <div className="text-[11px] text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-200/60 flex items-center space-x-1.5">
-                                          <Icon name="exclamation-circle" className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                          <span>No faculty assignment registered in database</span>
+                                        <div className="text-[11px] text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-200/60 flex items-center justify-between">
+                                          <div className="flex items-center space-x-1.5">
+                                            <Icon name="exclamation-circle" className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                            <span>No faculty assignment registered</span>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenAssignModal(subj, activeSem)}
+                                            className="text-[10px] font-semibold text-[#1657D9] underline cursor-pointer"
+                                          >
+                                            Assign Now
+                                          </button>
                                         </div>
                                       )}
                                     </div>
@@ -960,6 +1089,134 @@ export const AcademicsView: React.FC = () => {
         </div>
       )}
 
+      {/* Action Success Toast */}
+      {actionSuccessToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg border border-slate-700 flex items-center space-x-2 animate-fade-in">
+          <Icon name="check-circle" className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{actionSuccessToast}</span>
+        </div>
+      )}
+
+      {/* Assign Faculty Administrative Modal */}
+      {assignModalSubject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+              <div>
+                <h3 className="text-sm font-bold text-slate-800 flex items-center space-x-1.5">
+                  <Icon name="academic-cap" className="w-4 h-4 text-[#1657D9]" />
+                  <span>Assign Teaching Faculty</span>
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {assignModalSubject.code}: {assignModalSubject.title} (Semester {assignModalSemesterNumber})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseAssignModal}
+                disabled={isAssigning}
+                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <Icon name="x-mark" className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAssignment} className="p-5 space-y-4 text-xs text-slate-700 overflow-y-auto">
+              {assignError && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-start space-x-2">
+                  <Icon name="exclamation-circle" className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <span className="text-[11px] leading-relaxed">{assignError}</span>
+                </div>
+              )}
+
+              <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200 text-[11px] text-blue-900 flex items-start space-x-2">
+                <Icon name="check-circle" className="w-4 h-4 text-[#1657D9] shrink-0 mt-0.5" />
+                <p>
+                  Relational Verification: Only valid faculty members and compatible division cohorts belonging to Semester {assignModalSemesterNumber} can be assigned.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  Select Faculty Member <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedStaffId}
+                  disabled={isAssigning}
+                  onChange={(e) => setSelectedStaffId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs font-medium cursor-pointer"
+                  required
+                >
+                  {staffList.length === 0 ? (
+                    <option value="">No faculty loaded</option>
+                  ) : (
+                    staffList.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.fullName} ({s.designation}{s.department ? ` - ${s.department.name}` : ""})
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Target Division Cohort</label>
+                <select
+                  value={selectedDivisionId}
+                  disabled={isAssigning}
+                  onChange={(e) => setSelectedDivisionId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs font-medium cursor-pointer"
+                >
+                  <option value="">All Divisions / Theory Lecture (Cohort Wide)</option>
+                  {assignModalDivisions.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      Division {d.name} (Max Capacity: {d.maxCapacity})
+                    </option>
+                  ))}
+                </select>
+                {assignModalDivisions.length === 0 && (
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    No specific divisions provisioned for this semester. Assignment will apply cohort-wide.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Weekly Contact Hours</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={24}
+                  value={weeklyHours}
+                  disabled={isAssigning}
+                  onChange={(e) => setWeeklyHours(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs font-medium"
+                  required
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={handleCloseAssignModal}
+                  disabled={isAssigning}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAssigning || !selectedStaffId}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#1657D9] hover:bg-[#1248B8] transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isAssigning && <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>}
+                  <span>{isAssigning ? "Assigning..." : "Confirm Assignment"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
