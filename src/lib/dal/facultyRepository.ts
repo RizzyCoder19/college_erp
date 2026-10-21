@@ -12,6 +12,11 @@ export interface CreateStaffDTO {
   departmentId: string;
   dateOfJoining: Date;
   status?: string;
+  qualification?: string;
+  specialization?: string;
+  officeLocation?: string;
+  workloadHours?: number;
+  employmentType?: string;
 }
 
 export interface UpdateStaffDTO {
@@ -23,6 +28,11 @@ export interface UpdateStaffDTO {
   category?: string;
   departmentId?: string;
   status?: string;
+  qualification?: string;
+  specialization?: string;
+  officeLocation?: string;
+  workloadHours?: number;
+  employmentType?: string;
 }
 
 export interface StaffFilterParams {
@@ -36,6 +46,7 @@ export interface StaffFilterParams {
 export type StaffWithRelations = Prisma.StaffGetPayload<{
   include: {
     department: true;
+    userAccount: true;
     teachingAssignments: {
       include: {
         subject: true;
@@ -84,6 +95,7 @@ export class FacultyRepository {
           orderBy: { employeeId: "asc" },
           include: {
             department: true,
+            userAccount: true,
             teachingAssignments: {
               include: {
                 subject: true,
@@ -119,6 +131,7 @@ export class FacultyRepository {
         where: { id },
         include: {
           department: true,
+          userAccount: true,
           teachingAssignments: {
             include: {
               subject: true,
@@ -133,6 +146,7 @@ export class FacultyRepository {
           where: { employeeId: id },
           include: {
             department: true,
+            userAccount: true,
             teachingAssignments: {
               include: {
                 subject: true,
@@ -195,6 +209,11 @@ export class FacultyRepository {
           departmentId: dto.departmentId,
           dateOfJoining: dto.dateOfJoining,
           status: dto.status || "ACTIVE",
+          qualification: dto.qualification?.trim() || null,
+          specialization: dto.specialization?.trim() || null,
+          officeLocation: dto.officeLocation?.trim() || null,
+          workloadHours: dto.workloadHours !== undefined ? Number(dto.workloadHours) : null,
+          employmentType: dto.employmentType?.trim() || null,
         },
       });
 
@@ -321,12 +340,18 @@ export class FacultyRepository {
       if (data.departmentId !== undefined) {
         staffUpdate.department = { connect: { id: data.departmentId } };
       }
+      if (data.qualification !== undefined) staffUpdate.qualification = data.qualification ? data.qualification.trim() : null;
+      if (data.specialization !== undefined) staffUpdate.specialization = data.specialization ? data.specialization.trim() : null;
+      if (data.officeLocation !== undefined) staffUpdate.officeLocation = data.officeLocation ? data.officeLocation.trim() : null;
+      if (data.workloadHours !== undefined) staffUpdate.workloadHours = data.workloadHours !== null && !isNaN(Number(data.workloadHours)) ? Number(data.workloadHours) : null;
+      if (data.employmentType !== undefined) staffUpdate.employmentType = data.employmentType ? data.employmentType.trim() : null;
 
       const updated = await prisma.staff.update({
         where: { id: targetId },
         data: staffUpdate,
         include: {
           department: true,
+          userAccount: true,
           teachingAssignments: {
             include: {
               subject: true,

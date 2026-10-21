@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { connection } from "next/server";
 import prisma from "@/lib/db";
 import { Session } from "@prisma/client";
 
@@ -12,6 +13,9 @@ export interface AuthenticatedUser {
   role: string;
   staffId: string | null;
   studentId: string | null;
+  designation?: string | null;
+  departmentName?: string | null;
+  isFirstLogin?: boolean;
 }
 
 export interface SessionVerificationResult {
@@ -66,7 +70,15 @@ export async function verifySessionToken(token: string): Promise<SessionVerifica
     const session = await prisma.session.findUnique({
       where: { tokenHash },
       include: {
-        user: true,
+        user: {
+          include: {
+            staff: {
+              include: {
+                department: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -89,6 +101,7 @@ export async function verifySessionToken(token: string): Promise<SessionVerifica
       return null;
     }
 
+    const staff = (session.user as unknown as { staff?: { designation?: string | null; department?: { name?: string | null } | null } }).staff;
     const user: AuthenticatedUser = {
       id: session.user.id,
       email: session.user.email,
@@ -96,6 +109,9 @@ export async function verifySessionToken(token: string): Promise<SessionVerifica
       role: session.user.role,
       staffId: session.user.staffId,
       studentId: session.user.studentId,
+      designation: staff?.designation || (session.user.role === "SYSTEM_ADMIN" ? "System Administrator" : null),
+      departmentName: staff?.department?.name || null,
+      isFirstLogin: session.user.lastLoginAt === null,
     };
 
     return { session, user };

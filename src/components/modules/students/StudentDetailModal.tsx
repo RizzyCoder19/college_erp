@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect } from "react";
 import Image from "next/image";
@@ -43,17 +43,6 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     }
   };
 
-  const getFeeBadge = (status: string) => {
-    switch (status) {
-      case "Paid":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200";
-      case "Partial":
-        return "bg-amber-50 text-amber-700 border-amber-200";
-      default:
-        return "bg-red-50 text-[#D92534] border-red-200";
-    }
-  };
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
@@ -92,7 +81,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                 <div>
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <span className="font-mono text-xs font-bold text-blue-200 bg-blue-500/20 px-2 py-0.5 rounded border border-blue-400/30">
-                      PRN: {student.prn}
+                      PRN: {student.prn}{student.rollNumber && student.rollNumber !== student.prn ? ` • Roll: ${student.rollNumber}` : ""}
                     </span>
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getStatusBadge(
@@ -101,12 +90,9 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     >
                       {student.enrollmentStatus}
                     </span>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getFeeBadge(
-                        student.feeStatus
-                      )}`}
-                    >
-                      Fee: {student.feeStatus}
+                    {/* Workstream D: Truthful Fee Status */}
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                      Fee: Not Configured
                     </span>
                   </div>
                   <h2 className="text-xl font-bold tracking-tight text-white font-serif">
@@ -152,7 +138,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     : "text-[#D92534]"
                 }`}
               >
-                {student.attendanceRate}%
+                {student.attendanceRate > 0 ? `${student.attendanceRate}%` : "Not Recorded"}
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">
                 Ledger sync pending
@@ -184,27 +170,20 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                 {student.yearGroup} ({student.division})
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">
-                Admitted {student.admissionDate}
+                Enrolled {student.admissionDate}
               </span>
             </div>
 
+            {/* Workstream D: Truthful Fee Status */}
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
               <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
                 Fee Ledger
               </span>
-              <span
-                className={`text-base font-extrabold font-serif ${
-                  student.feeStatus === "Paid"
-                    ? "text-emerald-700"
-                    : student.feeStatus === "Partial"
-                    ? "text-amber-700"
-                    : "text-[#D92534]"
-                }`}
-              >
-                {student.feeStatus}
+              <span className="text-sm font-bold text-slate-600 font-serif block mt-1">
+                Not Configured
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">
-                AY 2026 – 27 Installment
+                Financial records inactive
               </span>
             </div>
           </div>
@@ -226,12 +205,88 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
               </div>
               <div>
                 <span className="text-slate-400 block">Faculty Mentor / Guide</span>
-                <span className="font-medium text-slate-800">{student.mentorFaculty}</span>
+                <span className="font-medium text-slate-800">{student.mentorFaculty || "Not Assigned"}</span>
               </div>
               <div>
-                <span className="text-slate-400 block">Affiliated Body</span>
-                <span className="font-medium text-slate-800">University of Mumbai</span>
+                <span className="text-slate-400 block">Affiliation Status</span>
+                <span className="font-medium text-slate-600 italic">Not configured</span>
               </div>
+            </div>
+          </div>
+
+          {/* Workstream C: Academic Lifecycle & Enrolment History */}
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center justify-between">
+              <span className="flex items-center space-x-1.5">
+                <Icon name="academic-cap" className="h-4 w-4 text-[#1657D9]" />
+                <span>Academic Lifecycle & Enrolment History</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-normal">
+                {student.enrolmentHistory ? student.enrolmentHistory.length : 1} recorded terms
+              </span>
+            </h4>
+
+            <div className="space-y-2">
+              {student.enrolmentHistory && student.enrolmentHistory.length > 0 ? (
+                student.enrolmentHistory.map((item, idx) => (
+                  <div
+                    key={item.id || idx}
+                    className={`p-3.5 rounded-xl border text-xs transition-all ${
+                      item.isCurrent
+                        ? "bg-blue-50/40 border-blue-200/80 shadow-2xs"
+                        : "bg-slate-50/60 border-slate-200"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-slate-900">
+                          Semester {item.semesterNumber} ({item.divisionName})
+                        </span>
+                        <span className="font-mono text-[10px] font-bold text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded">
+                          {item.programmeCode}
+                        </span>
+                        <span className="text-[10px] text-slate-500">
+                          {item.academicYearCode}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1.5">
+                        {item.isCurrent && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Current Placement
+                          </span>
+                        )}
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                          {item.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-[11px] text-slate-600 flex items-center justify-between">
+                      <span>{item.programmeName}</span>
+                      <span className="text-slate-400 text-[10px]">
+                        Enrolled: {item.enrolledAt}
+                      </span>
+                    </div>
+
+                    {/* Workstream E: Surface hierarchy anomaly if present */}
+                    {item.hasHierarchyAnomaly && (
+                      <div className="mt-2.5 p-2.5 rounded-lg bg-amber-50/90 border border-amber-300 text-amber-900 flex items-start space-x-2">
+                        <Icon name="exclamation-circle" className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold block text-[11px]">Enrolment Hierarchy Inconsistency Flagged</span>
+                          <span className="text-[10px] text-amber-800 leading-relaxed block">
+                            {item.anomalyMessage || "Assigned division belongs to a different semester record in active institutional records. Needs administrative review."}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-center text-xs">
+                  No historical enrolments recorded.
+                </div>
+              )}
             </div>
           </div>
 
@@ -252,11 +307,11 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
               </div>
               <div>
                 <span className="text-slate-400 block">Date of Birth</span>
-                <span className="font-medium text-slate-800">{student.dateOfBirth || "Recorded on Dossier"}</span>
+                <span className="font-medium text-slate-800">{student.dateOfBirth || "Not Recorded"}</span>
               </div>
               <div>
                 <span className="text-slate-400 block">Blood Group</span>
-                <span className="font-medium text-slate-800">{student.bloodGroup || "O+"}</span>
+                <span className="font-medium text-slate-800">{student.bloodGroup || "Not Recorded"}</span>
               </div>
             </div>
           </div>
@@ -270,25 +325,25 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
               <div>
                 <span className="text-slate-400 block">Guardian Name</span>
-                <span className="font-semibold text-slate-800">{student.guardianName}</span>
+                <span className="font-semibold text-slate-800">{student.guardianName || "Not Recorded"}</span>
               </div>
               <div>
                 <span className="text-slate-400 block">Relationship</span>
-                <span className="font-medium text-slate-800">{student.guardianRelationship}</span>
+                <span className="font-medium text-slate-800">{student.guardianRelationship || "Not Recorded"}</span>
               </div>
               <div>
                 <span className="text-slate-400 block">Emergency Phone</span>
-                <span className="font-medium text-slate-800">{student.guardianPhone}</span>
+                <span className="font-medium text-slate-800">{student.guardianPhone || "Not Recorded"}</span>
               </div>
             </div>
           </div>
 
-          {/* Institutional Prototype Disclaimer Notice */}
+          {/* Institutional Integrity Notice */}
           <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200 text-[11px] text-slate-600 leading-relaxed">
             <strong className="text-slate-800 font-semibold block mb-0.5">
-              Prototype Mode • Sample Record Information:
+              Institutional Academic Dossier:
             </strong>
-            This record is a fictional demonstration profile for R. P. Institute of Hospitality & Management. Student data is stored in the local application session state. Final institutional verification portals (eligibility enrolment, caste certificates, and university marksheets) will be connected in subsequent phases.
+            Verified student records and academic placements are backed by the institutional database. Fee ledgers and examination portals will be integrated in subsequent milestones.
           </div>
         </div>
 

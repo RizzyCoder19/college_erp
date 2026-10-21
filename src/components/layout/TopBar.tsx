@@ -5,7 +5,6 @@ import { Icon } from "@/components/common/Icon";
 import { NotificationPopover } from "@/components/common/NotificationPopover";
 import { ProfileModal } from "@/components/common/ProfileModal";
 import { GlobalSearchModal } from "@/components/common/GlobalSearchModal";
-import { FICTIONAL_USER } from "@/data/mockData";
 import { getCurrentUserAction } from "@/lib/actions/auth";
 
 interface TopBarProps {
@@ -22,7 +21,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<{ fullName: string; role: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ fullName: string; role: string; designation?: string | null } | null>(null);
 
   useEffect(() => {
     getCurrentUserAction().then((res) => {
@@ -216,14 +215,24 @@ export const TopBar: React.FC<TopBarProps> = ({
             aria-label="Open profile modal"
           >
             <div className="w-9 h-9 rounded-full bg-[#0B1528] text-white font-bold text-xs flex items-center justify-center shadow-xs border border-slate-200">
-              KS
+              {currentUser
+                ? currentUser.fullName
+                    .split(" ")
+                    .filter(Boolean)
+                    .map((n) => n[0])
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase()
+                : "GU"}
             </div>
             <div className="hidden xl:block">
               <div className="text-[13px] font-bold text-slate-800 leading-tight">
-                {currentUser ? currentUser.fullName : FICTIONAL_USER.name}
+                {currentUser ? currentUser.fullName : "Guest Session"}
               </div>
               <div className="text-[11px] text-slate-400 font-medium">
-                {currentUser ? `Authorized (${currentUser.role})` : FICTIONAL_USER.designation}
+                {currentUser
+                  ? currentUser.designation || (currentUser.role === "SYSTEM_ADMIN" ? "System Administrator" : currentUser.role === "ACADEMIC_ADMIN" ? "Academic Administrator" : "Institutional User")
+                  : "Unauthenticated"}
               </div>
             </div>
             <Icon name="chevron-down" className="h-4 w-4 text-slate-400 hidden xl:block" />

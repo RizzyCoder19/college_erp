@@ -21,6 +21,7 @@ export interface FacultyRecord {
   fullName: string;
   designation: string;
   department: string;
+  departmentId?: string;
   category: StaffCategory;
   employmentType: EmploymentType;
   email: string;
@@ -35,6 +36,10 @@ export interface FacultyRecord {
   assignedProgrammes: string[];
   avatarInitial?: string;
   isSampleRecord?: boolean;
+  userAccountId?: string | null;
+  hasUserAccount?: boolean;
+  userAccountRole?: string | null;
+  userAccountEmail?: string | null;
 }
 
 export interface FacultyFilterState {

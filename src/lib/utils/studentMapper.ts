@@ -1,9 +1,14 @@
-import { StudentWithEnrolment } from "@/lib/dal/studentRepository";
-import { StudentRecord, StudentStatus, FeeStatus } from "@/types/student";
+﻿import { StudentWithEnrolment } from "@/lib/dal/studentRepository";
+import { StudentRecord, StudentStatus, FeeStatus, EnrolmentHistoryItem } from "@/types/student";
 
 export function mapStudentDbToRecord(dbStudent: StudentWithEnrolment): StudentRecord {
-  const latestEnrolment = dbStudent.enrolments && dbStudent.enrolments.length > 0 ? dbStudent.enrolments[0] : null;
-  const semNum = latestEnrolment ? latestEnrolment.semester.semesterNumber : dbStudent.currentSemester || 1;
+  // Sort enrolments by enrolledAt descending to determine latest active placement
+  const sortedEnrolments = (dbStudent.enrolments || []).slice().sort((a, b) => {
+    return new Date(b.enrolledAt).getTime() - new Date(a.enrolledAt).getTime();
+  });
+
+  const latestEnrolment = sortedEnrolments.length > 0 ? sortedEnrolments[0] : null;
+  const semNum = latestEnrolment?.semester?.semesterNumber || dbStudent.currentSemester || 1;
   const yearGroup: "FY" | "SY" | "TY" = semNum <= 2 ? "FY" : semNum <= 4 ? "SY" : "TY";
   const divName = (latestEnrolment?.division?.name as "Div A" | "Div B" | "Div C") || "Div A";
 
@@ -30,11 +35,46 @@ export function mapStudentDbToRecord(dbStudent: StudentWithEnrolment): StudentRe
 
   const formattedDob = dbStudent.dob
     ? new Date(dbStudent.dob).toISOString().split("T")[0]
-    : "2006-05-15";
+    : "";
+
+  // Map historical enrolments & detect any existing relational anomalies
+  const enrolmentHistory: EnrolmentHistoryItem[] = sortedEnrolments.map((enr, idx) => {
+    const isProgMismatch = Boolean(enr.semester?.programmeId && enr.programmeId && enr.semester.programmeId !== enr.programmeId);
+    const isDivMismatch = Boolean(enr.division?.semesterId && enr.semesterId && enr.division.semesterId !== enr.semesterId);
+    const hasHierarchyAnomaly = isProgMismatch || isDivMismatch;
+
+    let anomalyMessage: string | undefined = undefined;
+    if (isProgMismatch) {
+      anomalyMessage = `Semester record belongs to a different programme than the registered programme.`;
+    } else if (isDivMismatch) {
+      anomalyMessage = `Assigned division belongs to a different semester record in active institutional database.`;
+    }
+
+    return {
+      id: enr.id,
+      academicYearCode: enr.academicYear?.code || "AY 2026-27",
+      programmeCode: enr.programme?.code || "PROG",
+      programmeName: enr.programme?.name || "Academic Programme",
+      semesterNumber: enr.semester?.semesterNumber || 1,
+      divisionName: enr.division?.name || "Div A",
+      status: enr.status || "ENROLLED",
+      enrolledAt: new Date(enr.enrolledAt).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+      isCurrent: idx === 0,
+      hasHierarchyAnomaly,
+      anomalyMessage,
+    };
+  });
+
+  const hasAnyAnomaly = enrolmentHistory.some((e) => e.hasHierarchyAnomaly);
 
   return {
     id: dbStudent.id,
     prn: dbStudent.prn || dbStudent.rollNumber,
+    rollNumber: dbStudent.rollNumber,
     fullName: dbStudent.fullName,
     email: dbStudent.email,
     phone: dbStudent.phone,
@@ -46,15 +86,17 @@ export function mapStudentDbToRecord(dbStudent: StudentWithEnrolment): StudentRe
     division: divName,
     admissionDate: formattedAdmissionDate,
     enrollmentStatus,
-    feeStatus: "Paid" as FeeStatus,
-    attendanceRate: 88.5,
-    gpa: 8.5,
-    mentorFaculty: isHospitality ? "Chef Vikramaditya Kapoor" : "Prof. Snehal Kulkarni",
-    guardianName: "Parent / Guardian",
-    guardianRelationship: "Father",
-    guardianPhone: dbStudent.phone,
+    feeStatus: "Not configured" as FeeStatus,
+    attendanceRate: typeof dbStudent.attendanceRate === "number" ? dbStudent.attendanceRate : 0,
+    gpa: undefined,
+    mentorFaculty: dbStudent.mentorFaculty || "",
+    guardianName: dbStudent.guardianName || "",
+    guardianRelationship: dbStudent.guardianRelationship || "",
+    guardianPhone: dbStudent.guardianPhone || "",
     dateOfBirth: formattedDob,
-    bloodGroup: dbStudent.bloodGroup || "B+",
+    bloodGroup: dbStudent.bloodGroup || "",
     isFictionalSample: false,
+    enrolmentHistory,
+    hasAnomaly: hasAnyAnomaly,
   };
 }

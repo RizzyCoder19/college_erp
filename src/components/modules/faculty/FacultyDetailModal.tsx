@@ -117,11 +117,11 @@ export const FacultyDetailModal: React.FC<FacultyDetailModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
                 <span className="text-slate-400 block mb-1 font-medium">Highest Qualification</span>
-                <span className="font-semibold text-slate-800">{faculty.qualification}</span>
+                <span className="font-semibold text-slate-800">{faculty.qualification || "Not Recorded"}</span>
               </div>
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
                 <span className="text-slate-400 block mb-1 font-medium">Primary Specialization</span>
-                <span className="font-semibold text-slate-800">{faculty.specialization}</span>
+                <span className="font-semibold text-slate-800">{faculty.specialization || "Not Recorded"}</span>
               </div>
             </div>
           </div>
@@ -135,7 +135,7 @@ export const FacultyDetailModal: React.FC<FacultyDetailModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-3">
               <div className="p-3 bg-emerald-50/50 rounded-lg border border-emerald-200/60">
                 <span className="text-emerald-700 font-medium block">Weekly Contact Hours</span>
-                <span className="text-base font-bold text-emerald-900">{faculty.workloadHours} hrs / week</span>
+                <span className="text-base font-bold text-emerald-900">{faculty.workloadHours > 0 ? `${faculty.workloadHours} hrs / week` : "Not Assigned"}</span>
               </div>
               <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-200/60">
                 <span className="text-blue-700 font-medium block">Assigned Programmes</span>
@@ -145,22 +145,26 @@ export const FacultyDetailModal: React.FC<FacultyDetailModalProps> = ({
               </div>
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
                 <span className="text-slate-500 font-medium block">Institutional Joining Date</span>
-                <span className="text-xs font-bold text-slate-800 block mt-1">{faculty.joinedDate}</span>
+                <span className="text-xs font-bold text-slate-800 block mt-1">{faculty.joinedDate || "Not Recorded"}</span>
               </div>
             </div>
 
             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
               <span className="text-slate-400 block mb-2 font-medium text-xs">Allocated Course Subjects</span>
               <div className="flex flex-wrap gap-1.5">
-                {faculty.teachingSubjects.map((sub, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-200 shadow-2xs"
-                  >
-                    <Icon name="document-text" className="w-3 h-3 text-[#1657D9] mr-1.5" />
-                    {sub}
-                  </span>
-                ))}
+                {faculty.teachingSubjects && faculty.teachingSubjects.length > 0 ? (
+                  faculty.teachingSubjects.map((sub, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-200 shadow-2xs"
+                    >
+                      <Icon name="document-text" className="w-3 h-3 text-[#1657D9] mr-1.5" />
+                      {sub}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-slate-400 italic text-xs">No course subjects currently allocated</span>
+                )}
               </div>
             </div>
           </div>
@@ -174,7 +178,7 @@ export const FacultyDetailModal: React.FC<FacultyDetailModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
                 <span className="text-slate-400 block mb-1 font-medium">Campus Cabin / Studio</span>
-                <span className="font-semibold text-slate-800">{faculty.officeLocation}</span>
+                <span className="font-semibold text-slate-800">{faculty.officeLocation || "Not Assigned"}</span>
               </div>
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
                 <span className="text-slate-400 block mb-1 font-medium">Campus Email Address</span>

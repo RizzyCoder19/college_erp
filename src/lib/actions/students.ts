@@ -1,6 +1,14 @@
-"use server";
+﻿"use server";
 
-import { StudentRepository, CreateStudentDTO, UpdateStudentDTO, StudentFilterParams, StudentWithEnrolment } from "@/lib/dal/studentRepository";
+import {
+  StudentRepository,
+  CreateStudentDTO,
+  UpdateStudentDTO,
+  StudentFilterParams,
+  StudentWithEnrolment,
+  validateEnrolmentPlacement,
+  EnrolmentPlacementValidationParams,
+} from "@/lib/dal/studentRepository";
 import { requirePermission } from "@/lib/auth/guards";
 import { Result } from "@/lib/dal/types";
 
@@ -32,4 +40,16 @@ export async function deleteStudentAction(id: string) {
   const guard = await requirePermission("DELETE_STUDENTS");
   if (!guard.success) return guard as Result<never>;
   return StudentRepository.deleteStudent(id);
+}
+
+export async function validateEnrolmentPlacementAction(params: EnrolmentPlacementValidationParams) {
+  const guard = await requirePermission("READ_STUDENTS");
+  if (!guard.success) return guard as Result<never>;
+  return validateEnrolmentPlacement(params);
+}
+
+export async function diagnoseEnrolmentIntegrityAction() {
+  const guard = await requirePermission("READ_STUDENTS");
+  if (!guard.success) return guard as Result<never>;
+  return StudentRepository.diagnoseEnrolmentIntegrity();
 }

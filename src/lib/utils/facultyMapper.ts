@@ -29,9 +29,9 @@ export function mapStaffDbToRecord(dbStaff: StaffWithRelations): FacultyRecord {
 
   const joinedDate = dbStaff.dateOfJoining
     ? new Date(dbStaff.dateOfJoining).toISOString().split("T")[0]
-    : "2020-01-01";
+    : "";
 
-  const totalWeeklyHours = dbStaff.teachingAssignments?.reduce((acc, ta) => acc + ta.weeklyHours, 0) || 18;
+  const totalWeeklyHours = dbStaff.teachingAssignments?.reduce((acc, ta) => acc + ta.weeklyHours, 0) || 0;
 
   return {
     id: dbStaff.id,
@@ -39,21 +39,26 @@ export function mapStaffDbToRecord(dbStaff: StaffWithRelations): FacultyRecord {
     fullName: dbStaff.fullName,
     designation: dbStaff.designation,
     department: dbStaff.department?.name || "Hospitality & Culinary Arts",
+    departmentId: dbStaff.departmentId,
     category,
-    employmentType: "Full-Time Permanent" as EmploymentType,
+    employmentType: (dbStaff.employmentType as EmploymentType) || ("Full-Time Permanent" as EmploymentType),
     email: dbStaff.email,
     phone: dbStaff.phone,
-    officeLocation: dbStaff.department?.code === "CUL"
-      ? "Culinary Complex ? Master Production Kitchen"
-      : "Academic Block A ? Faculty Cabin",
-    workloadHours: totalWeeklyHours > 0 ? totalWeeklyHours : 18,
+    officeLocation: dbStaff.officeLocation || "",
+    workloadHours: typeof dbStaff.workloadHours === "number"
+      ? dbStaff.workloadHours
+      : totalWeeklyHours,
     status,
-    qualification: dbStaff.designation.includes("Dr.") ? "Ph.D. / Master of Science" : "Master of Science / Grand Diplome",
-    specialization: dbStaff.department?.name || "Hospitality & Management",
+    qualification: dbStaff.qualification || "",
+    specialization: dbStaff.specialization || "",
     joinedDate,
-    teachingSubjects: teachingSubjects.length > 0 ? teachingSubjects : ["Academic Foundations & Practicum"],
-    assignedProgrammes: [dbStaff.department?.name || "Undergraduate Programme"],
+    teachingSubjects,
+    assignedProgrammes: dbStaff.department ? [dbStaff.department.name] : [],
     avatarInitial: dbStaff.fullName.charAt(0).toUpperCase(),
     isSampleRecord: false,
+    userAccountId: dbStaff.userAccount?.id || null,
+    hasUserAccount: Boolean(dbStaff.userAccount),
+    userAccountRole: dbStaff.userAccount?.role || null,
+    userAccountEmail: dbStaff.userAccount?.email || null,
   };
 }

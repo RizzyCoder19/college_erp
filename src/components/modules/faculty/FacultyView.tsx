@@ -2,10 +2,19 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { getStaffAction, createStaffAction, updateStaffAction, deleteStaffAction } from "@/lib/actions/faculty";
+import { getCurrentUserAction } from "@/lib/actions/auth";
+import { hasPermission } from "@/lib/auth/roles";
 import { getDepartmentsAction } from "@/lib/actions/academics";
 import { DepartmentWithCounts } from "@/lib/dal/academicRepository";
 import { mapStaffDbToRecord } from "@/lib/utils/facultyMapper";
-import { PrototypeReconciliationModal, PrototypeComparisonItem } from "@/components/common/PrototypeReconciliationModal";
+import { PrototypeReconciliationModal } from "@/components/common/PrototypeReconciliationModal";
+import {
+  evaluateFacultyReconciliation,
+  executeSafePruning,
+  PrototypeComparisonItem,
+  AuthoritativeFetchResult,
+  fetchAllAuthoritativePages,
+} from "@/lib/utils/reconciliationEngine";
 import Link from "next/link";
 import { Icon } from "@/components/common/Icon";
 import { AnimatedReveal } from "@/components/common/AnimatedReveal";
@@ -13,8 +22,19 @@ import { FacultyRecord, StaffStatus } from "@/types/faculty";
 import { FacultyDetailModal } from "./FacultyDetailModal";
 import { FacultyFormModal } from "./FacultyFormModal";
 import { DeleteFacultyModal } from "./DeleteFacultyModal";
+import { StaffProvisionModal } from "./StaffProvisionModal";
 
 const STORAGE_KEY = "rpihm_faculty_records_v1";
+
+
+// Fail-Closed helper to fetch 100% of authoritative faculty records across all pages
+async function fetchAllAuthoritativeFaculty(): Promise<AuthoritativeFetchResult<FacultyRecord>> {
+  return fetchAllAuthoritativePages({
+    fetchPage: (pagination) => getStaffAction(pagination),
+    mapper: mapStaffDbToRecord,
+    pageSize: 100,
+  });
+}
 
 export const FacultyView: React.FC = () => {
   const [facultyList, setFacultyList] = useState<FacultyRecord[]>([]);
@@ -41,16 +61,24 @@ export const FacultyView: React.FC = () => {
   const [deleteFaculty, setDeleteFaculty] = useState<FacultyRecord | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // User Permissions and Account Provisioning State
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const [canWrite, setCanWrite] = useState<boolean>(true);
+  const [canDelete, setCanDelete] = useState<boolean>(true);
+  const [canManageAccounts, setCanManageAccounts] = useState<boolean>(false);
+  const [provisionModalOpen, setProvisionModalOpen] = useState<boolean>(false);
+  const [preselectedProvisionStaff, setPreselectedProvisionStaff] = useState<FacultyRecord | null>(null);
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setServerError(null);
     try {
-      const res = await getStaffAction({ pageSize: 100 });
-      if (!res.success || !res.data) {
-        setServerError(res.error || "Failed to load faculty from database.");
+      const fetchRes = await fetchAllAuthoritativeFaculty();
+      if (!fetchRes.success) {
+        setServerError(fetchRes.error);
+        // Do NOT replace existing state with an empty/incomplete list on failure
       } else {
-        const mapped = res.data.items.map(mapStaffDbToRecord);
-        setFacultyList(mapped);
+        setFacultyList(fetchRes.data);
       }
 
       const deptRes = await getDepartmentsAction();
@@ -78,15 +106,27 @@ export const FacultyView: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    getCurrentUserAction().then((res) => {
+      if (res.success && res.data) {
+        const r = res.data.role;
+        setCurrentUserRole(r);
+        setCanWrite(hasPermission(r, "WRITE_FACULTY"));
+        setCanDelete(hasPermission(r, "DELETE_FACULTY"));
+        setCanManageAccounts(hasPermission(r, "ADMIN_ALL"));
+      }
+    });
+  }, []);
+
+  useEffect(() => {
     let active = true;
     const init = async () => {
       try {
-        const res = await getStaffAction({ pageSize: 100 });
+        const fetchRes = await fetchAllAuthoritativeFaculty();
         if (!active) return;
-        if (!res.success || !res.data) {
-          setServerError(res.error || "Failed to load faculty from database.");
+        if (!fetchRes.success) {
+          setServerError(fetchRes.error);
         } else {
-          setFacultyList(res.data.items.map(mapStaffDbToRecord));
+          setFacultyList(fetchRes.data);
         }
 
         const deptRes = await getDepartmentsAction();
@@ -121,54 +161,78 @@ export const FacultyView: React.FC = () => {
     };
   }, []);
 
-  // Reconciliation Comparison Items
-  const reconciliationItems: PrototypeComparisonItem[] = useMemo(() => {
-    return prototypeRecords.map((proto) => {
-      const dbMatch = facultyList.find(
-        (f) =>
-          f.staffId.trim().toLowerCase() === proto.staffId.trim().toLowerCase() ||
-          f.email.trim().toLowerCase() === proto.email.trim().toLowerCase()
-      );
-
-      if (dbMatch) {
-        const isConflict =
-          dbMatch.fullName.trim().toLowerCase() !== proto.fullName.trim().toLowerCase();
-        if (isConflict) {
-          return {
-            id: proto.id,
-            primaryKey: proto.staffId,
-            name: proto.fullName,
-            email: proto.email,
-            secondaryInfo: proto.department,
-            status: "conflict",
-            statusReason: `Conflict: Staff ID matches database record for "${dbMatch.fullName}"`,
-            rawRecord: proto,
-          };
-        }
-        return {
-          id: proto.id,
-          primaryKey: proto.staffId,
-          name: proto.fullName,
-          email: proto.email,
-          secondaryInfo: proto.department,
-          status: "duplicate",
-          statusReason: "Already present in SQLite database",
-          rawRecord: proto,
-        };
-      }
-
-      return {
-        id: proto.id,
-        primaryKey: proto.staffId,
-        name: proto.fullName,
-        email: proto.email,
-        secondaryInfo: proto.department,
-        status: "importable",
-        statusReason: "New prototype staff record ready to import into database",
-        rawRecord: proto,
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as unknown as Record<string, unknown>).__facultyReconciliation = {
+        fetchAllAuthoritativePages,
+        executeSafePruning,
+        fetchAllAuthoritativeFaculty,
+        loadFacultyData: loadData,
+        triggerSimulatedServerError: (msg: string) => setServerError(msg),
       };
-    });
+    }
+  }, [loadData]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && facultyList.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const targetStaffId = params.get("staffId") || params.get("id");
+      const targetEmpId = params.get("employeeId");
+      if (targetStaffId || targetEmpId) {
+        const found = facultyList.find(
+          (f) =>
+            (targetStaffId && f.id === targetStaffId) ||
+            (targetEmpId && f.staffId.toLowerCase() === targetEmpId.toLowerCase())
+        );
+        if (found) {
+          setDetailFaculty(found);
+          setSearchQuery(found.staffId);
+        }
+      }
+    }
+  }, [facultyList]);
+
+
+  // Reconciliation Comparison Items with Field-Level Difference Analysis
+  const reconciliationItems: PrototypeComparisonItem[] = useMemo(() => {
+    return prototypeRecords.map((proto) => evaluateFacultyReconciliation(proto, facultyList));
   }, [prototypeRecords, facultyList]);
+
+  // Safe and Recoverable Pruning of Confirmed Duplicates (Fail-Closed)
+  const handlePruneDuplicates = async (duplicateIds: string[]) => {
+    // Fail-closed freshness check: Fetch 100% of authoritative database staff immediately before pruning
+    const fetchRes = await fetchAllAuthoritativeFaculty();
+    if (!fetchRes.success) {
+      showToast(`Pruning aborted: Could not verify database records (${fetchRes.error}). Prototype records preserved.`);
+      return;
+    }
+
+    const latestFaculty = fetchRes.data;
+    setFacultyList(latestFaculty); // Keep UI state synchronized with fresh DB snapshot
+
+    const result = executeSafePruning<FacultyRecord, FacultyRecord>({
+      storageKey: STORAGE_KEY,
+      requestedIds: duplicateIds,
+      rawStorageContent: null,
+      currentDbRecords: latestFaculty,
+      evaluator: evaluateFacultyReconciliation,
+    });
+
+    if (result.success) {
+      setPrototypeRecords(result.remainingRecords);
+      if (result.prunedCount > 0) {
+        showToast(
+          `Pruned ${result.prunedCount} confirmed duplicate(s) from browser storage. Backup created.`
+        );
+      } else {
+        showToast("No eligible confirmed duplicates were found to prune.");
+      }
+      return { pruned: result.prunedCount, backupKey: result.backupKey };
+    } else {
+      showToast(`Pruning error: ${result.error || "Storage write failed"}`);
+      return { pruned: 0, backupKey: "" };
+    }
+  };
 
   // Safe Prototype Reconciliation Import Handler
   const handleReconcileImport = async (importableItems: PrototypeComparisonItem[]) => {
@@ -242,7 +306,7 @@ export const FacultyView: React.FC = () => {
         f.qualification.toLowerCase().includes(searchQuery.toLowerCase()) ||
         f.teachingSubjects.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      const matchesDepartment = selectedDepartment === "all" || f.department === selectedDepartment;
+      const matchesDepartment = selectedDepartment === "all" || f.departmentId === selectedDepartment || f.department === selectedDepartment;
       const matchesCategory = selectedCategory === "all" || f.category === selectedCategory;
       const matchesStatus = selectedStatus === "all" || f.status === selectedStatus;
       const matchesEmployment = selectedEmployment === "all" || f.employmentType === selectedEmployment;
@@ -292,6 +356,11 @@ export const FacultyView: React.FC = () => {
         departmentId,
         dateOfJoining: record.joinedDate ? new Date(record.joinedDate) : new Date("2020-01-01"),
         status: "ACTIVE",
+        qualification: record.qualification,
+        specialization: record.specialization,
+        officeLocation: record.officeLocation,
+        workloadHours: record.workloadHours,
+        employmentType: record.employmentType,
       });
 
       if (!res.success) {
@@ -310,13 +379,15 @@ export const FacultyView: React.FC = () => {
 
   const handleEditFaculty = async (record: FacultyRecord) => {
     try {
-      let departmentId = departments.length > 0 ? departments[0].id : "";
-      const matchedDept = departments.find(
-        (d) =>
-          d.name.toLowerCase() === record.department.toLowerCase() ||
-          d.code.toLowerCase() === record.department.toLowerCase()
-      );
-      if (matchedDept) departmentId = matchedDept.id;
+      let departmentId = record.departmentId;
+      if (!departmentId) {
+        const matchedDept = departments.find(
+          (d) =>
+            d.name.toLowerCase() === record.department.toLowerCase() ||
+            d.code.toLowerCase() === record.department.toLowerCase()
+        );
+        departmentId = matchedDept ? matchedDept.id : (departments.length > 0 ? departments[0].id : "");
+      }
 
       let category = "TEACHING";
       if (record.category === "Technical Lab Staff") category = "TECHNICAL";
@@ -331,6 +402,11 @@ export const FacultyView: React.FC = () => {
         category,
         departmentId,
         status: record.status.toUpperCase() === "ON LEAVE" ? "ON_LEAVE" : "ACTIVE",
+        qualification: record.qualification,
+        specialization: record.specialization,
+        officeLocation: record.officeLocation,
+        workloadHours: record.workloadHours,
+        employmentType: record.employmentType,
       });
 
       if (!res.success || !res.data) {
@@ -518,6 +594,21 @@ export const FacultyView: React.FC = () => {
                 <span className="hidden sm:inline">Refresh Live Records</span>
               </button>
 
+              {prototypeRecords.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setReconcileModalOpen(true)}
+                  className="inline-flex items-center space-x-1.5 px-3 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors shadow-2xs"
+                  title="Inspect and reconcile uncommitted prototype faculty records"
+                >
+                  <Icon name="archive-box" className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Data Tools</span>
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                    {prototypeRecords.length}
+                  </span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={exportCSV}
@@ -527,61 +618,41 @@ export const FacultyView: React.FC = () => {
                 <span>Export CSV</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setFormMode("add");
-                  setFormFaculty(null);
-                  setFormModalOpen(true);
-                }}
-                className="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#1657D9] hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
-              >
-                <Icon name="plus" className="w-3.5 h-3.5" />
-                <span>Add Staff Member</span>
-              </button>
+              {canManageAccounts && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreselectedProvisionStaff(null);
+                    setProvisionModalOpen(true);
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-3 py-2 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl transition-colors shadow-2xs cursor-pointer"
+                  title="Provision a login account for an institutional staff member"
+                >
+                  <Icon name="key" className="w-3.5 h-3.5 text-[#1657D9]" />
+                  <span>Provision Account</span>
+                </button>
+              )}
+
+              {canWrite && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormMode("add");
+                    setFormFaculty(null);
+                    setFormModalOpen(true);
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#1657D9] hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
+                >
+                  <Icon name="plus" className="w-3.5 h-3.5" />
+                  <span>Add Staff Member</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
       </AnimatedReveal>
 
-      {/* Prototype Data Reconciliation Alert Banner */}
-      {prototypeRecords.length > 0 && showReconcileBanner && (
-        <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-start space-x-3">
-            <div className="p-2 rounded-xl bg-amber-100 text-amber-800 shrink-0 mt-0.5">
-              <Icon name="archive-box" className="h-5 w-5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-amber-950">
-                Prototype Browser Records Detected ({prototypeRecords.length} records in localStorage)
-              </h4>
-              <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                The SQLite database is now active as the authoritative system of record. You can safely inspect and reconcile legacy prototype faculty records. Browser storage will not be altered.
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center space-x-2 shrink-0 self-end sm:self-center">
-            <button
-              type="button"
-              onClick={() => setReconcileModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-[#1657D9] hover:bg-[#1248B8] text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer flex items-center space-x-1"
-            >
-              <Icon name="arrow-path" className="h-3.5 w-3.5" />
-              <span>Review & Reconcile</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowReconcileBanner(false)}
-              className="p-1.5 rounded-lg text-amber-700 hover:text-amber-900 hover:bg-amber-100/60 transition-colors cursor-pointer"
-              title="Dismiss Banner"
-              aria-label="Dismiss banner"
-            >
-              <Icon name="x-mark" className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Server Connection Error Alert */}
       {serverError && (
@@ -695,7 +766,7 @@ export const FacultyView: React.FC = () => {
               <option value="all">All Departments</option>
               {departments && departments.length > 0 ? (
                 departments.map((d) => (
-                  <option key={d.id} value={d.name}>
+                  <option key={d.id} value={d.id}>
                     {d.name} ({d.code})
                   </option>
                 ))
@@ -799,6 +870,16 @@ export const FacultyView: React.FC = () => {
                           {fac.fullName}
                         </div>
                         <div className="text-[11px] text-slate-500">{fac.designation}</div>
+                        {fac.hasUserAccount ? (
+                          <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
+                            {fac.userAccountRole === "ACADEMIC_ADMIN" ? "HOD / Academic Admin" : fac.userAccountRole}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
+                            No Login Account
+                          </span>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -879,26 +960,43 @@ export const FacultyView: React.FC = () => {
                       >
                         <Icon name="eye" className="w-4 h-4" />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormMode("edit");
-                          setFormFaculty(fac);
-                          setFormModalOpen(true);
-                        }}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                        title="Edit Record"
-                      >
-                        <Icon name="pencil" className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteFaculty(fac)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-                        title="Delete Record"
-                      >
-                        <Icon name="trash" className="w-4 h-4" />
-                      </button>
+                      {canManageAccounts && !fac.hasUserAccount && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreselectedProvisionStaff(fac);
+                            setProvisionModalOpen(true);
+                          }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-[#1657D9] hover:bg-blue-50 transition-colors cursor-pointer"
+                          title="Provision User Account"
+                        >
+                          <Icon name="key" className="w-4 h-4 text-[#1657D9]" />
+                        </button>
+                      )}
+                      {canWrite && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormMode("edit");
+                            setFormFaculty(fac);
+                            setFormModalOpen(true);
+                          }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                          title="Edit Record"
+                        >
+                          <Icon name="pencil" className="w-4 h-4" />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => setDeleteFaculty(fac)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="Delete Record"
+                        >
+                          <Icon name="trash" className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -969,26 +1067,30 @@ export const FacultyView: React.FC = () => {
                 >
                   Dossier
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormMode("edit");
-                    setFormFaculty(fac);
-                    setFormModalOpen(true);
-                  }}
-                  className="p-1 text-slate-500 hover:text-amber-600"
-                  title="Edit"
-                >
-                  <Icon name="pencil" className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeleteFaculty(fac)}
-                  className="p-1 text-slate-500 hover:text-red-600"
-                  title="Delete"
-                >
-                  <Icon name="trash" className="w-4 h-4" />
-                </button>
+                {canWrite && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormMode("edit");
+                      setFormFaculty(fac);
+                      setFormModalOpen(true);
+                    }}
+                    className="p-1 text-slate-500 hover:text-amber-600"
+                    title="Edit"
+                  >
+                    <Icon name="pencil" className="w-4 h-4" />
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    type="button"
+                    onClick={() => setDeleteFaculty(fac)}
+                    className="p-1 text-slate-500 hover:text-red-600"
+                    title="Delete"
+                  >
+                    <Icon name="trash" className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1029,7 +1131,7 @@ export const FacultyView: React.FC = () => {
       />
 
       <FacultyFormModal
-        key={formFaculty?.id || (formModalOpen ? "add" : "none")}
+        key={formFaculty?.id || formFaculty?.staffId || (formModalOpen ? "add" : "none")}
         isOpen={formModalOpen}
         mode={formMode}
         initialData={formFaculty}
@@ -1054,6 +1156,17 @@ export const FacultyView: React.FC = () => {
         onConfirm={handleDeleteFaculty}
       />
 
+      <StaffProvisionModal
+        isOpen={provisionModalOpen}
+        onClose={() => setProvisionModalOpen(false)}
+        onSuccess={() => {
+          showToast("Staff user account provisioned successfully.");
+          loadData();
+        }}
+        preselectedStaff={preselectedProvisionStaff}
+        allStaff={facultyList}
+      />
+
       {/* Prototype Data Reconciliation Modal */}
       <PrototypeReconciliationModal
         isOpen={reconcileModalOpen}
@@ -1062,6 +1175,7 @@ export const FacultyView: React.FC = () => {
         items={reconciliationItems}
         onClose={() => setReconcileModalOpen(false)}
         onImport={handleReconcileImport}
+        onPruneDuplicates={handlePruneDuplicates}
       />
     </div>
   );

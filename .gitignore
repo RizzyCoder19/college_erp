@@ -1,6 +1,4 @@
-﻿# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
+﻿# dependencies
 /node_modules
 /.pnp
 .pnp.*
@@ -47,3 +45,5 @@ next-env.d.ts
 prisma/*.db
 prisma/*.db-journal
 dev-admin-credentials.json
+dev-*-credentials.json
+dev-*.json

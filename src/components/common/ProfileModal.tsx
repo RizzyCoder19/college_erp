@@ -4,7 +4,6 @@ import React, { useEffect, useState, useCallback, useTransition } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/common/Icon";
-import { FICTIONAL_USER } from "@/data/mockData";
 import { loginAction, logoutAction, getCurrentUserAction } from "@/lib/actions/auth";
 import { AuthenticatedUser } from "@/lib/auth/session";
 
@@ -118,7 +117,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
             
             <div className="flex items-center space-x-4">
               <div className="w-14 h-14 rounded-full bg-[#1657D9] text-white flex items-center justify-center font-bold text-lg shadow-md border-2 border-white/20">
-                {currentUser ? currentUser.fullName.slice(0, 2).toUpperCase() : "KS"}
+                {currentUser ? currentUser.fullName.slice(0, 2).toUpperCase() : "GU"}
               </div>
               <div>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/20 text-blue-200 border border-blue-400/30 mb-1">
@@ -126,10 +125,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                   {currentUser ? `Active Session: ${currentUser.role}` : "Prototype Profile"}
                 </div>
                 <h2 className="text-xl font-bold tracking-tight text-white">
-                  {currentUser ? currentUser.fullName : FICTIONAL_USER.name}
+                  {currentUser ? currentUser.fullName : "Guest User"}
                 </h2>
                 <p className="text-xs text-slate-300">
-                  {currentUser ? currentUser.email : FICTIONAL_USER.designation}
+                  {currentUser ? (currentUser.designation ? currentUser.designation + " | " + currentUser.email : currentUser.email) : "Sign in to access institutional resources"}
                 </p>
               </div>
             </div>
@@ -228,7 +227,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               <div className="relative z-10 grid grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                   <span className="text-slate-400 block mb-0.5">Institution</span>
-                  <span className="font-semibold text-slate-800">{FICTIONAL_USER.institution}</span>
+                  <span className="font-semibold text-slate-800">R. P. Institute of Hospitality & Management, Vasai</span>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                   <span className="text-slate-400 block mb-0.5">Session Status</span>
@@ -242,7 +241,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                   <span className="text-slate-400 block mb-0.5">Academic Session</span>
-                  <span className="font-medium text-slate-800">{FICTIONAL_USER.academicYear}</span>
+                  <span className="font-medium text-slate-800">2026 - 2027</span>
                 </div>
               </div>
 

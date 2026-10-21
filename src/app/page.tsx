@@ -1,9 +1,12 @@
-import { Suspense } from "react";
+﻿import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import prisma from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { AppShell } from "@/components/layout/AppShell";
 import { ExecutiveOverview } from "@/components/dashboard/ExecutiveOverview";
 import { ModuleSwitchboard } from "@/components/dashboard/ModuleSwitchboard";
+
+import { StudentRepository } from "@/lib/dal/studentRepository";
 
 async function AuthenticatedDashboard() {
   const user = await getCurrentUser();
@@ -11,10 +14,34 @@ async function AuthenticatedDashboard() {
     redirect("/login");
   }
 
+  const [studentCount, staffCount, programmeCount, divisionCount, anomaliesRes] = await Promise.all([
+    prisma.student.count(),
+    prisma.staff.count(),
+    prisma.programme.count(),
+    prisma.division.count(),
+    StudentRepository.diagnoseEnrolmentIntegrity(),
+  ]);
+
+  const anomalies = anomaliesRes.success && anomaliesRes.data?.anomalies ? anomaliesRes.data.anomalies : [];
+
   return (
     <AppShell>
       <div className="space-y-8">
-        <ExecutiveOverview />
+        <ExecutiveOverview
+          initialMetrics={{
+            studentCount,
+            staffCount,
+            programmeCount,
+            divisionCount,
+          }}
+          integrityAnomalies={anomalies}
+          currentUser={{
+            fullName: user.fullName,
+            email: user.email,
+            role: user.role,
+            designation: user.designation,
+          }}
+        />
         <ModuleSwitchboard />
       </div>
     </AppShell>

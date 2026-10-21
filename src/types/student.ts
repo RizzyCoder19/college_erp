@@ -1,9 +1,24 @@
-export type StudentStatus = "Active" | "On Leave" | "Graduated" | "Pending Verification";
-export type FeeStatus = "Paid" | "Partial" | "Pending";
+﻿export type StudentStatus = "Active" | "On Leave" | "Graduated" | "Pending Verification";
+export type FeeStatus = "Not configured" | "Paid" | "Partial" | "Pending";
+
+export interface EnrolmentHistoryItem {
+  id: string;
+  academicYearCode: string;
+  programmeCode: string;
+  programmeName: string;
+  semesterNumber: number;
+  divisionName: string;
+  status: string;
+  enrolledAt: string;
+  isCurrent: boolean;
+  hasHierarchyAnomaly?: boolean;
+  anomalyMessage?: string;
+}
 
 export interface StudentRecord {
   id: string;
-  prn: string; // Permanent Registration Number / Roll No
+  prn: string; // Permanent Registration Number
+  rollNumber?: string; // Institutional Roll Number
   fullName: string;
   email: string;
   phone: string;
@@ -25,6 +40,8 @@ export interface StudentRecord {
   dateOfBirth?: string;
   bloodGroup?: string;
   isFictionalSample: boolean;
+  enrolmentHistory?: EnrolmentHistoryItem[];
+  hasAnomaly?: boolean;
 }
 
 export interface StudentFilterState {

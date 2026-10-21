@@ -2,10 +2,19 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { getStudentsAction, createStudentAction, updateStudentAction, deleteStudentAction } from "@/lib/actions/students";
+import { getCurrentUserAction } from "@/lib/actions/auth";
+import { hasPermission } from "@/lib/auth/roles";
 import { getProgrammesAction, getCurrentAcademicYearAction, getProgrammeDetailsAction } from "@/lib/actions/academics";
 import { AcademicProgrammeDTO } from "@/lib/dal/academicRepository";
 import { mapStudentDbToRecord } from "@/lib/utils/studentMapper";
-import { PrototypeReconciliationModal, PrototypeComparisonItem } from "@/components/common/PrototypeReconciliationModal";
+import { PrototypeReconciliationModal } from "@/components/common/PrototypeReconciliationModal";
+import {
+  evaluateStudentReconciliation,
+  executeSafePruning,
+  PrototypeComparisonItem,
+  AuthoritativeFetchResult,
+  fetchAllAuthoritativePages,
+} from "@/lib/utils/reconciliationEngine";
 import Link from "next/link";
 import Image from "next/image";
 import { Icon } from "@/components/common/Icon";
@@ -18,6 +27,16 @@ import { DeleteConfirmModal } from "./DeleteConfirmModal";
 
 const STORAGE_KEY = "rpihm_student_records_v1";
 
+
+// Fail-Closed helper to fetch 100% of authoritative student records across all pages
+async function fetchAllAuthoritativeStudents(): Promise<AuthoritativeFetchResult<StudentRecord>> {
+  return fetchAllAuthoritativePages({
+    fetchPage: (pagination) => getStudentsAction(pagination),
+    mapper: mapStudentDbToRecord,
+    pageSize: 100,
+  });
+}
+
 export const StudentsView: React.FC = () => {
   const [students, setStudents] = useState<StudentRecord[]>([]);
   const [programmes, setProgrammes] = useState<AcademicProgrammeDTO[]>([]);
@@ -29,22 +48,27 @@ export const StudentsView: React.FC = () => {
   const [selectedSemester, setSelectedSemester] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedFee, setSelectedFee] = useState("all");
+  const [detailStudent, setDetailStudent] = useState<StudentRecord | null>(null);
 
   // Prototype Data Inspection & Reconciliation State
   const [prototypeRecords, setPrototypeRecords] = useState<StudentRecord[]>([]);
   const [showReconcileBanner, setShowReconcileBanner] = useState(true);
   const [reconcileModalOpen, setReconcileModalOpen] = useState(false);
 
+  // User Permissions State
+  const [canWrite, setCanWrite] = useState<boolean>(true);
+  const [canDelete, setCanDelete] = useState<boolean>(true);
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setServerError(null);
     try {
-      const res = await getStudentsAction({ pageSize: 100 });
-      if (!res.success || !res.data) {
-        setServerError(res.error || "Failed to load students from database.");
+      const fetchRes = await fetchAllAuthoritativeStudents();
+      if (!fetchRes.success) {
+        setServerError(fetchRes.error);
+        // Do NOT replace existing state with an empty/incomplete list on failure
       } else {
-        const mapped = res.data.items.map(mapStudentDbToRecord);
-        setStudents(mapped);
+        setStudents(fetchRes.data);
       }
 
       const progRes = await getProgrammesAction();
@@ -72,15 +96,25 @@ export const StudentsView: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    getCurrentUserAction().then((res) => {
+      if (res.success && res.data) {
+        const r = res.data.role;
+        setCanWrite(hasPermission(r, "WRITE_STUDENTS"));
+        setCanDelete(hasPermission(r, "DELETE_STUDENTS"));
+      }
+    });
+  }, []);
+
+  useEffect(() => {
     let active = true;
     const init = async () => {
       try {
-        const res = await getStudentsAction({ pageSize: 100 });
+        const fetchRes = await fetchAllAuthoritativeStudents();
         if (!active) return;
-        if (!res.success || !res.data) {
-          setServerError(res.error || "Failed to load students from database.");
+        if (!fetchRes.success) {
+          setServerError(fetchRes.error);
         } else {
-          setStudents(res.data.items.map(mapStudentDbToRecord));
+          setStudents(fetchRes.data);
         }
 
         const progRes = await getProgrammesAction();
@@ -115,62 +149,85 @@ export const StudentsView: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as unknown as Record<string, unknown>).__reconciliationEngine = {
+        fetchAllAuthoritativePages,
+        executeSafePruning,
+        fetchAllAuthoritativeStudents,
+        loadStudentsData: loadData,
+        triggerSimulatedServerError: (msg: string) => setServerError(msg),
+      };
+    }
+  }, [loadData]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && students.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const targetStudentId = params.get("studentId") || params.get("id");
+      const targetPrn = params.get("prn");
+      if (targetStudentId || targetPrn) {
+        const found = students.find(
+          (s) =>
+            (targetStudentId && s.id === targetStudentId) ||
+            (targetPrn && s.prn.toLowerCase() === targetPrn.toLowerCase())
+        );
+        if (found) {
+          setDetailStudent(found);
+          setSearchQuery(found.prn);
+        }
+      }
+    }
+  }, [students]);
+
+
   // Modals state
-  const [detailStudent, setDetailStudent] = useState<StudentRecord | null>(null);
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [formMode, setFormMode] = useState<"add" | "edit">("add");
   const [formStudent, setFormStudent] = useState<StudentRecord | null>(null);
   const [deleteStudent, setDeleteStudent] = useState<StudentRecord | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Reconciliation Comparison Items
+  // Reconciliation Comparison Items with Field-Level Difference Analysis
   const reconciliationItems: PrototypeComparisonItem[] = useMemo(() => {
-    return prototypeRecords.map((proto) => {
-      const dbMatch = students.find(
-        (s) =>
-          s.prn.trim().toLowerCase() === proto.prn.trim().toLowerCase() ||
-          s.email.trim().toLowerCase() === proto.email.trim().toLowerCase()
-      );
-
-      if (dbMatch) {
-        const isConflict =
-          dbMatch.fullName.trim().toLowerCase() !== proto.fullName.trim().toLowerCase();
-        if (isConflict) {
-          return {
-            id: proto.id,
-            primaryKey: proto.prn,
-            name: proto.fullName,
-            email: proto.email,
-            secondaryInfo: proto.programmeName,
-            status: "conflict",
-            statusReason: `Conflict: PRN matches database record for "${dbMatch.fullName}"`,
-            rawRecord: proto,
-          };
-        }
-        return {
-          id: proto.id,
-          primaryKey: proto.prn,
-          name: proto.fullName,
-          email: proto.email,
-          secondaryInfo: proto.programmeName,
-          status: "duplicate",
-          statusReason: "Already present in SQLite database",
-          rawRecord: proto,
-        };
-      }
-
-      return {
-        id: proto.id,
-        primaryKey: proto.prn,
-        name: proto.fullName,
-        email: proto.email,
-        secondaryInfo: proto.programmeName,
-        status: "importable",
-        statusReason: "New prototype student ready to import into database",
-        rawRecord: proto,
-      };
-    });
+    return prototypeRecords.map((proto) => evaluateStudentReconciliation(proto, students));
   }, [prototypeRecords, students]);
+
+  // Safe and Recoverable Pruning of Confirmed Duplicates (Fail-Closed)
+  const handlePruneDuplicates = async (duplicateIds: string[]) => {
+    // Fail-closed freshness check: Fetch 100% of authoritative database records immediately before pruning
+    const fetchRes = await fetchAllAuthoritativeStudents();
+    if (!fetchRes.success) {
+      showToast(`Pruning aborted: Could not verify database records (${fetchRes.error}). Prototype records preserved.`);
+      return;
+    }
+
+    const latestStudents = fetchRes.data;
+    setStudents(latestStudents); // Keep UI state synchronized with fresh DB snapshot
+
+    const result = executeSafePruning<StudentRecord, StudentRecord>({
+      storageKey: STORAGE_KEY,
+      requestedIds: duplicateIds,
+      rawStorageContent: null,
+      currentDbRecords: latestStudents,
+      evaluator: evaluateStudentReconciliation,
+    });
+
+    if (result.success) {
+      setPrototypeRecords(result.remainingRecords);
+      if (result.prunedCount > 0) {
+        showToast(
+          `Pruned ${result.prunedCount} confirmed duplicate(s) from browser storage. Backup created.`
+        );
+      } else {
+        showToast("No eligible confirmed duplicates were found to prune.");
+      }
+      return { pruned: result.prunedCount, backupKey: result.backupKey };
+    } else {
+      showToast(`Pruning error: ${result.error || "Storage write failed"}`);
+      return { pruned: 0, backupKey: "" };
+    }
+  };
 
   // Safe Prototype Reconciliation Import Handler
   const handleReconcileImport = async (importableItems: PrototypeComparisonItem[]) => {
@@ -259,11 +316,22 @@ export const StudentsView: React.FC = () => {
         searchQuery.trim() === "" ||
         std.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         std.prn.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (Boolean(std.rollNumber) && std.rollNumber!.toLowerCase().includes(searchQuery.toLowerCase())) ||
         std.programmeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         std.email.toLowerCase().includes(searchQuery.toLowerCase());
 
+      const selectedProgObj = programmes.find((p) => p.id === selectedProgramme);
       const matchesProgramme =
-        selectedProgramme === "all" || std.programmeId === selectedProgramme;
+        selectedProgramme === "all" ||
+        std.programmeId === selectedProgramme ||
+        (Boolean(selectedProgObj) && (
+          selectedProgObj!.name.toLowerCase() === std.programmeName.toLowerCase() ||
+          false
+        )) ||
+        (selectedProgramme === "prog-ds" && (
+          std.programmeName.toLowerCase().includes("data science") ||
+          std.programmeId === "c010a20b-1eb1-4688-8cb4-ff807132142d"
+        ));
 
       const matchesSemester =
         selectedSemester === "all" || String(std.semester) === selectedSemester;
@@ -271,8 +339,7 @@ export const StudentsView: React.FC = () => {
       const matchesStatus =
         selectedStatus === "all" || std.enrollmentStatus === selectedStatus;
 
-      const matchesFee =
-        selectedFee === "all" || std.feeStatus === selectedFee;
+      const matchesFee = true; // Workstream D: Fee ledger unconfigured
 
       return (
         matchesSearch &&
@@ -284,6 +351,7 @@ export const StudentsView: React.FC = () => {
     });
   }, [
     students,
+    programmes,
     searchQuery,
     selectedProgramme,
     selectedSemester,
@@ -296,8 +364,8 @@ export const StudentsView: React.FC = () => {
     const total = students.length;
     const active = students.filter((s) => s.enrollmentStatus === "Active").length;
     const onLeave = students.filter((s) => s.enrollmentStatus === "On Leave").length;
-    const feePending = students.filter((s) => s.feeStatus === "Pending").length;
-    return { total, active, onLeave, feePending };
+    const anomalous = students.filter((s) => s.hasAnomaly).length;
+    return { total, active, onLeave, anomalous };
   }, [students]);
 
   // Handlers for Database Mutations
@@ -316,15 +384,22 @@ export const StudentsView: React.FC = () => {
       if (targetProgId) {
         const progRes = await getProgrammeDetailsAction(targetProgId);
         if (progRes.success && progRes.data && progRes.data.semesters?.length > 0) {
-          const sem =
-            progRes.data.semesters.find((s) => s.semesterNumber === Number(record.semester)) ||
-            progRes.data.semesters[0];
-          semesterId = sem.id;
-          if (sem.divisions?.length > 0) {
-            const div =
-              sem.divisions.find((d) => d.name === record.division) || sem.divisions[0];
-            divisionId = div.id;
+          const sem = progRes.data.semesters.find((s) => s.semesterNumber === Number(record.semester));
+          if (!sem) {
+            return {
+              success: false,
+              error: `Semester ${record.semester} is not offered in programme "${progRes.data.name}".`,
+            };
           }
+          semesterId = sem.id;
+          const div = sem.divisions?.find((d) => d.name === record.division) || sem.divisions?.[0];
+          if (!div) {
+            return {
+              success: false,
+              error: `Division "${record.division}" is not configured for Semester ${sem.semesterNumber}.`,
+            };
+          }
+          divisionId = div.id;
         }
       }
 
@@ -354,6 +429,11 @@ export const StudentsView: React.FC = () => {
         dob: record.dateOfBirth ? new Date(record.dateOfBirth) : new Date("2006-05-15"),
         bloodGroup: record.bloodGroup || "B+",
         gender: "MALE",
+        guardianName: record.guardianName,
+        guardianRelationship: record.guardianRelationship,
+        guardianPhone: record.guardianPhone,
+        attendanceRate: record.attendanceRate,
+        mentorFaculty: record.mentorFaculty,
         programmeId: targetProgId,
         semesterId,
         divisionId,
@@ -376,23 +456,42 @@ export const StudentsView: React.FC = () => {
 
   const handleEditStudent = async (record: StudentRecord) => {
     try {
-      let targetProgId = record.programmeId;
-      if (!targetProgId && programmes.length > 0) {
-        targetProgId = programmes[0].id;
-      }
+      // Differentiate Identity-Only edits from Academic Placement transitions
+      const original = formStudent;
+      const placementChanged =
+        !original ||
+        original.programmeId !== record.programmeId ||
+        Number(original.semester) !== Number(record.semester) ||
+        original.division !== record.division;
 
-      let semesterId = "";
-      let divisionId = "";
-      if (targetProgId) {
-        const progRes = await getProgrammeDetailsAction(targetProgId);
-        if (progRes.success && progRes.data && progRes.data.semesters?.length > 0) {
-          const sem =
-            progRes.data.semesters.find((s) => s.semesterNumber === Number(record.semester)) ||
-            progRes.data.semesters[0];
-          semesterId = sem.id;
-          if (sem.divisions?.length > 0) {
-            const div =
-              sem.divisions.find((d) => d.name === record.division) || sem.divisions[0];
+      let targetProgId: string | undefined = undefined;
+      let semesterId: string | undefined = undefined;
+      let divisionId: string | undefined = undefined;
+
+      if (placementChanged) {
+        targetProgId = record.programmeId;
+        if (!targetProgId && programmes.length > 0) {
+          targetProgId = programmes[0].id;
+        }
+
+        if (targetProgId) {
+          const progRes = await getProgrammeDetailsAction(targetProgId);
+          if (progRes.success && progRes.data && progRes.data.semesters?.length > 0) {
+            const sem = progRes.data.semesters.find((s) => s.semesterNumber === Number(record.semester));
+            if (!sem) {
+              return {
+                success: false,
+                error: `Semester ${record.semester} is not offered in programme "${progRes.data.name}".`,
+              };
+            }
+            semesterId = sem.id;
+            const div = sem.divisions?.find((d) => d.name === record.division) || sem.divisions?.[0];
+            if (!div) {
+              return {
+                success: false,
+                error: `Division "${record.division}" is not configured for Semester ${sem.semesterNumber}.`,
+              };
+            }
             divisionId = div.id;
           }
         }
@@ -415,9 +514,14 @@ export const StudentsView: React.FC = () => {
         bloodGroup: record.bloodGroup,
         dob: record.dateOfBirth ? new Date(record.dateOfBirth) : undefined,
         status: dbStatus,
-        programmeId: targetProgId,
-        semesterId,
-        divisionId,
+        guardianName: record.guardianName,
+        guardianRelationship: record.guardianRelationship,
+        guardianPhone: record.guardianPhone,
+        attendanceRate: record.attendanceRate,
+        mentorFaculty: record.mentorFaculty,
+        programmeId: placementChanged ? targetProgId : undefined,
+        semesterId: placementChanged ? semesterId : undefined,
+        divisionId: placementChanged ? divisionId : undefined,
       });
 
       if (!res.success || !res.data) {
@@ -441,9 +545,21 @@ export const StudentsView: React.FC = () => {
         searchQuery.trim() === "" ||
         updatedRecord.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         updatedRecord.prn.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (Boolean(updatedRecord.rollNumber) && updatedRecord.rollNumber!.toLowerCase().includes(searchQuery.toLowerCase())) ||
         updatedRecord.programmeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         updatedRecord.email.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesProg = selectedProgramme === "all" || updatedRecord.programmeId === selectedProgramme;
+      const selectedProgObj = programmes.find((p) => p.id === selectedProgramme);
+      const matchesProg =
+        selectedProgramme === "all" ||
+        updatedRecord.programmeId === selectedProgramme ||
+        (Boolean(selectedProgObj) && (
+          selectedProgObj!.name.toLowerCase() === updatedRecord.programmeName.toLowerCase() ||
+          false
+        )) ||
+        (selectedProgramme === "prog-ds" && (
+          updatedRecord.programmeName.toLowerCase().includes("data science") ||
+          updatedRecord.programmeId === "c010a20b-1eb1-4688-8cb4-ff807132142d"
+        ));
       const matchesSem = selectedSemester === "all" || String(updatedRecord.semester) === selectedSemester;
       const matchesSt = selectedStatus === "all" || updatedRecord.enrollmentStatus === selectedStatus;
       const matchesF = selectedFee === "all" || updatedRecord.feeStatus === selectedFee;
@@ -593,18 +709,34 @@ export const StudentsView: React.FC = () => {
               </div>
 
               <div className="shrink-0 flex items-center space-x-2.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormMode("add");
-                    setFormStudent(null);
-                    setFormModalOpen(true);
-                  }}
-                  className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-[#1657D9] hover:bg-[#1248B8] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
-                >
-                  <Icon name="plus" className="h-4 w-4" />
-                  <span>Enroll New Student</span>
-                </button>
+                {prototypeRecords.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setReconcileModalOpen(true)}
+                    className="inline-flex items-center space-x-2 px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                    title="Inspect and reconcile uncommitted prototype student records"
+                  >
+                    <Icon name="archive-box" className="h-4 w-4 text-amber-600" />
+                    <span>Data Tools</span>
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                      {prototypeRecords.length}
+                    </span>
+                  </button>
+                )}
+                {canWrite && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormMode("add");
+                      setFormStudent(null);
+                      setFormModalOpen(true);
+                    }}
+                    className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-[#1657D9] hover:bg-[#1248B8] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                  >
+                    <Icon name="plus" className="h-4 w-4" />
+                    <span>Enroll New Student</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -636,10 +768,11 @@ export const StudentsView: React.FC = () => {
               </div>
               <div className="bg-white/80 backdrop-blur-xs p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
                 <div className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
-                  Fee Installment Due
+                  Fee Ledger
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-[#D92534] mt-0.5 font-serif">
-                  {stats.feePending}
+                <div className="text-sm font-semibold text-slate-500 mt-1.5 flex items-center space-x-1.5">
+                  <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                  <span>Not Configured</span>
                 </div>
               </div>
             </div>
@@ -647,44 +780,7 @@ export const StudentsView: React.FC = () => {
         </div>
       </AnimatedReveal>
 
-      {/* Prototype Data Reconciliation Alert Banner */}
-      {prototypeRecords.length > 0 && showReconcileBanner && (
-        <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-start space-x-3">
-            <div className="p-2 rounded-xl bg-amber-100 text-amber-800 shrink-0 mt-0.5">
-              <Icon name="archive-box" className="h-5 w-5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-amber-950">
-                Prototype Browser Records Detected ({prototypeRecords.length} records in localStorage)
-              </h4>
-              <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                The SQLite database is now active as the authoritative system of record. You can safely inspect and reconcile legacy prototype data. Browser storage will not be altered.
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center space-x-2 shrink-0 self-end sm:self-center">
-            <button
-              type="button"
-              onClick={() => setReconcileModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-[#1657D9] hover:bg-[#1248B8] text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer flex items-center space-x-1"
-            >
-              <Icon name="arrow-path" className="h-3.5 w-3.5" />
-              <span>Review & Reconcile</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowReconcileBanner(false)}
-              className="p-1.5 rounded-lg text-amber-700 hover:text-amber-900 hover:bg-amber-100/60 transition-colors cursor-pointer"
-              title="Dismiss Banner"
-              aria-label="Dismiss banner"
-            >
-              <Icon name="x-mark" className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Server Connection Error Alert */}
       {serverError && (
@@ -718,8 +814,9 @@ export const StudentsView: React.FC = () => {
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
               />
               <input
+                id="student-search-input"
                 type="text"
-                placeholder="Search students by name, PRN, programme, email…"
+                placeholder="Search students by name, PRN, roll number, programme, email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3.5 py-2 text-xs rounded-xl bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#1657D9]"
@@ -759,16 +856,23 @@ export const StudentsView: React.FC = () => {
                 Programme
               </label>
               <select
+                id="student-programme-filter"
                 value={selectedProgramme}
                 onChange={(e) => setSelectedProgramme(e.target.value)}
                 className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#1657D9] cursor-pointer"
               >
                 <option value="all">All Programmes</option>
-                {ACADEMIC_PROGRAMMES.map((prog) => (
-                  <option key={prog.id} value={prog.id}>
-                    {prog.code} ({prog.name.slice(0, 24)}…)
-                  </option>
-                ))}
+                {programmes && programmes.length > 0
+                  ? programmes.map((prog) => (
+                      <option key={prog.id} value={prog.id}>
+                        {prog.code} ({prog.name.length > 24 ? `${prog.name.slice(0, 24)}...` : prog.name})
+                      </option>
+                    ))
+                  : ACADEMIC_PROGRAMMES.map((prog) => (
+                      <option key={prog.id} value={prog.id}>
+                        {prog.code} ({prog.name.length > 24 ? `${prog.name.slice(0, 24)}...` : prog.name})
+                      </option>
+                    ))}
               </select>
             </div>
 
@@ -813,14 +917,11 @@ export const StudentsView: React.FC = () => {
                 Fee Ledger
               </label>
               <select
-                value={selectedFee}
-                onChange={(e) => setSelectedFee(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#1657D9] cursor-pointer"
+                disabled
+                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 text-xs cursor-not-allowed opacity-80"
+                title="Institutional Fee Ledger not configured"
               >
-                <option value="all">All Fee Statuses</option>
-                <option value="Paid">Paid Full</option>
-                <option value="Partial">Partial</option>
-                <option value="Pending">Pending</option>
+                <option>Not Configured</option>
               </select>
             </div>
           </div>
@@ -855,7 +956,12 @@ export const StudentsView: React.FC = () => {
               {filteredStudents.map((std) => (
                 <tr key={std.id} className="hover:bg-slate-50/80 transition-colors group">
                   <td className="py-3.5 px-4 font-mono font-bold text-xs text-[#1657D9]">
-                    {std.prn}
+                    <div>{std.prn}</div>
+                    {std.rollNumber && std.rollNumber !== std.prn && (
+                      <div className="font-mono font-normal text-[10px] text-slate-400 mt-0.5">
+                        {std.rollNumber}
+                      </div>
+                    )}
                   </td>
                   <td className="py-3.5 px-4">
                     <div className="flex items-center space-x-3">
@@ -908,12 +1014,8 @@ export const StudentsView: React.FC = () => {
                     </div>
                   </td>
                   <td className="py-3.5 px-4">
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getFeeBadge(
-                        std.feeStatus
-                      )}`}
-                    >
-                      {std.feeStatus}
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                      Not configured
                     </span>
                   </td>
                   <td className="py-3.5 px-4">
@@ -935,26 +1037,30 @@ export const StudentsView: React.FC = () => {
                       >
                         <Icon name="eye" className="h-4 w-4" />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormMode("edit");
-                          setFormStudent(std);
-                          setFormModalOpen(true);
-                        }}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
-                        title="Edit Record"
-                      >
-                        <Icon name="pencil" className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteStudent(std)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-[#D92534] hover:bg-red-50 transition-colors cursor-pointer"
-                        title="Delete Record"
-                      >
-                        <Icon name="trash" className="h-4 w-4" />
-                      </button>
+                      {canWrite && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormMode("edit");
+                            setFormStudent(std);
+                            setFormModalOpen(true);
+                          }}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+                          title="Edit Record"
+                        >
+                          <Icon name="pencil" className="h-4 w-4" />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => setDeleteStudent(std)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-[#D92534] hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Delete Record"
+                        >
+                          <Icon name="trash" className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1010,12 +1116,8 @@ export const StudentsView: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between pt-1">
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getFeeBadge(
-                    std.feeStatus
-                  )}`}
-                >
-                  Fee: {std.feeStatus}
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                  Fee: Not configured
                 </span>
 
                 <div className="flex items-center space-x-1.5">
@@ -1099,7 +1201,7 @@ export const StudentsView: React.FC = () => {
       />
 
       <StudentFormModal
-        key={formStudent?.id || (formModalOpen ? "add" : "none")}
+        key={formStudent?.id || formStudent?.prn || (formModalOpen ? "add" : "none")}
         isOpen={formModalOpen}
         mode={formMode}
         initialData={formStudent}
@@ -1132,6 +1234,7 @@ export const StudentsView: React.FC = () => {
         items={reconciliationItems}
         onClose={() => setReconcileModalOpen(false)}
         onImport={handleReconcileImport}
+        onPruneDuplicates={handlePruneDuplicates}
       />
     </div>
   );

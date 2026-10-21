@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { verifySessionToken, SESSION_COOKIE_NAME, AuthenticatedUser } from "./session";
 import { Permission, hasPermission, Role } from "./roles";
 import { Result } from "@/lib/dal/types";
@@ -9,6 +10,7 @@ import { Result } from "@/lib/dal/types";
  */
 export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
   try {
+    try { await connection(); } catch {}
     const cookieStore = await cookies();
     const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
     if (!token) {

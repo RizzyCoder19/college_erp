@@ -131,6 +131,11 @@ model Student {
   bloodGroup      String?
   status          String       @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, ALUMNI
   currentSemester Int          @default(1)
+  guardianName    String?
+  guardianRelationship String?
+  guardianPhone   String?
+  attendanceRate  Float?
+  mentorFaculty   String?
   enrolments      Enrolment[]
   userAccount     UserAccount?
   createdAt       DateTime     @default(now())
@@ -151,6 +156,11 @@ model Staff {
   department          Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   dateOfJoining       DateTime
   status              String               @default("ACTIVE") // ACTIVE, ON_LEAVE
+  qualification       String?
+  specialization      String?
+  officeLocation      String?
+  workloadHours       Int?
+  employmentType      String?
   teachingAssignments TeachingAssignment[]
   userAccount         UserAccount?
   createdAt           DateTime             @default(now())

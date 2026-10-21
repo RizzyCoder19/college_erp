@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { AppShell } from "@/components/layout/AppShell";
@@ -10,12 +11,6 @@ interface PageProps {
   params: Promise<{
     slug: string;
   }>;
-}
-
-export async function generateStaticParams() {
-  return MODULES_LIST.map((m) => ({
-    slug: m.slug,
-  }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -29,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   return {
-    title: `${moduleData.title} | RPIHM CampusOS ERP`,
+    title: moduleData.title + " | RPIHM CampusOS ERP",
     description: moduleData.description,
   };
 }
@@ -46,6 +41,7 @@ async function ModuleContent({ params }: PageProps) {
 }
 
 async function AuthenticatedModule(props: PageProps) {
+  await connection();
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

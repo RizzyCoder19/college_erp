@@ -11,6 +11,9 @@ export interface AcademicProgrammeDTO {
   departmentId: string;
   departmentName: string;
   semesterCount: number;
+  divisionCount: number;
+  subjectCount: number;
+  enrolmentCount: number;
 }
 
 export type AcademicYearWithTerms = Prisma.AcademicYearGetPayload<{
@@ -31,7 +34,27 @@ export type ProgrammeDetails = Prisma.ProgrammeGetPayload<{
     semesters: {
       include: {
         divisions: true;
-        subjects: true;
+        subjects: {
+          include: {
+            teachingAssignments: {
+              include: {
+                staff: true;
+                division: true;
+              };
+            };
+          };
+        };
+        enrolments: {
+          include: {
+            student: true;
+            division: true;
+          };
+        };
+      };
+    };
+    _count: {
+      select: {
+        enrolments: true;
       };
     };
   };
@@ -108,23 +131,45 @@ export class AcademicRepository {
     try {
       const programmes = await prisma.programme.findMany({
         where: departmentId ? { departmentId } : undefined,
-        orderBy: { name: "asc" },
+        orderBy: { code: "asc" },
         include: {
           department: true,
-          semesters: true,
+          semesters: {
+            include: {
+              _count: {
+                select: {
+                  divisions: true,
+                  subjects: true,
+                  enrolments: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              enrolments: true,
+            },
+          },
         },
       });
 
-      const formatted: AcademicProgrammeDTO[] = programmes.map((p) => ({
-        id: p.id,
-        code: p.code,
-        name: p.name,
-        degreeLevel: p.degreeLevel,
-        durationYears: p.durationYears,
-        departmentId: p.departmentId,
-        departmentName: p.department.name,
-        semesterCount: p.semesters.length,
-      }));
+      const formatted: AcademicProgrammeDTO[] = programmes.map((p) => {
+        const divisionCount = p.semesters.reduce((acc, s) => acc + s._count.divisions, 0);
+        const subjectCount = p.semesters.reduce((acc, s) => acc + s._count.subjects, 0);
+        return {
+          id: p.id,
+          code: p.code,
+          name: p.name,
+          degreeLevel: p.degreeLevel,
+          durationYears: p.durationYears,
+          departmentId: p.departmentId,
+          departmentName: p.department.name,
+          semesterCount: p.semesters.length,
+          divisionCount,
+          subjectCount,
+          enrolmentCount: p._count.enrolments,
+        };
+      });
 
       return { success: true, data: formatted };
     } catch (error: unknown) {
@@ -146,7 +191,27 @@ export class AcademicRepository {
             orderBy: { semesterNumber: "asc" },
             include: {
               divisions: true,
-              subjects: true,
+              subjects: {
+                include: {
+                  teachingAssignments: {
+                    include: {
+                      staff: true,
+                      division: true,
+                    },
+                  },
+                },
+              },
+              enrolments: {
+                include: {
+                  student: true,
+                  division: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              enrolments: true,
             },
           },
         },

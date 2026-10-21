@@ -12,13 +12,19 @@ export function LoginForm() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setIsPending(true);
 
     try {
-      const result = await loginAction({ email, password });
+      const form = e.currentTarget;
+      const emailEl = form.querySelector("#login-email") as HTMLInputElement | null;
+      const passEl = form.querySelector("#login-password") as HTMLInputElement | null;
+      const submitEmail = (emailEl?.value || email).trim();
+      const submitPassword = passEl?.value || password;
+
+      const result = await loginAction({ email: submitEmail, password: submitPassword });
       if (!result.success) {
         setError(result.error || "Authentication failed. Please check credentials.");
         setIsPending(false);
@@ -56,6 +62,7 @@ export function LoginForm() {
         <div className="relative">
           <input
             id="login-email"
+            name="email"
             type="email"
             required
             autoComplete="email"
@@ -77,6 +84,7 @@ export function LoginForm() {
         <div className="relative">
           <input
             id="login-password"
+            name="password"
             type="password"
             required
             autoComplete="current-password"

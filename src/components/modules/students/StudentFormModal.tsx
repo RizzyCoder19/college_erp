@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import { Icon } from "@/components/common/Icon";
@@ -9,7 +9,7 @@ interface StudentFormModalProps {
   isOpen: boolean;
   mode: "add" | "edit";
   initialData?: StudentRecord | null;
-  programmes?: Array<{ id: string; code: string; name: string; departmentName?: string }>;
+  programmes?: Array<{ id: string; code: string; name: string; departmentName?: string; semesterCount?: number; durationYears?: number }>;
   onClose: () => void;
   onSave: (student: StudentRecord) => Promise<{ success: boolean; error?: string } | boolean | void>;
 }
@@ -38,26 +38,36 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   const [programmeId, setProgrammeId] = useState(
     initialData?.programmeId || (effectiveProgrammes.length > 0 ? effectiveProgrammes[0].id : "prog-ds")
   );
+
+  // Compute maximum semesters supported by the selected programme
+  const selectedProg = effectiveProgrammes.find((p) => p.id === programmeId);
+  const maxSemesters =
+    selectedProg && "semesterCount" in selectedProg && typeof selectedProg.semesterCount === "number" && selectedProg.semesterCount > 0
+      ? selectedProg.semesterCount
+      : selectedProg && "durationYears" in selectedProg && typeof selectedProg.durationYears === "number"
+      ? selectedProg.durationYears * 2
+      : 6;
+
   const [semester, setSemester] = useState<number>(initialData?.semester || 1);
   const [yearGroup, setYearGroup] = useState<"FY" | "SY" | "TY">(initialData?.yearGroup || "FY");
   const [division, setDivision] = useState<"Div A" | "Div B" | "Div C">(initialData?.division || "Div A");
   const [email, setEmail] = useState(initialData?.email || "");
   const [phone, setPhone] = useState(initialData?.phone || "+91 ");
   const [enrollmentStatus, setEnrollmentStatus] = useState<StudentStatus>(initialData?.enrollmentStatus || "Active");
-  const [feeStatus, setFeeStatus] = useState<FeeStatus>(initialData?.feeStatus || "Paid");
   const [attendanceRate, setAttendanceRate] = useState<number>(initialData?.attendanceRate ?? 88);
   const [gpa] = useState<string>(initialData?.gpa ? String(initialData.gpa) : "8.5");
-  const [mentorFaculty, setMentorFaculty] = useState(initialData?.mentorFaculty || "Prof. Snehal Kulkarni");
+  const [mentorFaculty, setMentorFaculty] = useState(initialData?.mentorFaculty || "");
   const [guardianName, setGuardianName] = useState(initialData?.guardianName || "");
-  const [guardianRelationship, setGuardianRelationship] = useState(initialData?.guardianRelationship || "Father");
-  const [guardianPhone, setGuardianPhone] = useState(initialData?.guardianPhone || "+91 ");
-  const [dateOfBirth, setDateOfBirth] = useState(initialData?.dateOfBirth || "2006-05-15");
-  const [bloodGroup, setBloodGroup] = useState(initialData?.bloodGroup || "B+");
+  const [guardianRelationship, setGuardianRelationship] = useState(initialData?.guardianRelationship || "");
+  const [guardianPhone, setGuardianPhone] = useState(initialData?.guardianPhone || "");
+  const [dateOfBirth, setDateOfBirth] = useState(initialData?.dateOfBirth || "");
+  const [bloodGroup, setBloodGroup] = useState(initialData?.bloodGroup || "");
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
+  // Synchronize form state whenever modal opens or target record updates
   useEffect(() => {
     if (isOpen) {
       setFullName(initialData?.fullName || "");
@@ -71,19 +81,25 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       setEmail(initialData?.email || "");
       setPhone(initialData?.phone || "+91 ");
       setEnrollmentStatus(initialData?.enrollmentStatus || "Active");
-      setFeeStatus(initialData?.feeStatus || "Paid");
       setAttendanceRate(initialData?.attendanceRate ?? 88);
-      setMentorFaculty(initialData?.mentorFaculty || "Prof. Snehal Kulkarni");
+      setMentorFaculty(initialData?.mentorFaculty || "");
       setGuardianName(initialData?.guardianName || "");
-      setGuardianRelationship(initialData?.guardianRelationship || "Father");
-      setGuardianPhone(initialData?.guardianPhone || "+91 ");
-      setDateOfBirth(initialData?.dateOfBirth || "2006-05-15");
-      setBloodGroup(initialData?.bloodGroup || "B+");
+      setGuardianRelationship(initialData?.guardianRelationship || "");
+      setGuardianPhone(initialData?.guardianPhone || "");
+      setDateOfBirth(initialData?.dateOfBirth || "");
+      setBloodGroup(initialData?.bloodGroup || "");
       setErrors({});
       setServerError(null);
-      setIsSubmitting(false);
     }
   }, [isOpen, initialData, effectiveProgrammes]);
+
+  // Keep semester bounded to the selected programme's valid range
+  useEffect(() => {
+    if (semester > maxSemesters) {
+      setSemester(1);
+      setYearGroup("FY");
+    }
+  }, [programmeId, maxSemesters, semester]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -121,13 +137,11 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       newErrors.attendanceRate = "Attendance must be between 0 and 100%.";
     }
 
-    if (!guardianName.trim()) {
-      newErrors.guardianName = "Guardian name is required.";
-    }
-
-    const cleanGPhone = guardianPhone.replace(/[^0-9]/g, "");
-    if (cleanGPhone.length < 10) {
-      newErrors.guardianPhone = "Guardian emergency phone must have at least 10 digits.";
+    if (guardianPhone.trim()) {
+      const cleanGPhone = guardianPhone.replace(/[^0-9]/g, "");
+      if (cleanGPhone.length < 10) {
+        newErrors.guardianPhone = "Guardian emergency phone must have at least 10 digits.";
+      }
     }
 
     setErrors(newErrors);
@@ -143,12 +157,12 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      const selectedProg = effectiveProgrammes.find((p) => p.id === programmeId);
+      const selectedP = effectiveProgrammes.find((p) => p.id === programmeId);
       const deptName =
-        selectedProg && "departmentName" in selectedProg && typeof selectedProg.departmentName === "string"
-          ? selectedProg.departmentName
-          : selectedProg && "department" in selectedProg && typeof selectedProg.department === "string"
-          ? selectedProg.department
+        selectedP && "departmentName" in selectedP && typeof selectedP.departmentName === "string"
+          ? selectedP.departmentName
+          : selectedP && "department" in selectedP && typeof selectedP.department === "string"
+          ? selectedP.department
           : "Technology & Computing";
 
       const record: StudentRecord = {
@@ -158,14 +172,14 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
         programmeId,
-        programmeName: selectedProg ? selectedProg.name : "Undergraduate Programme",
+        programmeName: selectedP ? selectedP.name : "Undergraduate Programme",
         department: deptName,
         semester: Number(semester),
         yearGroup,
         division,
         admissionDate: initialData?.admissionDate || "24 Jul 2026",
         enrollmentStatus,
-        feeStatus,
+        feeStatus: "Not configured" as FeeStatus,
         attendanceRate: Number(attendanceRate),
         gpa: gpa ? parseFloat(gpa) : undefined,
         mentorFaculty,
@@ -201,106 +215,65 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
-      onClick={() => {
-        if (!isSubmitting) onClose();
-      }}
+      onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label={mode === "add" ? "Add Student" : "Edit Student"}
+      aria-label={mode === "add" ? "Enroll New Student" : "Edit Student Record"}
     >
       <div
-        className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden"
+        className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-[#0B1528] px-6 py-4.5 text-white border-b border-[#16243E] flex items-center justify-between shrink-0">
+        <div className="bg-[#0B1528] p-5 text-white flex items-center justify-between border-b border-[#16243E] shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-blue-500/20 text-blue-200 border border-blue-400/30">
-              <Icon name="users" className="h-5 w-5" />
+            <div className="w-10 h-10 rounded-xl bg-[#1657D9] flex items-center justify-center font-bold text-white shadow-md">
+              <Icon name={mode === "add" ? "plus" : "pencil"} className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white font-serif">
-                {mode === "add" ? "Enroll New Student Dossier" : "Update Student Record"}
+              <h3 className="font-bold text-base font-serif">
+                {mode === "add" ? "Enroll New Student Record" : `Edit Dossier: ${initialData?.fullName}`}
               </h3>
-              <p className="text-[11px] text-slate-300">
-                Academic Session 2026?27 ? Student Management
+              <p className="text-xs text-slate-300">
+                {mode === "add"
+                  ? "Record student identity and academic placement in the institutional register."
+                  : `PRN: ${initialData?.prn} • Verified SQLite Record`}
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            disabled={isSubmitting}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            aria-label="Close"
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Close modal"
           >
             <Icon name="x-mark" className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Scrollable Form Body */}
-        <form id="student-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-xs text-slate-800">
-          {/* Actionable Server Error Banner */}
+        {/* Form Body */}
+        <form
+          id="student-form"
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto p-6 space-y-6 text-xs text-slate-700"
+        >
           {serverError && (
-            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-[#D92534] flex items-start space-x-2.5 animate-in fade-in">
-              <Icon name="exclamation-circle" className="h-5 w-5 shrink-0 mt-0.5 text-[#D92534]" />
-              <div className="flex-1">
-                <p className="font-bold text-xs text-red-900">Unable to Save Student Record</p>
-                <p className="text-[11px] text-red-700 mt-0.5 leading-relaxed">{serverError}</p>
-              </div>
+            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-center space-x-2">
+              <Icon name="exclamation-circle" className="h-4 w-4 text-red-600 shrink-0" />
+              <span>{serverError}</span>
             </div>
           )}
 
-          {/* Section 1: Core Academic Information */}
+          {/* Section 1: Academic Placement */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#1657D9] flex items-center space-x-1.5 border-b border-slate-100 pb-1.5">
               <Icon name="academic-cap" className="h-4 w-4" />
-              <span>1. Academic Enrolment Data</span>
+              <span>1. Institutional Academic Placement</span>
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
-                <label className="block text-slate-600 font-semibold mb-1">
-                  Full Student Name <span className="text-[#D92534]">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={fullName}
-                  disabled={isSubmitting}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Aarav Sharma"
-                  className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
-                    errors.fullName ? "border-[#D92534] ring-1 ring-[#D92534]" : "border-slate-200"
-                  } text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60`}
-                />
-                {errors.fullName && (
-                  <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.fullName}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-slate-600 font-semibold mb-1">
-                  PRN / Roll Number <span className="text-[#D92534]">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={prn}
-                  disabled={isSubmitting}
-                  onChange={(e) => setPrn(e.target.value)}
-                  placeholder="e.g. 2026DS041"
-                  className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
-                    errors.prn ? "border-[#D92534] ring-1 ring-[#D92534]" : "border-slate-200"
-                  } font-mono font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60`}
-                />
-                {errors.prn && (
-                  <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.prn}</p>
-                )}
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-slate-600 font-semibold mb-1">
-                  Academic Programme <span className="text-[#D92534]">*</span>
-                </label>
+                <label className="block text-slate-600 font-semibold mb-1">Academic Programme</label>
                 <select
                   value={programmeId}
                   disabled={isSubmitting}
@@ -328,7 +301,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                     }}
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium disabled:opacity-60"
                   >
-                    {[1, 2, 3, 4, 5, 6].map((s) => (
+                    {Array.from({ length: maxSemesters }, (_, i) => i + 1).map((s) => (
                       <option key={s} value={s}>
                         Semester {s}
                       </option>
@@ -356,40 +329,72 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                   onChange={(e) => setEnrollmentStatus(e.target.value as StudentStatus)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium disabled:opacity-60"
                 >
-                  <option value="Active">Active</option>
-                  <option value="On Leave">On Leave</option>
-                  <option value="Graduated">Graduated</option>
+                  <option value="Active">Active Student</option>
+                  <option value="On Leave">On Leave / Training</option>
                   <option value="Pending Verification">Pending Verification</option>
+                  <option value="Graduated">Graduated / Alumni</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">
+                  Institutional Roll Number / PRN <span className="text-[#D92534]">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={prn}
+                  disabled={isSubmitting}
+                  onChange={(e) => setPrn(e.target.value.toUpperCase())}
+                  placeholder="e.g. 2026DS045 or RPIHM-2026-045"
+                  className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
+                    errors.prn ? "border-[#D92534] ring-1 ring-[#D92534]" : "border-slate-200"
+                  } font-mono font-semibold text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60`}
+                />
+                {errors.prn && <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.prn}</p>}
               </div>
             </div>
           </div>
 
-          {/* Section 2: Contact & Identification */}
+          {/* Section 2: Student Identity */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#1657D9] flex items-center space-x-1.5 border-b border-slate-100 pb-1.5">
-              <Icon name="identification" className="h-4 w-4" />
-              <span>2. Contact & Identity Information</span>
+              <Icon name="users" className="h-4 w-4" />
+              <span>2. Student Identity & Contact Information</span>
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="sm:col-span-2">
+                <label className="block text-slate-600 font-semibold mb-1">
+                  Full Name (as per matriculation records) <span className="text-[#D92534]">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  disabled={isSubmitting}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g. Aarav Sharma"
+                  className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
+                    errors.fullName ? "border-[#D92534] ring-1 ring-[#D92534]" : "border-slate-200"
+                  } text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs font-medium disabled:opacity-60`}
+                />
+                {errors.fullName && <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.fullName}</p>}
+              </div>
+
               <div>
                 <label className="block text-slate-600 font-semibold mb-1">
-                  Institutional / Student Email <span className="text-[#D92534]">*</span>
+                  Institutional Email <span className="text-[#D92534]">*</span>
                 </label>
                 <input
                   type="email"
                   value={email}
                   disabled={isSubmitting}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="student.name@rpihm.ac.in"
+                  onChange={(e) => setEmail(e.target.value.toLowerCase())}
+                  placeholder="e.g. student.name.26@rpihm.ac.in"
                   className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
                     errors.email ? "border-[#D92534] ring-1 ring-[#D92534]" : "border-slate-200"
                   } text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60`}
                 />
-                {errors.email && (
-                  <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.email}</p>
-                )}
+                {errors.email && <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.email}</p>}
               </div>
 
               <div>
@@ -397,18 +402,16 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                   Primary Mobile Phone <span className="text-[#D92534]">*</span>
                 </label>
                 <input
-                  type="text"
+                  type="tel"
                   value={phone}
                   disabled={isSubmitting}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98200 12345"
+                  placeholder="+91 98000 00000"
                   className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
                     errors.phone ? "border-[#D92534] ring-1 ring-[#D92534]" : "border-slate-200"
                   } font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60`}
                 />
-                {errors.phone && (
-                  <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.phone}</p>
-                )}
+                {errors.phone && <p className="text-[10px] text-[#D92534] mt-1 font-medium">{errors.phone}</p>}
               </div>
 
               <div>
@@ -430,17 +433,20 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                   onChange={(e) => setBloodGroup(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium disabled:opacity-60"
                 >
-                  {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
-                    <option key={bg} value={bg}>
-                      {bg}
-                    </option>
-                  ))}
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
                 </select>
               </div>
             </div>
           </div>
 
-          {/* Section 3: Guardian & Emergency Contact */}
+          {/* Section 3: Guardian Details */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#1657D9] flex items-center space-x-1.5 border-b border-slate-100 pb-1.5">
               <Icon name="phone" className="h-4 w-4" />
@@ -478,20 +484,20 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                   <option value="Father">Father</option>
                   <option value="Mother">Mother</option>
                   <option value="Guardian">Legal Guardian</option>
-                  <option value="Sibling">Elder Sibling</option>
+                  <option value="Sibling">Sibling</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-slate-600 font-semibold mb-1">
-                  Guardian Phone <span className="text-[#D92534]">*</span>
+                  Emergency Phone <span className="text-[#D92534]">*</span>
                 </label>
                 <input
-                  type="text"
+                  type="tel"
                   value={guardianPhone}
                   disabled={isSubmitting}
                   onChange={(e) => setGuardianPhone(e.target.value)}
-                  placeholder="+91 98200 54321"
+                  placeholder="+91 98000 00000"
                   className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${
                     errors.guardianPhone ? "border-[#D92534] ring-1 ring-[#D92534]" : "border-slate-200"
                   } font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs disabled:opacity-60`}
@@ -511,18 +517,17 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              {/* Workstream D: Disabled Unconfigured Fee Input */}
               <div>
                 <label className="block text-slate-600 font-semibold mb-1">Institutional Fee Ledger</label>
                 <select
-                  value={feeStatus}
-                  disabled={isSubmitting}
-                  onChange={(e) => setFeeStatus(e.target.value as FeeStatus)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs cursor-pointer font-medium disabled:opacity-60"
+                  disabled
+                  className="w-full px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs cursor-not-allowed font-medium opacity-80"
+                  title="Fee ledger not configured for live database persistence"
                 >
-                  <option value="Paid">Paid in Full</option>
-                  <option value="Partial">Partial Installment</option>
-                  <option value="Pending">Payment Pending</option>
+                  <option>Fee records not configured</option>
                 </select>
+                <p className="text-[10px] text-slate-400 mt-1">Financial ledger inactive in current milestone.</p>
               </div>
 
               <div>

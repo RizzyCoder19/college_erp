@@ -37,8 +37,13 @@ export const FacultyFormModal: React.FC<FacultyFormModalProps> = ({
   const [fullName, setFullName] = useState(initialData?.fullName || "");
   const [staffId, setStaffId] = useState(initialData?.staffId || "");
   const [designation, setDesignation] = useState(initialData?.designation || "");
-  const defaultDept = departments && departments.length > 0 ? departments[0].name : "Hospitality & Culinary Arts";
-  const [department, setDepartment] = useState(initialData?.department || defaultDept);
+  const defaultDeptId = departments && departments.length > 0 ? departments[0].id : "";
+  const [departmentId, setDepartmentId] = useState(
+    initialData?.departmentId ||
+    (departments?.find((d) => d.name === initialData?.department)?.id || defaultDeptId)
+  );
+  const defaultDeptName = departments?.find((d) => d.id === departmentId)?.name || initialData?.department || "Hospitality & Culinary Arts";
+  const [department, setDepartment] = useState(defaultDeptName);
   const [category, setCategory] = useState<StaffCategory>(initialData?.category || "Teaching Faculty");
   const [employmentType, setEmploymentType] = useState<EmploymentType>(initialData?.employmentType || "Full-Time Permanent");
   const [email, setEmail] = useState(initialData?.email || "");
@@ -59,13 +64,19 @@ export const FacultyFormModal: React.FC<FacultyFormModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
+
+
+  // Synchronize faculty form state whenever modal opens or target record updates
   useEffect(() => {
     if (isOpen) {
       setFullName(initialData?.fullName || "");
       setStaffId(initialData?.staffId || "");
       setDesignation(initialData?.designation || "");
-      const defDept = departments && departments.length > 0 ? departments[0].name : "Hospitality & Culinary Arts";
-      setDepartment(initialData?.department || defDept);
+      const currentDeptId = initialData?.departmentId ||
+        (departments?.find((d) => d.name === initialData?.department)?.id || defaultDeptId);
+      setDepartmentId(currentDeptId);
+      const foundName = departments?.find((d) => d.id === currentDeptId)?.name || initialData?.department || defaultDeptName;
+      setDepartment(foundName);
       setCategory(initialData?.category || "Teaching Faculty");
       setEmploymentType(initialData?.employmentType || "Full-Time Permanent");
       setEmail(initialData?.email || "");
@@ -79,9 +90,8 @@ export const FacultyFormModal: React.FC<FacultyFormModalProps> = ({
       setAssignedProgrammesInput(initialData?.assignedProgrammes?.join(", ") || "B.Sc. Hospitality Management");
       setErrors({});
       setServerError(null);
-      setIsSubmitting(false);
     }
-  }, [isOpen, initialData, departments]);
+  }, [isOpen, initialData, defaultDeptId, defaultDeptName]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -116,17 +126,8 @@ export const FacultyFormModal: React.FC<FacultyFormModalProps> = ({
     if (!phone.trim() || phone.trim().length < 8) {
       newErrors.phone = "Valid contact phone/extension is required";
     }
-    if (!officeLocation.trim()) {
-      newErrors.officeLocation = "Campus cabin/studio location is required";
-    }
-    if (isNaN(workloadHours) || workloadHours < 1 || workloadHours > 60) {
-      newErrors.workloadHours = "Workload must be between 1 and 60 hours/week";
-    }
-    if (!qualification.trim()) {
-      newErrors.qualification = "Highest qualification is required";
-    }
-    if (!specialization.trim()) {
-      newErrors.specialization = "Specialization area is required";
+    if (isNaN(workloadHours) || workloadHours < 0 || workloadHours > 60) {
+      newErrors.workloadHours = "Workload must be between 0 and 60 hours/week";
     }
 
     setErrors(newErrors);
@@ -158,6 +159,7 @@ export const FacultyFormModal: React.FC<FacultyFormModalProps> = ({
         fullName: fullName.trim(),
         designation: designation.trim(),
         department: department.trim(),
+        departmentId,
         category,
         employmentType,
         email: email.trim().toLowerCase(),
@@ -307,13 +309,18 @@ export const FacultyFormModal: React.FC<FacultyFormModalProps> = ({
                   Department <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
+                  value={departmentId}
+                  onChange={(e) => {
+                    const selId = e.target.value;
+                    setDepartmentId(selId);
+                    const found = departments?.find((d) => d.id === selId);
+                    if (found) setDepartment(found.name);
+                  }}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#1657D9]"
                 >
                   {departments && departments.length > 0 ? (
                     departments.map((d) => (
-                      <option key={d.id} value={d.name}>
+                      <option key={d.id} value={d.id}>
                         {d.name} ({d.code})
                       </option>
                     ))
