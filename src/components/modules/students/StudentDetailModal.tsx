@@ -270,13 +270,21 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
 
                     {/* Workstream E: Surface hierarchy anomaly if present */}
                     {item.hasHierarchyAnomaly && (
-                      <div className="mt-2.5 p-2.5 rounded-lg bg-amber-50/90 border border-amber-300 text-amber-900 flex items-start space-x-2">
+                      <div className="mt-2.5 p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 flex items-start space-x-2.5">
                         <Icon name="exclamation-circle" className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="font-bold block text-[11px]">Enrolment Hierarchy Inconsistency Flagged</span>
-                          <span className="text-[10px] text-amber-800 leading-relaxed block">
-                            {item.anomalyMessage || "Assigned division belongs to a different semester record in active institutional records. Needs administrative review."}
-                          </span>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-[11px] text-amber-950">Relational Placement Mismatch Detected</span>
+                            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900">
+                              Review Required
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-amber-900 leading-relaxed">
+                            {item.anomalyMessage || `Student is recorded in Semester ${item.semesterNumber}, but the assigned division belongs to a different semester record in the institutional database.`}
+                          </p>
+                          <div className="pt-1.5 border-t border-amber-200/80 text-[10px] text-amber-800 flex items-center justify-between">
+                            <span>Correction Workflow: (1) Ensure a division is provisioned for Semester {item.semesterNumber} in Academics, then (2) Click &quot;Edit Record&quot; below to link the valid division.</span>
+                          </div>
                         </div>
                       </div>
                     )}

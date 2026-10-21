@@ -1,6 +1,13 @@
 ﻿import prisma from "@/lib/db";
-import { Prisma } from "@prisma/client";
+import { Prisma, Division } from "@prisma/client";
 import { Result } from "./types";
+
+
+export interface CreateDivisionDTO {
+  semesterId: string;
+  name: string;
+  maxCapacity?: number;
+}
 
 export interface AcademicProgrammeDTO {
   id: string;
@@ -245,6 +252,108 @@ export class AcademicRepository {
       return { success: true, data: subjects };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to fetch subjects";
+      return { success: false, error: message };
+    }
+  }
+  /**
+   * Creates a new academic division under a specified semester with validation.
+   * Enforces:
+   * 1. Target semester exists.
+   * 2. Division name is valid.
+   * 3. Max capacity is a positive integer (default 60, min 1, max 200).
+   * 4. Uniqueness per semester (semesterId + name).
+   */
+  static async createDivision(dto: CreateDivisionDTO): Promise<Result<Division>> {
+    try {
+      const cleanName = dto.name.trim();
+      if (!cleanName) {
+        return { success: false, error: "Division name cannot be empty.", code: "INVALID_DIVISION_NAME" };
+      }
+
+      const capacity = dto.maxCapacity !== undefined ? Math.floor(Number(dto.maxCapacity)) : 60;
+      if (isNaN(capacity) || capacity < 1 || capacity > 200) {
+        return { success: false, error: "Division capacity must be between 1 and 200.", code: "INVALID_CAPACITY" };
+      }
+
+      // Check semester existence
+      const semester = await prisma.semester.findUnique({
+        where: { id: dto.semesterId },
+        include: { programme: true },
+      });
+      if (!semester) {
+        return { success: false, error: "Target semester record not found.", code: "SEMESTER_NOT_FOUND" };
+      }
+
+      // Check duplicate division name in same semester
+      const existing = await prisma.division.findUnique({
+        where: {
+          semesterId_name: {
+            semesterId: dto.semesterId,
+            name: cleanName,
+          },
+        },
+      });
+      if (existing) {
+        return {
+          success: false,
+          error: `Division "${cleanName}" already exists in Semester ${semester.semesterNumber} of ${semester.programme.name}.`,
+          code: "DUPLICATE_DIVISION",
+        };
+      }
+
+      const division = await prisma.division.create({
+        data: {
+          semesterId: dto.semesterId,
+          name: cleanName,
+          maxCapacity: capacity,
+        },
+      });
+
+      return { success: true, data: division };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to create division";
+      return { success: false, error: message };
+    }
+  }
+
+  /**
+   * Deletes an academic division if it has no associated enrolments or teaching assignments.
+   */
+  static async deleteDivision(divisionId: string): Promise<Result<boolean>> {
+    try {
+      const division = await prisma.division.findUnique({
+        where: { id: divisionId },
+        include: {
+          _count: {
+            select: { enrolments: true, teachingAssignments: true },
+          },
+        },
+      });
+
+      if (!division) {
+        return { success: false, error: "Division not found.", code: "NOT_FOUND" };
+      }
+
+      if (division._count.enrolments > 0) {
+        return {
+          success: false,
+          error: `Cannot delete division "${division.name}": ${division._count.enrolments} student enrolment(s) are actively placed in this cohort.`,
+          code: "DIVISION_IN_USE",
+        };
+      }
+
+      if (division._count.teachingAssignments > 0) {
+        return {
+          success: false,
+          error: `Cannot delete division "${division.name}": Faculty teaching assignments are linked to this division.`,
+          code: "DIVISION_IN_USE",
+        };
+      }
+
+      await prisma.division.delete({ where: { id: divisionId } });
+      return { success: true, data: true };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to delete division";
       return { success: false, error: message };
     }
   }

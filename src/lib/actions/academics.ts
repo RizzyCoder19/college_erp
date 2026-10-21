@@ -1,7 +1,7 @@
 "use server";
 
 import { AcademicRepository } from "@/lib/dal/academicRepository";
-import { requireAuth } from "@/lib/auth/guards";
+import { requireAuth, requirePermission } from "@/lib/auth/guards";
 import { Result } from "@/lib/dal/types";
 
 export async function getAcademicYearsAction() {
@@ -38,4 +38,16 @@ export async function getSubjectsAction(semesterId?: string) {
   const guard = await requireAuth();
   if (!guard.success) return guard as Result<never>;
   return AcademicRepository.getSubjects(semesterId);
+}
+
+export async function createDivisionAction(semesterId: string, name: string, maxCapacity?: number) {
+  const guard = await requirePermission("MANAGE_ACADEMICS");
+  if (!guard.success) return guard as Result<never>;
+  return AcademicRepository.createDivision({ semesterId, name, maxCapacity });
+}
+
+export async function deleteDivisionAction(divisionId: string) {
+  const guard = await requirePermission("MANAGE_ACADEMICS");
+  if (!guard.success) return guard as Result<never>;
+  return AcademicRepository.deleteDivision(divisionId);
 }

@@ -10,6 +10,8 @@ import {
   getProgrammeDetailsAction,
   getDepartmentsAction,
   getCurrentAcademicYearAction,
+  createDivisionAction,
+  deleteDivisionAction,
 } from "@/lib/actions/academics";
 import {
   getStaffAction,
@@ -54,6 +56,13 @@ export const AcademicsView: React.FC = () => {
   const [assignError, setAssignError] = useState<string | null>(null);
   const [actionSuccessToast, setActionSuccessToast] = useState<string | null>(null);
 
+  // Administrative Division Creation Workflow
+  const [createDivModalSemester, setCreateDivModalSemester] = useState<{ id: string; semesterNumber: number; divisions?: Array<{ name: string }> } | null>(null);
+  const [newDivName, setNewDivName] = useState<string>("Div A");
+  const [newDivCapacity, setNewDivCapacity] = useState<number>(60);
+  const [isCreatingDiv, setIsCreatingDiv] = useState(false);
+  const [createDivError, setCreateDivError] = useState<string | null>(null);
+
   // Load live programmes and departments from SQLite
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -94,6 +103,75 @@ export const AcademicsView: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Administrative Division Handlers
+  const handleOpenCreateDivModal = (sem: { id: string; semesterNumber: number; divisions?: Array<{ name: string }> }) => {
+    const existingNames = (sem.divisions || []).map((d) => d.name);
+    let suggested = "Div A";
+    if (existingNames.includes("Div A") && !existingNames.includes("Div B")) suggested = "Div B";
+    else if (existingNames.includes("Div A") && existingNames.includes("Div B") && !existingNames.includes("Div C")) suggested = "Div C";
+    setCreateDivModalSemester(sem);
+    setNewDivName(suggested);
+    setNewDivCapacity(60);
+    setCreateDivError(null);
+  };
+
+  const handleCloseCreateDivModal = () => {
+    setCreateDivModalSemester(null);
+    setCreateDivError(null);
+  };
+
+  const handleSaveDivision = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createDivModalSemester || !newDivName.trim()) return;
+
+    setIsCreatingDiv(true);
+    setCreateDivError(null);
+
+    try {
+      const res = await createDivisionAction(
+        createDivModalSemester.id,
+        newDivName.trim(),
+        newDivCapacity
+      );
+
+      if (!res.success) {
+        setCreateDivError(res.error || "Failed to create division.");
+      } else {
+        setActionSuccessToast(`Division "${newDivName.trim()}" successfully created for Semester ${createDivModalSemester.semesterNumber}.`);
+        handleCloseCreateDivModal();
+        if (selectedProgrammeId) {
+          handleInspectProgramme(selectedProgrammeId);
+        }
+        setTimeout(() => setActionSuccessToast(null), 4000);
+      }
+    } catch (err) {
+      setCreateDivError(err instanceof Error ? err.message : "Error creating division.");
+    } finally {
+      setIsCreatingDiv(false);
+    }
+  };
+
+  const handleDeleteDivision = async (divId: string, divName: string, semesterNum: number) => {
+    if (!confirm(`Are you sure you want to delete Division "${divName}" from Semester ${semesterNum}?`)) {
+      return;
+    }
+
+    try {
+      const res = await deleteDivisionAction(divId);
+      if (!res.success) {
+        alert(res.error || "Failed to delete division.");
+      } else {
+        setActionSuccessToast(`Division "${divName}" removed from Semester ${semesterNum}.`);
+        if (selectedProgrammeId) {
+          handleInspectProgramme(selectedProgrammeId);
+        }
+        setTimeout(() => setActionSuccessToast(null), 4000);
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Error deleting division.");
+    }
+  };
 
   // Faculty Assignment Handlers
   const handleOpenAssignModal = (
@@ -870,28 +948,78 @@ export const AcademicsView: React.FC = () => {
                                 <Icon name="users" className="w-4 h-4 text-slate-400" />
                                 <span>Academic Divisions (Cohorts)</span>
                               </span>
-                              <span className="text-[11px] text-slate-400">{activeSem.divisions?.length || 0} configured</span>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-[11px] text-slate-400">{activeSem.divisions?.length || 0} configured</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenCreateDivModal(activeSem)}
+                                  className="px-2 py-0.5 rounded text-[10px] font-bold text-[#1657D9] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center space-x-1 cursor-pointer"
+                                >
+                                  <span>+ Add Division</span>
+                                </button>
+                              </div>
                             </div>
 
                             {(!activeSem.divisions || activeSem.divisions.length === 0) ? (
-                              <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-300 text-center text-xs text-slate-500">
-                                No divisions configured for Semester {activeSem.semesterNumber}.
+                              <div className="p-6 rounded-xl bg-slate-50 border border-dashed border-slate-300 text-center text-xs text-slate-500 space-y-2.5">
+                                <p>No divisions configured for Semester {activeSem.semesterNumber}.</p>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenCreateDivModal(activeSem)}
+                                  className="px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-[#1657D9] hover:bg-[#1248B8] transition-colors shadow-xs inline-flex items-center space-x-1.5 cursor-pointer"
+                                >
+                                  <span>+ Provision Division for Sem {activeSem.semesterNumber}</span>
+                                </button>
                               </div>
                             ) : (
                               <div className="space-y-2">
-                                {activeSem.divisions.map((div) => (
-                                  <div key={div.id} className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors flex items-center justify-between shadow-xs">
-                                    <div>
-                                      <span className="font-bold text-xs text-slate-900 block">{div.name}</span>
-                                      <span className="text-[11px] text-slate-400 block mt-0.5">
-                                        Cohort Capacity: {div.maxCapacity} students
-                                      </span>
+                                {activeSem.divisions.map((div) => {
+                                  const enrolmentCount = (activeSem.enrolments || []).filter((e) => e.divisionId === div.id).length;
+                                  const teachingCount = (activeSem.subjects || []).flatMap((s) => s.teachingAssignments || []).filter((ta) => ta.divisionId === div.id).length;
+                                  const isDeletable = enrolmentCount === 0 && teachingCount === 0;
+
+                                  return (
+                                    <div key={div.id} className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors flex items-center justify-between shadow-xs">
+                                      <div>
+                                        <div className="flex items-center space-x-2">
+                                          <span className="font-bold text-xs text-slate-900">{div.name}</span>
+                                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            Active
+                                          </span>
+                                        </div>
+                                        <div className="text-[11px] text-slate-400 flex items-center space-x-2 mt-0.5">
+                                          <span>Capacity: {div.maxCapacity} seats</span>
+                                          <span>•</span>
+                                          <span className={enrolmentCount > 0 ? "font-semibold text-slate-700" : "text-slate-400"}>
+                                            {enrolmentCount} {enrolmentCount === 1 ? "student" : "students"} placed
+                                          </span>
+                                          {teachingCount > 0 && (
+                                            <>
+                                              <span>•</span>
+                                              <span>{teachingCount} faculty assigned</span>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div>
+                                        {isDeletable ? (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeleteDivision(div.id, div.name, activeSem.semesterNumber)}
+                                            className="px-2 py-1 rounded text-[10px] font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 transition-colors cursor-pointer"
+                                            title="Delete unused division"
+                                          >
+                                            Delete
+                                          </button>
+                                        ) : (
+                                          <span className="text-[10px] text-slate-400 font-medium px-2 py-0.5 bg-slate-50 rounded border border-slate-200/60" title="Cannot delete division with active enrolments or teaching assignments">
+                                            Locked
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                      Active Division
-                                    </span>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
@@ -1094,6 +1222,115 @@ export const AcademicsView: React.FC = () => {
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg border border-slate-700 flex items-center space-x-2 animate-fade-in">
           <Icon name="check-circle" className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{actionSuccessToast}</span>
+        </div>
+      )}
+
+      {/* Provision Division Administrative Modal */}
+      {createDivModalSemester && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+              <div>
+                <h3 className="text-sm font-bold text-slate-800 flex items-center space-x-1.5">
+                  <Icon name="users" className="w-4 h-4 text-[#1657D9]" />
+                  <span>Provision Academic Division</span>
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {programmeDetails?.name} • Semester {createDivModalSemester.semesterNumber}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseCreateDivModal}
+                disabled={isCreatingDiv}
+                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <Icon name="x-mark" className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDivision} className="p-5 space-y-4 text-xs text-slate-700 overflow-y-auto">
+              {createDivError && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-start space-x-2">
+                  <Icon name="exclamation-circle" className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <span className="text-[11px] leading-relaxed">{createDivError}</span>
+                </div>
+              )}
+
+              <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200 text-[11px] text-blue-900 flex items-start space-x-2">
+                <Icon name="check-circle" className="w-4 h-4 text-[#1657D9] shrink-0 mt-0.5" />
+                <p>
+                  Divisions establish class cohorts for student enrolments and faculty assignments within Semester {createDivModalSemester.semesterNumber}.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  Division Name <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center space-x-1.5 mb-2">
+                  <span className="text-[10px] text-slate-400">Quick Picks:</span>
+                  {["Div A", "Div B", "Div C", "Div D"].map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setNewDivName(opt)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors cursor-pointer ${
+                        newDivName === opt
+                          ? "bg-[#1657D9] text-white"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  value={newDivName}
+                  disabled={isCreatingDiv}
+                  onChange={(e) => setNewDivName(e.target.value)}
+                  placeholder="e.g. Div A, Div B, Batch 1"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs font-semibold"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Maximum Student Capacity</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={newDivCapacity}
+                  disabled={isCreatingDiv}
+                  onChange={(e) => setNewDivCapacity(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1657D9] text-xs font-medium"
+                  required
+                />
+                <span className="text-[10px] text-slate-400 mt-1 block">Default standard capacity is 60 students per division.</span>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={handleCloseCreateDivModal}
+                  disabled={isCreatingDiv}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingDiv || !newDivName.trim()}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#1657D9] hover:bg-[#1248B8] transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isCreatingDiv && <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>}
+                  <span>{isCreatingDiv ? "Creating..." : "Confirm Division"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
