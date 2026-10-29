@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Icon } from "@/components/common/Icon";
 import { AnimatedReveal } from "@/components/common/AnimatedReveal";
+import { getCurrentUserAction } from "@/lib/actions/auth";
+import { hasPermission } from "@/lib/auth/roles";
 import {
   getProgrammesAction,
   getProgrammeDetailsAction,
@@ -63,17 +65,25 @@ export const AcademicsView: React.FC = () => {
   const [isCreatingDiv, setIsCreatingDiv] = useState(false);
   const [createDivError, setCreateDivError] = useState<string | null>(null);
 
+  // User Role & Administrative Permission State
+  const [canManageAcademics, setCanManageAcademics] = useState<boolean>(false);
+
   // Load live programmes and departments from SQLite
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setServerError(null);
     try {
-      const [progRes, deptRes, ayRes, staffRes] = await Promise.all([
+      const [progRes, deptRes, ayRes, staffRes, userRes] = await Promise.all([
         getProgrammesAction(),
         getDepartmentsAction(),
         getCurrentAcademicYearAction(),
         getStaffAction(),
+        getCurrentUserAction(),
       ]);
+
+      if (userRes.success && userRes.data) {
+        setCanManageAcademics(hasPermission(userRes.data.role, "MANAGE_ACADEMICS"));
+      }
 
       if (staffRes.success && staffRes.data) {
         setStaffList(staffRes.data.items);
@@ -950,26 +960,30 @@ export const AcademicsView: React.FC = () => {
                               </span>
                               <div className="flex items-center space-x-2">
                                 <span className="text-[11px] text-slate-400">{activeSem.divisions?.length || 0} configured</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenCreateDivModal(activeSem)}
-                                  className="px-2 py-0.5 rounded text-[10px] font-bold text-[#1657D9] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center space-x-1 cursor-pointer"
-                                >
-                                  <span>+ Add Division</span>
-                                </button>
+                                {canManageAcademics && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenCreateDivModal(activeSem)}
+                                    className="px-2 py-0.5 rounded text-[10px] font-bold text-[#1657D9] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center space-x-1 cursor-pointer"
+                                  >
+                                    <span>+ Add Division</span>
+                                  </button>
+                                )}
                               </div>
                             </div>
 
                             {(!activeSem.divisions || activeSem.divisions.length === 0) ? (
                               <div className="p-6 rounded-xl bg-slate-50 border border-dashed border-slate-300 text-center text-xs text-slate-500 space-y-2.5">
                                 <p>No divisions configured for Semester {activeSem.semesterNumber}.</p>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenCreateDivModal(activeSem)}
-                                  className="px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-[#1657D9] hover:bg-[#1248B8] transition-colors shadow-xs inline-flex items-center space-x-1.5 cursor-pointer"
-                                >
-                                  <span>+ Provision Division for Sem {activeSem.semesterNumber}</span>
-                                </button>
+                                {canManageAcademics && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenCreateDivModal(activeSem)}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-[#1657D9] hover:bg-[#1248B8] transition-colors shadow-xs inline-flex items-center space-x-1.5 cursor-pointer"
+                                  >
+                                    <span>+ Provision Division for Sem {activeSem.semesterNumber}</span>
+                                  </button>
+                                )}
                               </div>
                             ) : (
                               <div className="space-y-2">
@@ -1002,7 +1016,7 @@ export const AcademicsView: React.FC = () => {
                                         </div>
                                       </div>
                                       <div>
-                                        {isDeletable ? (
+                                        {canManageAcademics && isDeletable ? (
                                           <button
                                             type="button"
                                             onClick={() => handleDeleteDivision(div.id, div.name, activeSem.semesterNumber)}
@@ -1067,13 +1081,15 @@ export const AcademicsView: React.FC = () => {
                                           <Icon name="users" className="w-3 h-3 text-[#1657D9]" />
                                           <span>Faculty Assignments</span>
                                         </span>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleOpenAssignModal(subj, activeSem)}
-                                          className="px-2 py-0.5 rounded text-[10px] font-bold text-[#1657D9] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center space-x-1 cursor-pointer"
-                                        >
-                                          <span>+ Assign Faculty</span>
-                                        </button>
+                                        {canManageAcademics && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenAssignModal(subj, activeSem)}
+                                            className="px-2 py-0.5 rounded text-[10px] font-bold text-[#1657D9] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center space-x-1 cursor-pointer"
+                                          >
+                                            <span>+ Assign Faculty</span>
+                                          </button>
+                                        )}
                                       </div>
 
                                       {subj.teachingAssignments && subj.teachingAssignments.length > 0 ? (
@@ -1098,14 +1114,16 @@ export const AcademicsView: React.FC = () => {
                                                 >
                                                   Profile
                                                 </a>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => handleRemoveAssignment(ta.id, ta.staff.fullName, subj.title)}
-                                                  className="px-2 py-1 rounded text-[10px] font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 transition-colors cursor-pointer"
-                                                  title="Unassign Faculty"
-                                                >
-                                                  Remove
-                                                </button>
+                                                {canManageAcademics && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveAssignment(ta.id, ta.staff.fullName, subj.title)}
+                                                    className="px-2 py-1 rounded text-[10px] font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 transition-colors cursor-pointer"
+                                                    title="Unassign Faculty"
+                                                  >
+                                                    Remove
+                                                  </button>
+                                                )}
                                               </div>
                                             </div>
                                           ))}
@@ -1116,13 +1134,15 @@ export const AcademicsView: React.FC = () => {
                                             <Icon name="exclamation-circle" className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                                             <span>No faculty assignment registered</span>
                                           </div>
-                                          <button
-                                            type="button"
-                                            onClick={() => handleOpenAssignModal(subj, activeSem)}
-                                            className="text-[10px] font-semibold text-[#1657D9] underline cursor-pointer"
-                                          >
-                                            Assign Now
-                                          </button>
+                                          {canManageAcademics && (
+                                            <button
+                                              type="button"
+                                              onClick={() => handleOpenAssignModal(subj, activeSem)}
+                                              className="text-[10px] font-semibold text-[#1657D9] underline cursor-pointer"
+                                            >
+                                              Assign Now
+                                            </button>
+                                          )}
                                         </div>
                                       )}
                                     </div>
