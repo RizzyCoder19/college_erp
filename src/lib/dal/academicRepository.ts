@@ -1,6 +1,8 @@
-﻿import prisma from "@/lib/db";
+import prisma from "@/lib/db";
 import { Prisma, Division } from "@prisma/client";
 import { Result } from "./types";
+import { enrichSubject, SubjectCurriculumMetadata } from "@/data/canonicalCurriculumManifest";
+
 
 
 export interface CreateDivisionDTO {
@@ -35,44 +37,98 @@ export type DepartmentWithCounts = Prisma.DepartmentGetPayload<{
   };
 }>;
 
-export type ProgrammeDetails = Prisma.ProgrammeGetPayload<{
+export type ProgrammeSubjectWithRelations = Prisma.SubjectGetPayload<{
   include: {
-    department: true;
-    semesters: {
+    teachingAssignments: {
       include: {
-        divisions: true;
-        subjects: {
-          include: {
-            teachingAssignments: {
-              include: {
-                staff: true;
-                division: true;
-              };
-            };
-          };
-        };
-        enrolments: {
-          include: {
-            student: true;
-            division: true;
-          };
-        };
-      };
-    };
-    _count: {
-      select: {
-        enrolments: true;
+        staff: true;
+        division: true;
       };
     };
   };
-}>;
+}> & {
+  metadata: SubjectCurriculumMetadata;
+};
+
+export type ProgrammeSemesterDetails = Omit<
+  Prisma.SemesterGetPayload<{
+    include: {
+      divisions: true;
+      subjects: {
+        include: {
+          teachingAssignments: {
+            include: {
+              staff: true;
+              division: true;
+            };
+          };
+        };
+      };
+      enrolments: {
+        include: {
+          student: true;
+          division: true;
+        };
+      };
+    };
+  }>,
+  "subjects"
+> & {
+  subjects: ProgrammeSubjectWithRelations[];
+};
+
+export type ProgrammeDetails = Omit<
+  Prisma.ProgrammeGetPayload<{
+    include: {
+      department: true;
+      semesters: {
+        include: {
+          divisions: true;
+          subjects: {
+            include: {
+              teachingAssignments: {
+                include: {
+                  staff: true;
+                  division: true;
+                };
+              };
+            };
+          };
+          enrolments: {
+            include: {
+              student: true;
+              division: true;
+            };
+          };
+        };
+      };
+      _count: {
+        select: {
+          enrolments: true;
+        };
+      };
+    };
+  }>,
+  "semesters"
+> & {
+  semesters: ProgrammeSemesterDetails[];
+};
 
 export type SubjectWithRelations = Prisma.SubjectGetPayload<{
   include: {
     semester: {
       include: { programme: true };
     };
+    teachingAssignments: {
+      include: { staff: true; division: true };
+    };
   };
+}> & {
+  metadata: SubjectCurriculumMetadata;
+};
+
+export type SemesterWithProgramme = Prisma.SemesterGetPayload<{
+  include: { programme: true };
 }>;
 
 export class AcademicRepository {
@@ -228,7 +284,15 @@ export class AcademicRepository {
         return { success: false, error: "Programme not found", code: "NOT_FOUND" };
       }
 
-      return { success: true, data: programme };
+      const enrichedProgramme: ProgrammeDetails = {
+        ...programme,
+        semesters: programme.semesters.map((sem) => ({
+          ...sem,
+          subjects: sem.subjects.map(enrichSubject),
+        })),
+      };
+
+      return { success: true, data: enrichedProgramme };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to fetch programme details";
       return { success: false, error: message };
@@ -238,6 +302,22 @@ export class AcademicRepository {
   /**
    * Retrieves subjects by semester or programme.
    */
+  static async getSemesters(programmeId?: string): Promise<Result<SemesterWithProgramme[]>> {
+    try {
+      const where: Prisma.SemesterWhereInput = {};
+      if (programmeId) where.programmeId = programmeId;
+      const semesters = await prisma.semester.findMany({
+        where,
+        include: { programme: true },
+        orderBy: [{ programme: { code: "asc" } }, { semesterNumber: "asc" }],
+      });
+      return { success: true, data: semesters };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to fetch semesters";
+      return { success: false, error: message };
+    }
+  }
+
   static async getSubjects(semesterId?: string): Promise<Result<SubjectWithRelations[]>> {
     try {
       const subjects = await prisma.subject.findMany({
@@ -247,9 +327,13 @@ export class AcademicRepository {
           semester: {
             include: { programme: true },
           },
+          teachingAssignments: {
+            include: { staff: true, division: true },
+          },
         },
       });
-      return { success: true, data: subjects };
+      const enrichedSubjects: SubjectWithRelations[] = subjects.map(enrichSubject);
+      return { success: true, data: enrichedSubjects };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to fetch subjects";
       return { success: false, error: message };

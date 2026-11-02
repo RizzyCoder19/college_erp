@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import { connection } from "next/server";
 import prisma from "@/lib/db";
 import { Session } from "@prisma/client";
 

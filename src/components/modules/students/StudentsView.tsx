@@ -17,6 +17,7 @@ import {
 } from "@/lib/utils/reconciliationEngine";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Icon } from "@/components/common/Icon";
 import { AnimatedReveal } from "@/components/common/AnimatedReveal";
 import { StudentRecord, StudentStatus, FeeStatus } from "@/types/student";
@@ -24,6 +25,7 @@ import { ACADEMIC_PROGRAMMES } from "@/data/mockData";
 import { StudentDetailModal } from "./StudentDetailModal";
 import { StudentFormModal } from "./StudentFormModal";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
+import { CohortProgressionModal } from "./CohortProgressionModal";
 
 const STORAGE_KEY = "rpihm_student_records_v1";
 
@@ -38,10 +40,12 @@ async function fetchAllAuthoritativeStudents(): Promise<AuthoritativeFetchResult
 }
 
 export const StudentsView: React.FC = () => {
+  const router = useRouter();
   const [students, setStudents] = useState<StudentRecord[]>([]);
   const [programmes, setProgrammes] = useState<AcademicProgrammeDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [cohortModalOpen, setCohortModalOpen] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProgramme, setSelectedProgramme] = useState("all");
@@ -339,7 +343,12 @@ export const StudentsView: React.FC = () => {
       const matchesStatus =
         selectedStatus === "all" || std.enrollmentStatus === selectedStatus;
 
-      const matchesFee = true; // Workstream D: Fee ledger unconfigured
+      const matchesFee =
+        selectedFee === "all" ||
+        (selectedFee === "Paid" && std.feeStatus === "Paid") ||
+        (selectedFee === "Partial" && std.feeStatus === "Partial") ||
+        (selectedFee === "Pending" && std.feeStatus === "Pending") ||
+        (selectedFee === "Not configured" && (!std.feeStatus || std.feeStatus === "Not configured"));
 
       return (
         matchesSearch &&
@@ -365,7 +374,9 @@ export const StudentsView: React.FC = () => {
     const active = students.filter((s) => s.enrollmentStatus === "Active").length;
     const onLeave = students.filter((s) => s.enrollmentStatus === "On Leave").length;
     const anomalous = students.filter((s) => s.hasAnomaly).length;
-    return { total, active, onLeave, anomalous };
+    const clearedFees = students.filter((s) => s.feeStatus === "Paid").length;
+    const pendingFees = students.filter((s) => s.feeStatus === "Pending" || s.feeStatus === "Partial").length;
+    return { total, active, onLeave, anomalous, clearedFees, pendingFees };
   }, [students]);
 
   // Handlers for Database Mutations
@@ -434,6 +445,7 @@ export const StudentsView: React.FC = () => {
         guardianPhone: record.guardianPhone,
         attendanceRate: record.attendanceRate,
         mentorFaculty: record.mentorFaculty,
+        status: record.enrollmentStatus ? record.enrollmentStatus.toUpperCase() : "ACTIVE",
         programmeId: targetProgId,
         semesterId,
         divisionId,
@@ -444,8 +456,15 @@ export const StudentsView: React.FC = () => {
         return { success: false, error: res.error || "Permission denied or invalid student data." };
       }
 
-      showToast(`Student dossier for "${record.fullName}" enrolled in database.`);
+      showToast(`Student dossier for "${record.fullName}" enrolled in database. Navigating to dossier...`);
       setFormModalOpen(false);
+
+      const createdStudentId = res.data?.student?.id;
+      if (createdStudentId) {
+        router.push(`/modules/students/${createdStudentId}`);
+        return { success: true };
+      }
+
       await loadData();
       return { success: true };
     } catch (err) {
@@ -724,18 +743,28 @@ export const StudentsView: React.FC = () => {
                   </button>
                 )}
                 {canWrite && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormMode("add");
-                      setFormStudent(null);
-                      setFormModalOpen(true);
-                    }}
-                    className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-[#1657D9] hover:bg-[#1248B8] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
-                  >
-                    <Icon name="plus" className="h-4 w-4" />
-                    <span>Enroll New Student</span>
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setCohortModalOpen(true)}
+                      className="inline-flex items-center space-x-2 px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                    >
+                      <Icon name="arrow-path" className="h-4 w-4 text-[#1657D9]" />
+                      <span>Cohort Progression</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormMode("add");
+                        setFormStudent(null);
+                        setFormModalOpen(true);
+                      }}
+                      className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-[#1657D9] hover:bg-[#1248B8] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                    >
+                      <Icon name="plus" className="h-4 w-4" />
+                      <span>Enroll New Student</span>
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -768,11 +797,13 @@ export const StudentsView: React.FC = () => {
               </div>
               <div className="bg-white/80 backdrop-blur-xs p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
                 <div className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
-                  Fee Ledger
+                  Fee Clearance
                 </div>
-                <div className="text-sm font-semibold text-slate-500 mt-1.5 flex items-center space-x-1.5">
-                  <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                  <span>Not Configured</span>
+                <div className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-0.5 font-serif">
+                  {stats.clearedFees} <span className="text-xs font-sans font-medium text-slate-400">/ {stats.total} Cleared</span>
+                </div>
+                <div className="text-[10px] text-slate-500 mt-0.5">
+                  {stats.pendingFees > 0 ? `${stats.pendingFees} with pending dues` : "Live Ledger Sync"}
                 </div>
               </div>
             </div>
@@ -917,11 +948,15 @@ export const StudentsView: React.FC = () => {
                 Fee Ledger
               </label>
               <select
-                disabled
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 text-xs cursor-not-allowed opacity-80"
-                title="Institutional Fee Ledger not configured"
+                value={selectedFee}
+                onChange={(e) => setSelectedFee(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-800 text-xs focus:outline-hidden focus:ring-2 focus:ring-[#1657D9]"
               >
-                <option>Not Configured</option>
+                <option value="all">All Fee Statuses</option>
+                <option value="Paid">Cleared (Paid)</option>
+                <option value="Partial">Partially Paid</option>
+                <option value="Pending">Pending Dues</option>
+                <option value="Not configured">Not Invoiced</option>
               </select>
             </div>
           </div>
@@ -956,7 +991,9 @@ export const StudentsView: React.FC = () => {
               {filteredStudents.map((std) => (
                 <tr key={std.id} className="hover:bg-slate-50/80 transition-colors group">
                   <td className="py-3.5 px-4 font-mono font-bold text-xs text-[#1657D9]">
-                    <div>{std.prn}</div>
+                    <Link href={`/modules/students/${std.id}`} className="hover:underline" title="Open 360° Student Dossier">
+                      {std.prn}
+                    </Link>
                     {std.rollNumber && std.rollNumber !== std.prn && (
                       <div className="font-mono font-normal text-[10px] text-slate-400 mt-0.5">
                         {std.rollNumber}
@@ -965,17 +1002,24 @@ export const StudentsView: React.FC = () => {
                   </td>
                   <td className="py-3.5 px-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-50 text-[#1657D9] font-bold text-xs flex items-center justify-center border border-blue-100">
+                      <Link
+                        href={`/modules/students/${std.id}`}
+                        className="w-8 h-8 rounded-full bg-blue-50 text-[#1657D9] font-bold text-xs flex items-center justify-center border border-blue-100 shrink-0 hover:bg-[#1657D9] hover:text-white transition-colors"
+                        title="Open 360° Student Dossier"
+                      >
                         {std.fullName
                           .split(" ")
                           .map((n) => n[0])
                           .slice(0, 2)
                           .join("")}
-                      </div>
+                      </Link>
                       <div>
-                        <div className="font-bold text-slate-900 group-hover:text-[#1657D9] transition-colors">
+                        <Link
+                          href={`/modules/students/${std.id}`}
+                          className="font-bold text-slate-900 group-hover:text-[#1657D9] transition-colors hover:underline block"
+                        >
                           {std.fullName}
-                        </div>
+                        </Link>
                         <div className="text-[11px] text-slate-400">{std.email}</div>
                       </div>
                     </div>
@@ -1014,9 +1058,28 @@ export const StudentsView: React.FC = () => {
                     </div>
                   </td>
                   <td className="py-3.5 px-4">
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
-                      Not configured
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setDetailStudent(std)}
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition-opacity ${
+                        std.feeStatus === "Paid"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : std.feeStatus === "Partial"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : std.feeStatus === "Pending"
+                          ? "bg-rose-50 text-rose-700 border-rose-200"
+                          : "bg-slate-100 text-slate-600 border-slate-200"
+                      }`}
+                      title="Inspect Financial Ledger in Quick Modal"
+                    >
+                      {std.feeStatus === "Paid"
+                        ? "Cleared"
+                        : std.feeStatus === "Partial"
+                        ? "Partial"
+                        : std.feeStatus === "Pending"
+                        ? "Pending"
+                        : "Not Invoiced"}
+                    </button>
                   </td>
                   <td className="py-3.5 px-4">
                     <span
@@ -1029,14 +1092,21 @@ export const StudentsView: React.FC = () => {
                   </td>
                   <td className="py-3.5 px-4 text-right">
                     <div className="flex items-center justify-end space-x-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setDetailStudent(std)}
-                        className="p-1.5 rounded-lg text-[#1657D9] hover:bg-blue-50 transition-colors cursor-pointer"
-                        title="View Full Dossier"
+                      <Link
+                        href={`/modules/students/${std.id}`}
+                        className="p-1.5 rounded-lg text-[#1657D9] hover:bg-blue-50 transition-colors"
+                        title="Open Full 360° Dossier"
                       >
                         <Icon name="eye" className="h-4 w-4" />
-                      </button>
+                      </Link>
+                      <a
+                        href={`/modules/finance?studentId=${std.id}`}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+                        title="Collect Fee / Open Cashier POS"
+                      >
+                        <Icon name="credit-card" className="h-4 w-4" />
+                      </a>
+
                       {canWrite && (
                         <button
                           type="button"
@@ -1116,18 +1186,25 @@ export const StudentsView: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between pt-1">
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
-                  Fee: Not configured
+                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+                  std.feeStatus === "Paid"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : std.feeStatus === "Partial"
+                    ? "bg-amber-50 text-amber-700 border-amber-200"
+                    : std.feeStatus === "Pending"
+                    ? "bg-rose-50 text-rose-700 border-rose-200"
+                    : "bg-slate-100 text-slate-600 border-slate-200"
+                }`}>
+                  Fee: {std.feeStatus === "Paid" ? "Cleared" : std.feeStatus === "Partial" ? "Partial" : std.feeStatus === "Pending" ? "Pending" : "Not Invoiced"}
                 </span>
 
                 <div className="flex items-center space-x-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setDetailStudent(std)}
+                  <Link
+                    href={`/modules/students/${std.id}`}
                     className="px-2.5 py-1.5 rounded-lg bg-blue-50 text-[#1657D9] text-xs font-semibold cursor-pointer border border-blue-200"
                   >
-                    View
-                  </button>
+                    Dossier
+                  </Link>
                   <button
                     type="button"
                     onClick={() => {
@@ -1235,6 +1312,17 @@ export const StudentsView: React.FC = () => {
         onClose={() => setReconcileModalOpen(false)}
         onImport={handleReconcileImport}
         onPruneDuplicates={handlePruneDuplicates}
+      />
+
+      {/* Cohort Progression Modal */}
+      <CohortProgressionModal
+        isOpen={cohortModalOpen}
+        programmes={programmes}
+        onClose={() => setCohortModalOpen(false)}
+        onSuccess={(summary) => {
+          showToast(summary);
+          loadData();
+        }}
       />
     </div>
   );

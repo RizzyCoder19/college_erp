@@ -34,6 +34,12 @@ export async function getProgrammeDetailsAction(programmeId: string) {
   return AcademicRepository.getProgrammeDetails(programmeId);
 }
 
+export async function getSemestersAction(programmeId?: string) {
+  const guard = await requireAuth();
+  if (!guard.success) return guard as Result<never>;
+  return AcademicRepository.getSemesters(programmeId);
+}
+
 export async function getSubjectsAction(semesterId?: string) {
   const guard = await requireAuth();
   if (!guard.success) return guard as Result<never>;

@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { AuthenticatedUser } from "@/lib/auth/session";
 
@@ -141,7 +141,15 @@ export const CinematicWelcomeTransition: React.FC<CinematicWelcomeTransitionProp
     };
   }, [prefersReducedMotion]);
 
-  // Smooth progress line and completion timer
+  const completedRef = useRef(false);
+
+  const triggerCompletion = useCallback(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    onComplete();
+  }, [onComplete]);
+
+  // Smooth progress line, completion timer, and mobile throttling safeguard
   useEffect(() => {
     const startTime = performance.now();
 
@@ -152,19 +160,25 @@ export const CinematicWelcomeTransition: React.FC<CinematicWelcomeTransitionProp
 
       if (pct >= 100) {
         clearInterval(interval);
-        onComplete();
+        triggerCompletion();
       }
     }, 16);
 
+    // Fallback timer to guarantee transition fires even if mobile browser throttles interval
+    const fallbackTimer = setTimeout(() => {
+      triggerCompletion();
+    }, actualDuration + 200);
+
     // Keyboard / click bypass for accessibility
-    const handleKeyDown = () => onComplete();
+    const handleKeyDown = () => triggerCompletion();
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
       clearInterval(interval);
+      clearTimeout(fallbackTimer);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [actualDuration, onComplete]);
+  }, [actualDuration, triggerCompletion]);
 
   const roleDisplay =
     user.role === "SYSTEM_ADMIN"
@@ -177,7 +191,7 @@ export const CinematicWelcomeTransition: React.FC<CinematicWelcomeTransitionProp
 
   return (
     <div
-      className="fixed inset-0 z-[99999] bg-[#04070e] text-slate-100 flex flex-col items-center justify-center p-6 select-none overflow-hidden"
+      onClick={triggerCompletion} className="fixed inset-0 z-[99999] bg-[#04070e] text-slate-100 flex flex-col items-center justify-center p-6 select-none overflow-hidden cursor-pointer"
       role="status"
       aria-live="polite"
       aria-label={`Welcome transition for ${user.fullName}`}

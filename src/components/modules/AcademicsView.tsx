@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
@@ -25,6 +25,7 @@ import {
   ProgrammeDetails,
   DepartmentWithCounts,
   AcademicYearWithTerms,
+  ProgrammeSubjectWithRelations,
 } from "@/lib/dal/academicRepository";
 
 type DegreeFilter = "all" | "UNDERGRADUATE" | "DIPLOMA" | "CERTIFICATE";
@@ -45,6 +46,24 @@ export const AcademicsView: React.FC = () => {
   const [programmeDetails, setProgrammeDetails] = useState<ProgrammeDetails | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [selectedSemesterIndex, setSelectedSemesterIndex] = useState(0);
+  // Milestone 1C: Subject Catalog Search, Filter & Provenance Inspector State
+  const [subjectSearch, setSubjectSearch] = useState("");
+  const [subjectVerticalFilter, setSubjectVerticalFilter] = useState<string>("all");
+  const [subjectTypeFilter, setSubjectTypeFilter] = useState<string>("all");
+  const [provenanceSubject, setProvenanceSubject] = useState<ProgrammeSubjectWithRelations | null>(null);
+
+  // Milestone 1C.1: Keyboard accessibility for Provenance Inspector (ESC key handler)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setProvenanceSubject(null);
+      }
+    };
+    if (provenanceSubject) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [provenanceSubject]);
 
   // Administrative Faculty Teaching Assignment Workflow
   const [staffList, setStaffList] = useState<Array<{ id: string; fullName: string; designation: string; department?: { name: string } | null }>>([]);
@@ -334,6 +353,82 @@ export const AcademicsView: React.FC = () => {
     if (!programmeDetails || !programmeDetails.semesters) return null;
     return programmeDetails.semesters[selectedSemesterIndex] || programmeDetails.semesters[0] || null;
   }, [programmeDetails, selectedSemesterIndex]);
+
+  // Milestone 1C.1: Matching predicate for curriculum search and filtering
+  const matchesSubjectFilter = useCallback(
+    (subj: ProgrammeSubjectWithRelations) => {
+      const q = subjectSearch.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        subj.code.toLowerCase().includes(q) ||
+        subj.title.toLowerCase().includes(q);
+
+      const matchesVertical =
+        subjectVerticalFilter === "all" ||
+        (subjectVerticalFilter === "unclassified"
+          ? !subj.metadata?.vertical
+          : subj.metadata?.vertical === subjectVerticalFilter);
+
+      const matchesType =
+        subjectTypeFilter === "all" || subj.subjectType === subjectTypeFilter;
+
+      return matchesSearch && matchesVertical && matchesType;
+    },
+    [subjectSearch, subjectVerticalFilter, subjectTypeFilter]
+  );
+
+  // Milestone 1C: Filter subjects within active semester
+  const filteredSemesterSubjects = useMemo(() => {
+    if (!activeSemester || !activeSemester.subjects) return [];
+    return activeSemester.subjects.filter(matchesSubjectFilter);
+  }, [activeSemester, matchesSubjectFilter]);
+
+  // Milestone 1C.1: Partition subjects into compulsory units and intelligent SEC elective groups
+  const { compulsorySubjects, electiveGroups } = useMemo(() => {
+    if (!activeSemester || !activeSemester.subjects) {
+      return { compulsorySubjects: [], electiveGroups: [] };
+    }
+
+    const compulsory = activeSemester.subjects
+      .filter((s) => !s.metadata?.electiveGroup)
+      .filter(matchesSubjectFilter);
+
+    // Collect all options per elective group across the full active semester
+    const rawGroups: Record<string, ProgrammeSubjectWithRelations[]> = {};
+    for (const s of activeSemester.subjects) {
+      if (s.metadata?.electiveGroup) {
+        if (!rawGroups[s.metadata.electiveGroup]) {
+          rawGroups[s.metadata.electiveGroup] = [];
+        }
+        rawGroups[s.metadata.electiveGroup].push(s);
+      }
+    }
+
+    // Partition each group into matching options and companion alternative options
+    const groups: Array<{
+      groupName: string;
+      allSubjects: ProgrammeSubjectWithRelations[];
+      matchingSubjects: ProgrammeSubjectWithRelations[];
+      hiddenSubjects: ProgrammeSubjectWithRelations[];
+    }> = [];
+
+    for (const [groupName, allSubjects] of Object.entries(rawGroups)) {
+      const matchingSubjects = allSubjects.filter(matchesSubjectFilter);
+      const hiddenSubjects = allSubjects.filter((s) => !matchesSubjectFilter(s));
+
+      // Display the elective group whenever at least one option matches the filter/search criteria
+      if (matchingSubjects.length > 0) {
+        groups.push({
+          groupName,
+          allSubjects,
+          matchingSubjects,
+          hiddenSubjects,
+        });
+      }
+    }
+
+    return { compulsorySubjects: compulsory, electiveGroups: groups };
+  }, [activeSemester, matchesSubjectFilter]);
   return (
     <div className="space-y-6">
       {/* Breadcrumb Navigation */}
@@ -1038,113 +1133,461 @@ export const AcademicsView: React.FC = () => {
                             )}
                           </div>
 
-                          {/* Column 2: Subjects & Teaching Faculty */}
+                          {/* Column 2: Enhanced Curriculum Catalog & Faculty Assignments */}
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1.5">
-                                <Icon name="book-open" className="w-4 h-4 text-slate-400" />
-                                <span>Syllabus & Faculty Assignments</span>
+                                <Icon name="book-open" className="w-4 h-4 text-[#1657D9]" />
+                                <span>Academic Curriculum Catalog</span>
                               </span>
-                              <span className="text-[11px] text-slate-400">{activeSem.subjects?.length || 0} subjects</span>
+                              <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                                {filteredSemesterSubjects.length} of {activeSem.subjects?.length || 0} Units
+                              </span>
                             </div>
+
+                            {/* Catalog Search & Filtering Controls */}
+                            {activeSem.subjects && activeSem.subjects.length > 0 && (
+                              <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200 space-y-2">
+                                <div className="relative">
+                                  <Icon name="search" className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                                  <input
+                                    type="text"
+                                    placeholder="Search courses by code or title..."
+                                    value={subjectSearch}
+                                    onChange={(e) => setSubjectSearch(e.target.value)}
+                                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-white rounded-lg border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#1657D9]"
+                                  />
+                                  {subjectSearch && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSubjectSearch("")}
+                                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                                  <span className="text-slate-400 text-[10px] uppercase font-bold mr-0.5">Vertical:</span>
+                                  {([
+                                    { id: "all", label: "All" },
+                                    { id: "Major", label: "Major" },
+                                    { id: "VSC", label: "VSC" },
+                                    { id: "SEC", label: "SEC" },
+                                    { id: "Minor", label: "Minor" },
+                                    { id: "unclassified", label: "Baseline" },
+                                  ] as const).map((v) => (
+                                    <button
+                                      key={v.id}
+                                      type="button"
+                                      onClick={() => setSubjectVerticalFilter(v.id)}
+                                      className={`px-2 py-0.5 rounded-full font-medium transition-colors cursor-pointer text-[10px] ${
+                                        subjectVerticalFilter === v.id
+                                          ? "bg-[#1657D9] text-white shadow-xs"
+                                          : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                                      }`}
+                                    >
+                                      {v.label}
+                                    </button>
+                                  ))}
+
+                                  <div className="h-3 w-px bg-slate-200 mx-1 hidden sm:block" />
+
+                                  <select
+                                    value={subjectTypeFilter}
+                                    onChange={(e) => setSubjectTypeFilter(e.target.value)}
+                                    className="text-[10px] bg-white border border-slate-200 rounded px-2 py-0.5 text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-[#1657D9]"
+                                  >
+                                    <option value="all">All Course Types</option>
+                                    <option value="THEORY">Theory (TH)</option>
+                                    <option value="PRACTICAL">Practical (PR)</option>
+                                    <option value="OJT">On-Job Training (OJT)</option>
+                                  </select>
+
+                                  {(subjectSearch || subjectVerticalFilter !== "all" || subjectTypeFilter !== "all") && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSubjectSearch("");
+                                        setSubjectVerticalFilter("all");
+                                        setSubjectTypeFilter("all");
+                                      }}
+                                      className="text-[10px] font-semibold text-[#D92534] hover:underline ml-auto cursor-pointer"
+                                    >
+                                      Reset Filters
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
 
                             {(!activeSem.subjects || activeSem.subjects.length === 0) ? (
                               <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-300 text-center text-xs text-slate-500">
                                 No curriculum subjects configured for Semester {activeSem.semesterNumber}.
                               </div>
+                            ) : filteredSemesterSubjects.length === 0 ? (
+                              <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-2">
+                                <Icon name="search" className="w-6 h-6 text-slate-300 mx-auto" />
+                                <p className="text-xs font-semibold text-slate-700">No matching subjects found</p>
+                                <p className="text-[11px] text-slate-400">Try adjusting your search keywords or vertical filter pills.</p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSubjectSearch("");
+                                    setSubjectVerticalFilter("all");
+                                    setSubjectTypeFilter("all");
+                                  }}
+                                  className="px-3 py-1 rounded-lg text-xs font-bold text-[#1657D9] bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
+                                >
+                                  Clear All Filters
+                                </button>
+                              </div>
                             ) : (
-                              <div className="space-y-2.5">
-                                {activeSem.subjects.map((subj) => (
-                                  <div key={subj.id} className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs space-y-2.5">
-                                    <div className="flex items-start justify-between">
-                                      <div>
-                                        <div className="flex items-center space-x-2">
-                                          <span className="font-mono text-xs font-bold text-[#1657D9] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-                                            {subj.code}
-                                          </span>
-                                          <span className="font-bold text-xs text-slate-900">
-                                            {subj.title}
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center space-x-2 mt-1">
-                                          <span className="text-[11px] text-slate-500">Type: {subj.subjectType}</span>
-                                          <span className="text-[11px] text-slate-300">•</span>
-                                          <span className="text-[11px] font-semibold text-slate-700">{subj.credits} Credits</span>
-                                        </div>
-                                      </div>
-                                    </div>
+                              <div className="space-y-3">
+                                {/* Section 2A: Compulsory Core Curriculum Units */}
+                                {compulsorySubjects.length > 0 && (
+                                  <div className="space-y-2.5">
+                                    {compulsorySubjects.map((subj) => (
+                                      <div key={subj.id} className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs space-y-2.5 hover:border-slate-300 transition-colors">
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div className="space-y-1.5 flex-1">
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                              <span className="font-mono text-xs font-bold text-[#1657D9] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                                {subj.code}
+                                              </span>
+                                              <span className="font-bold text-xs text-slate-900 leading-snug">
+                                                {subj.title}
+                                              </span>
+                                            </div>
 
-                                    {/* Assigned Faculty Header & Administrative Assign Action */}
-                                    <div className="pt-2 border-t border-slate-100 space-y-2">
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1">
-                                          <Icon name="users" className="w-3 h-3 text-[#1657D9]" />
-                                          <span>Faculty Assignments</span>
-                                        </span>
-                                        {canManageAcademics && (
+                                            {/* Badges Row: NEP Vertical, Course Type, Credits & Verified Status */}
+                                            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                              {subj.metadata?.vertical === "Major" && (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#1657D9] border border-blue-200">
+                                                  Major
+                                                </span>
+                                              )}
+                                              {subj.metadata?.vertical === "VSC" && (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                  Vocational (VSC)
+                                                </span>
+                                              )}
+                                              {subj.metadata?.vertical === "SEC" && (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                                  Skill Enhancement (SEC)
+                                                </span>
+                                              )}
+                                              {subj.metadata?.vertical === "Minor" && (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                                  Minor
+                                                </span>
+                                              )}
+                                              {!subj.metadata?.vertical && (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                                  Baseline Prototype
+                                                </span>
+                                              )}
+
+                                              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-50 text-slate-600 border border-slate-200">
+                                                {subj.subjectType === "THEORY"
+                                                  ? "Theory (TH)"
+                                                  : subj.subjectType === "PRACTICAL" || subj.subjectType === "PRACTICAL_KITCHEN"
+                                                  ? "Practical (PR)"
+                                                  : subj.subjectType === "OJT"
+                                                  ? "On-Job Training (OJT)"
+                                                  : subj.subjectType}
+                                              </span>
+
+                                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-800 bg-slate-100 border border-slate-200">
+                                                {subj.credits} Credits
+                                              </span>
+
+                                              {subj.metadata?.isVerified && subj.metadata?.isManifestMatched ? (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center space-x-1">
+                                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                  <span>Verified • MU Circular</span>
+                                                </span>
+                                              ) : (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
+                                                  Unverified
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          {/* Provenance Inspection Trigger */}
                                           <button
                                             type="button"
-                                            onClick={() => handleOpenAssignModal(subj, activeSem)}
-                                            className="px-2 py-0.5 rounded text-[10px] font-bold text-[#1657D9] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center space-x-1 cursor-pointer"
+                                            onClick={() => setProvenanceSubject(subj)}
+                                            className="shrink-0 px-2.5 py-1 text-[10px] font-bold text-[#1657D9] bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors flex items-center space-x-1 cursor-pointer"
+                                            title="Inspect syllabus provenance, circular PDF and Academic Council resolution"
                                           >
-                                            <span>+ Assign Faculty</span>
+                                            <Icon name="document-text" className="w-3.5 h-3.5" />
+                                            <span>Details</span>
                                           </button>
-                                        )}
-                                      </div>
+                                        </div>
 
-                                      {subj.teachingAssignments && subj.teachingAssignments.length > 0 ? (
-                                        <div className="space-y-1.5">
-                                          {subj.teachingAssignments.map((ta) => (
-                                            <div key={ta.id} className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-lg border border-slate-200/60">
-                                              <div className="flex items-center space-x-2">
-                                                <div className="w-6 h-6 rounded-full bg-[#1657D9]/10 text-[#1657D9] flex items-center justify-center font-bold text-[10px]">
-                                                  {ta.staff.fullName.charAt(0)}
+                                        {/* Assigned Faculty Section */}
+                                        <div className="pt-2 border-t border-slate-100 space-y-2">
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1">
+                                              <Icon name="users" className="w-3 h-3 text-[#1657D9]" />
+                                              <span>Faculty Assignments</span>
+                                            </span>
+                                            {canManageAcademics && (
+                                              <button
+                                                type="button"
+                                                onClick={() => handleOpenAssignModal(subj, activeSem)}
+                                                className="px-2 py-0.5 rounded text-[10px] font-bold text-[#1657D9] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center space-x-1 cursor-pointer"
+                                              >
+                                                <span>+ Assign Faculty</span>
+                                              </button>
+                                            )}
+                                          </div>
+
+                                          {subj.teachingAssignments && subj.teachingAssignments.length > 0 ? (
+                                            <div className="space-y-1.5">
+                                              {subj.teachingAssignments.map((ta) => (
+                                                <div key={ta.id} className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-lg border border-slate-200/60">
+                                                  <div className="flex items-center space-x-2">
+                                                    <div className="w-6 h-6 rounded-full bg-[#1657D9]/10 text-[#1657D9] flex items-center justify-center font-bold text-[10px]">
+                                                      {ta.staff.fullName.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                      <span className="font-semibold text-slate-800 block text-xs">{ta.staff.fullName}</span>
+                                                      <span className="text-[10px] text-slate-500">
+                                                        {ta.division ? `Div ${ta.division.name}` : "All Divisions / Theory"} • {ta.weeklyHours} hrs/wk
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                                                  <div className="flex items-center space-x-1.5">
+                                                    <a
+                                                      href={`/modules/faculty?staffId=${ta.staff.id}`}
+                                                      className="px-2 py-1 rounded text-[10px] font-medium text-[#1657D9] bg-white border border-blue-200 hover:bg-blue-50 transition-colors"
+                                                    >
+                                                      Profile
+                                                    </a>
+                                                    {canManageAcademics && (
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveAssignment(ta.id, ta.staff.fullName, subj.title)}
+                                                        className="px-2 py-1 rounded text-[10px] font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 transition-colors cursor-pointer"
+                                                        title="Unassign Faculty"
+                                                      >
+                                                        Remove
+                                                      </button>
+                                                    )}
+                                                  </div>
                                                 </div>
-                                                <div>
-                                                  <span className="font-semibold text-slate-800 block text-xs">{ta.staff.fullName}</span>
-                                                  <span className="text-[10px] text-slate-500">
-                                                    {ta.division ? `Div ${ta.division.name}` : "All Divisions / Theory"} • {ta.weeklyHours} hrs/wk
-                                                  </span>
-                                                </div>
-                                              </div>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <div className="text-[11px] text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-200/60 flex items-center justify-between">
                                               <div className="flex items-center space-x-1.5">
-                                                <a
-                                                  href={`/modules/faculty?staffId=${ta.staff.id}`}
-                                                  className="px-2 py-1 rounded text-[10px] font-medium text-[#1657D9] bg-white border border-blue-200 hover:bg-blue-50 transition-colors"
+                                                <Icon name="exclamation-circle" className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                                <span>No faculty assignment registered</span>
+                                              </div>
+                                              {canManageAcademics && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleOpenAssignModal(subj, activeSem)}
+                                                  className="text-[10px] font-semibold text-[#1657D9] underline cursor-pointer"
                                                 >
-                                                  Profile
-                                                </a>
+                                                  Assign Now
+                                                </button>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Section 2B: SEC Elective Group Offerings (Intelligent Alternative Option Grouping) */}
+                                {electiveGroups.map((group) => (
+                                  <div key={group.groupName} className="p-4 rounded-xl bg-amber-50/50 border border-amber-200/80 shadow-xs space-y-3">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2 border-b border-amber-200/60">
+                                      <div className="flex items-center space-x-2">
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-200/80 text-amber-900 border border-amber-300">
+                                          Elective Group
+                                        </span>
+                                        <h4 className="text-xs font-bold text-amber-950">
+                                          {group.groupName} (Alternative Options)
+                                        </h4>
+                                      </div>
+                                      <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                                        {group.hiddenSubjects.length === 0
+                                          ? `Choose 1 of ${group.allSubjects.length} Options (2.0 Credits)`
+                                          : `Alternative Offering • 1 of ${group.allSubjects.length} Options Matches Filter`}
+                                      </span>
+                                    </div>
+
+                                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                                      Students fulfill this curriculum requirement by completing <strong>either Option A or Option B</strong>. Both courses are gazetted University of Mumbai syllabus options.
+                                    </p>
+
+                                    <div className="space-y-2.5">
+                                      {/* Matching Elective Options */}
+                                      {group.matchingSubjects.map((subj) => (
+                                        <div key={subj.id} className="p-3 rounded-xl border border-amber-200 bg-white shadow-2xs space-y-2 hover:border-amber-300 transition-colors">
+                                          <div className="flex items-start justify-between gap-3">
+                                            <div className="space-y-1.5 flex-1">
+                                              <div className="flex flex-wrap items-center gap-1.5">
+                                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                                                  {subj.metadata?.electiveOption || "Elective"}
+                                                </span>
+                                                <span className="font-mono text-xs font-bold text-[#1657D9] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                                  {subj.code}
+                                                </span>
+                                                <span className="font-bold text-xs text-slate-900">
+                                                  {subj.title}
+                                                </span>
+                                              </div>
+
+                                              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                                  Skill Enhancement (SEC)
+                                                </span>
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-50 text-slate-600 border border-slate-200">
+                                                  {subj.subjectType === "THEORY" ? "Theory (TH)" : "Practical (PR)"}
+                                                </span>
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-800 bg-slate-100 border border-slate-200">
+                                                  {subj.credits} Credits
+                                                </span>
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center space-x-1">
+                                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                  <span>Verified • MU Circular</span>
+                                                </span>
+                                              </div>
+                                            </div>
+
+                                            <button
+                                              type="button"
+                                              onClick={() => setProvenanceSubject(subj)}
+                                              className="shrink-0 px-2.5 py-1 text-[10px] font-bold text-[#1657D9] bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors flex items-center space-x-1 cursor-pointer"
+                                              title="Inspect syllabus provenance and circular details"
+                                            >
+                                              <Icon name="document-text" className="w-3.5 h-3.5" />
+                                              <span>Details</span>
+                                            </button>
+                                          </div>
+
+                                          {/* Assigned Faculty Section for Elective Option */}
+                                          <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1">
+                                                <Icon name="users" className="w-3 h-3 text-[#1657D9]" />
+                                                <span>Faculty Assignments</span>
+                                              </span>
+                                              {canManageAcademics && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleOpenAssignModal(subj, activeSem)}
+                                                  className="px-2 py-0.5 rounded text-[10px] font-bold text-[#1657D9] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center space-x-1 cursor-pointer"
+                                                >
+                                                  <span>+ Assign Faculty</span>
+                                                </button>
+                                              )}
+                                            </div>
+
+                                            {subj.teachingAssignments && subj.teachingAssignments.length > 0 ? (
+                                              <div className="space-y-1">
+                                                {subj.teachingAssignments.map((ta) => (
+                                                  <div key={ta.id} className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-lg border border-slate-200/60">
+                                                    <span className="font-semibold text-slate-800 text-xs">{ta.staff.fullName}</span>
+                                                    <div className="flex items-center space-x-1">
+                                                      <a
+                                                        href={`/modules/faculty?staffId=${ta.staff.id}`}
+                                                        className="px-2 py-0.5 rounded text-[10px] font-medium text-[#1657D9] bg-white border border-blue-200 hover:bg-blue-50"
+                                                      >
+                                                        Profile
+                                                      </a>
+                                                      {canManageAcademics && (
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => handleRemoveAssignment(ta.id, ta.staff.fullName, subj.title)}
+                                                          className="px-2 py-0.5 rounded text-[10px] font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 cursor-pointer"
+                                                        >
+                                                          Remove
+                                                        </button>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            ) : (
+                                              <div className="text-[10px] text-amber-700 bg-amber-50 p-1.5 rounded-lg border border-amber-200/60 flex items-center justify-between">
+                                                <span>No faculty assignment registered</span>
                                                 {canManageAcademics && (
                                                   <button
                                                     type="button"
-                                                    onClick={() => handleRemoveAssignment(ta.id, ta.staff.fullName, subj.title)}
-                                                    className="px-2 py-1 rounded text-[10px] font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 transition-colors cursor-pointer"
-                                                    title="Unassign Faculty"
+                                                    onClick={() => handleOpenAssignModal(subj, activeSem)}
+                                                    className="font-semibold text-[#1657D9] underline cursor-pointer"
                                                   >
-                                                    Remove
+                                                    Assign Now
                                                   </button>
                                                 )}
                                               </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <div className="text-[11px] text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-200/60 flex items-center justify-between">
-                                          <div className="flex items-center space-x-1.5">
-                                            <Icon name="exclamation-circle" className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                            <span>No faculty assignment registered</span>
+                                            )}
                                           </div>
-                                          {canManageAcademics && (
+                                        </div>
+                                      ))}
+
+                                      {/* Milestone 1C.1: Companion Alternative Options Hidden by Active Search/Filter */}
+                                      {group.hiddenSubjects.map((hiddenSubj) => (
+                                        <div
+                                          key={hiddenSubj.id}
+                                          className="p-3 rounded-xl border border-dashed border-amber-300 bg-amber-50/40 space-y-2 opacity-90 transition-opacity hover:opacity-100"
+                                        >
+                                          <div className="flex items-start justify-between gap-3">
+                                            <div className="space-y-1.5 flex-1">
+                                              <div className="flex flex-wrap items-center gap-1.5">
+                                                <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100/70 text-amber-900 border border-amber-200">
+                                                  {hiddenSubj.metadata?.electiveOption || "Alternative"} (Filtered Out)
+                                                </span>
+                                                <span className="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                                  {hiddenSubj.code}
+                                                </span>
+                                                <span className="font-bold text-xs text-slate-700">
+                                                  {hiddenSubj.title}
+                                                </span>
+                                              </div>
+
+                                              <p className="text-[11px] text-amber-700/90 italic">
+                                                Alternative curriculum track for this offering. Hidden from main results because it does not match active filter keyword &quot;{subjectSearch || subjectVerticalFilter}&quot;.
+                                              </p>
+
+                                              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                                  Skill Enhancement (SEC)
+                                                </span>
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-50 text-slate-600 border border-slate-200">
+                                                  {hiddenSubj.subjectType === "THEORY" ? "Theory (TH)" : "Practical (PR)"}
+                                                </span>
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-800 bg-slate-100 border border-slate-200">
+                                                  {hiddenSubj.credits} Credits
+                                                </span>
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center space-x-1">
+                                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                  <span>Verified • MU Circular</span>
+                                                </span>
+                                              </div>
+                                            </div>
+
                                             <button
                                               type="button"
-                                              onClick={() => handleOpenAssignModal(subj, activeSem)}
-                                              className="text-[10px] font-semibold text-[#1657D9] underline cursor-pointer"
+                                              onClick={() => setProvenanceSubject(hiddenSubj)}
+                                              className="shrink-0 px-2.5 py-1 text-[10px] font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors flex items-center space-x-1 cursor-pointer"
+                                              title="Inspect syllabus provenance and circular details"
                                             >
-                                              Assign Now
+                                              <Icon name="document-text" className="w-3.5 h-3.5 text-slate-500" />
+                                              <span>Details</span>
                                             </button>
-                                          )}
+                                          </div>
                                         </div>
-                                      )}
+                                      ))}
                                     </div>
                                   </div>
                                 ))}
@@ -1242,6 +1685,144 @@ export const AcademicsView: React.FC = () => {
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg border border-slate-700 flex items-center space-x-2 animate-fade-in">
           <Icon name="check-circle" className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{actionSuccessToast}</span>
+        </div>
+      )}
+
+      {/* Modal: Curriculum Provenance Inspector (Milestone 1C & 1C.1) */}
+      {provenanceSubject && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-2xs p-4 animate-in fade-in duration-200"
+          onClick={() => setProvenanceSubject(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="provenance-modal-title"
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-slate-200 space-y-5 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <span className="font-mono text-xs font-bold text-[#1657D9] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                    {provenanceSubject.code}
+                  </span>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Curriculum Provenance
+                  </span>
+                </div>
+                <h3 id="provenance-modal-title" className="text-base font-bold text-slate-900 leading-snug">
+                  {provenanceSubject.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProvenanceSubject(null)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer"
+                title="Close Inspector"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Provenance Metadata Grid */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">NEP 2020 Vertical</span>
+                  <span className="font-bold text-slate-800 block text-xs">
+                    {provenanceSubject.metadata?.vertical || "Unclassified Baseline"}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Course Classification</span>
+                  <span className="font-bold text-slate-800 block text-xs">
+                    {provenanceSubject.subjectType === "THEORY"
+                      ? "Theory (TH)"
+                      : provenanceSubject.subjectType === "PRACTICAL" || provenanceSubject.subjectType === "PRACTICAL_KITCHEN"
+                      ? "Practical (PR)"
+                      : provenanceSubject.subjectType === "OJT"
+                      ? "On-Job Training (OJT)"
+                      : provenanceSubject.subjectType}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Academic Weighting</span>
+                  <span className="font-bold text-slate-800 block text-xs">
+                    {provenanceSubject.credits} Academic Credits
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Curriculum Status</span>
+                  <span className="font-bold block text-xs text-emerald-700">
+                    {provenanceSubject.metadata?.isVerified ? "Verified • MU Circular" : "Baseline Prototype"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Verified Institutional Provenance Details */}
+              {provenanceSubject.metadata?.isManifestMatched ? (
+                <div className="p-4 rounded-xl bg-blue-50/60 border border-blue-200 space-y-2.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#1657D9] flex items-center space-x-1.5">
+                    <Icon name="award" className="w-3.5 h-3.5 text-[#1657D9]" />
+                    <span>University of Mumbai Gazetted Syllabus Reference</span>
+                  </span>
+
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex items-start justify-between py-1 border-b border-blue-100">
+                      <span className="text-slate-500 font-medium">Primary Circular PDF:</span>
+                      <span className="font-mono font-semibold text-slate-800 text-[11px]">
+                        {provenanceSubject.metadata.sourcePdf}
+                      </span>
+                    </div>
+
+                    <div className="flex items-start justify-between py-1 border-b border-blue-100">
+                      <span className="text-slate-500 font-medium">Circular Page Number:</span>
+                      <span className="font-semibold text-slate-800">
+                        Page {provenanceSubject.metadata.sourcePage}
+                      </span>
+                    </div>
+
+                    <div className="flex items-start justify-between py-1 border-b border-blue-100">
+                      <span className="text-slate-500 font-medium">Academic Council Resolution:</span>
+                      <span className="font-semibold text-slate-800 text-right max-w-[260px] text-[11px]">
+                        {provenanceSubject.metadata.acResolution}
+                      </span>
+                    </div>
+
+                    {provenanceSubject.metadata.electiveGroup && (
+                      <div className="flex items-start justify-between py-1">
+                        <span className="text-slate-500 font-medium">Elective Group Relationship:</span>
+                        <span className="font-semibold text-amber-800">
+                          {provenanceSubject.metadata.electiveOption} ({provenanceSubject.metadata.electiveGroup})
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-slate-100/80 border border-slate-200 space-y-1.5 text-xs text-slate-600">
+                  <span className="font-bold text-slate-800 block text-xs">Institutional Baseline Prototype Record</span>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    This subject was registered during initial ERP baseline development. Formal University of Mumbai circular resolution and primary syllabus PDF citations have not yet been gazetted for this record.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setProvenanceSubject(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#1657D9] hover:bg-blue-700 shadow-xs transition-colors cursor-pointer"
+              >
+                Close Provenance Inspector
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

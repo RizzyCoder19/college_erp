@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/common/Icon";
 import { MODULES_LIST } from "@/data/mockData";
+import { getCurrentUserAction } from "@/lib/actions/auth";
 
 interface SidebarProps {
   onNavigate?: () => void;
@@ -14,8 +15,18 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
   const pathname = usePathname();
+  const [currentUser, setCurrentUser] = useState<{ role: string; fullName: string } | null>(null);
+
+  useEffect(() => {
+    getCurrentUserAction().then((res) => {
+      if (res.success && res.data) {
+        setCurrentUser(res.data);
+      }
+    });
+  }, []);
 
   const isDashboard = pathname === "/";
+  const isStudent = currentUser?.role === "STUDENT_VIEWER" || pathname.startsWith("/portal/student");
 
   // Filter modules into main navigation and system navigation
   const mainModules = MODULES_LIST.filter((m) => m.category === "main");
@@ -71,53 +82,135 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
 
       {/* Navigation Scrollable Body */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-        {/* Dashboard Link with Magic Navigation Active Indicator */}
-        <nav className="space-y-1">
-          <Link
-            href="/"
-            onClick={onNavigate}
-            className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 transition-all ${
-              isDashboard
-                ? "magic-nav-active bg-[#1657D9] text-white font-semibold shadow-md"
-                : "text-slate-300 hover:bg-[#13223E] hover:text-white"
-            }`}
-          >
-            <Icon
-              name="dashboard"
-              className={`h-5 w-5 shrink-0 ${
-                isDashboard ? "text-white" : "text-slate-400"
+        {isStudent ? (
+          /* Student Self-Service Navigation */
+          <nav className="space-y-1">
+            <div className="px-3.5 text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+              STUDENT WORKSPACE
+            </div>
+            <Link
+              href="/portal/student?tab=overview"
+              onClick={onNavigate}
+              className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 transition-all ${
+                pathname === "/portal/student"
+                  ? "magic-nav-active bg-[#1657D9] text-white font-semibold shadow-md"
+                  : "text-slate-300 hover:bg-[#13223E] hover:text-white"
               }`}
-            />
-            <span>Dashboard</span>
-          </Link>
-        </nav>
+            >
+              <Icon
+                name="user"
+                className={`h-5 w-5 shrink-0 ${
+                  pathname === "/portal/student" ? "text-white" : "text-slate-400"
+                }`}
+              />
+              <span>Profile & Overview</span>
+            </Link>
 
-        {/* Core Academic & Administrative Modules */}
-        <nav className="space-y-1">
-          {mainModules.map((module) => {
-            const isActive = pathname === `/modules/${module.slug}`;
-            return (
+            <Link
+              href="/portal/student?tab=academics"
+              onClick={onNavigate}
+              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
+            >
+              <Icon name="academic-cap" className="h-5 w-5 shrink-0 text-slate-400" />
+              <span>Academics & Curriculum</span>
+            </Link>
+
+            <Link
+              href="/portal/student?tab=timetable"
+              onClick={onNavigate}
+              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
+            >
+              <Icon name="calendar" className="h-5 w-5 shrink-0 text-slate-400" />
+              <span>Class Schedule</span>
+            </Link>
+
+            <Link
+              href="/portal/student?tab=attendance"
+              onClick={onNavigate}
+              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
+            >
+              <Icon name="clipboard-check" className="h-5 w-5 shrink-0 text-slate-400" />
+              <span>Attendance</span>
+            </Link>
+
+            <Link
+              href="/portal/student?tab=examinations"
+              onClick={onNavigate}
+              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
+            >
+              <Icon name="award" className="h-5 w-5 shrink-0 text-slate-400" />
+              <span>Examinations</span>
+            </Link>
+
+            <Link
+              href="/portal/student?tab=fees"
+              onClick={onNavigate}
+              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
+            >
+              <Icon name="currency-rupee" className="h-5 w-5 shrink-0 text-slate-400" />
+              <span>Fee Ledger</span>
+            </Link>
+
+            <Link
+              href="/portal/student?tab=documents"
+              onClick={onNavigate}
+              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
+            >
+              <Icon name="document-duplicate" className="h-5 w-5 shrink-0 text-slate-400" />
+              <span>Compliance Documents</span>
+            </Link>
+          </nav>
+        ) : (
+          <>
+            {/* Dashboard Link with Magic Navigation Active Indicator */}
+            <nav className="space-y-1">
               <Link
-                key={module.slug}
-                href={`/modules/${module.slug}`}
+                href="/"
                 onClick={onNavigate}
-                className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2 transition-all ${
-                  isActive
+                className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 transition-all ${
+                  isDashboard
                     ? "magic-nav-active bg-[#1657D9] text-white font-semibold shadow-md"
                     : "text-slate-300 hover:bg-[#13223E] hover:text-white"
                 }`}
               >
                 <Icon
-                  name={module.icon}
+                  name="dashboard"
                   className={`h-5 w-5 shrink-0 ${
-                    isActive ? "text-white" : "text-slate-400"
+                    isDashboard ? "text-white" : "text-slate-400"
                   }`}
                 />
-                <span className="truncate">{module.title}</span>
+                <span>Dashboard</span>
               </Link>
-            );
-          })}
-        </nav>
+            </nav>
+
+            {/* Core Academic & Administrative Modules */}
+            <nav className="space-y-1">
+              {mainModules.map((module) => {
+                const isActive = pathname === `/modules/${module.slug}`;
+                return (
+                  <Link
+                    key={module.slug}
+                    href={`/modules/${module.slug}`}
+                    onClick={onNavigate}
+                    className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2 transition-all ${
+                      isActive
+                        ? "magic-nav-active bg-[#1657D9] text-white font-semibold shadow-md"
+                        : "text-slate-300 hover:bg-[#13223E] hover:text-white"
+                    }`}
+                  >
+                    <Icon
+                      name={module.icon}
+                      className={`h-5 w-5 shrink-0 ${
+                        isActive ? "text-white" : "text-slate-400"
+                      }`}
+                    />
+                    <span className="truncate">{module.title}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </>
+        )}
 
         {/* System Group */}
         <div>

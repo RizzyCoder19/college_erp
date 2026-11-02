@@ -15,7 +15,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   return (
-    <div className="min-h-screen w-full bg-[#F4F6F9] text-slate-900 flex flex-col relative">
+    <div className="min-h-screen w-full bg-workspace text-slate-800 flex flex-col relative overflow-x-hidden">
       {/* 1. Desktop Persistent Dark Navy Sidebar */}
       <aside
         className="hidden lg:flex flex-col fixed top-0 bottom-0 left-0 w-64 h-screen z-40 bg-[#0B1528] border-r border-[#16243E] overflow-y-auto"
@@ -56,7 +56,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       )}
 
       {/* 3. Main Workspace Column (Padded by 16rem / 256px on desktop to clear sidebar) */}
-      <div className="flex-1 flex flex-col min-w-0 lg:pl-64 w-full">
+      <div className="flex-1 flex flex-col min-w-0 lg:pl-64 w-full overflow-x-hidden">
         {/* Institutional Top Bar */}
         <TopBar
           onToggleMobileSidebar={() => setMobileMenuOpen(true)}
@@ -70,7 +70,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         </main>
 
         {/* Institutional Footer */}
-        <footer className="mt-auto border-t border-slate-200 bg-white px-4 py-5 text-xs text-slate-500 sm:px-6 lg:px-8">
+        <footer className="mt-auto border-t border-comfort-subtle bg-card-comfort px-4 py-5 text-xs text-slate-500 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
             <div>
               <p className="font-semibold text-slate-800">

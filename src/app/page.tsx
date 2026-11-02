@@ -1,4 +1,4 @@
-﻿import { Suspense } from "react";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/guards";
@@ -12,6 +12,11 @@ async function AuthenticatedDashboard() {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");
+  }
+
+  // Automatic redirect to role-specific workspace for students
+  if (user.role === "STUDENT_VIEWER") {
+    redirect("/portal/student");
   }
 
   const [studentCount, staffCount, programmeCount, divisionCount, anomaliesRes] = await Promise.all([

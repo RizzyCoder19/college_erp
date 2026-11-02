@@ -1,0 +1,84 @@
+{
+  "milestone": "1B",
+  "project": "CampusOS",
+  "institution": "R.P. Institute of Hospitality & Management, Vasai",
+  "affiliation": "University of Mumbai",
+  "execution_timestamp": "2026-10-30T15:28:06.849Z",
+  "status": "COMPLETED_AND_VERIFIED",
+  "pre_import_database": {
+    "path": "prisma/dev.db",
+    "size_bytes": 675840,
+    "sha256": "59566fced813d3da161edaaaa9b7f6d621edae987e89e9c2a353eed73a11035a",
+    "subject_count": 7,
+    "total_records": 256,
+    "tables_count": 26
+  },
+  "recovery_snapshot": {
+    "path": "prisma/dev.db.pre_milestone1b.bak",
+    "size_bytes": 663552,
+    "sha256_authoritative_recovery_hash": "f23dc61a422a17d5e51774aa2737275a5d0612866eb0f4ce97436b842c1a44e8",
+    "integrity_check": "ok",
+    "foreign_key_violations": 0,
+    "table_counts_match_active": true
+  },
+  "manifest_source": {
+    "file": "src/data/canonicalCurriculumManifest.ts",
+    "total_entries": 50,
+    "unique_codes": 50,
+    "programmes_covered": [
+      "BA-CUL",
+      "BSCIT",
+      "BSCCS",
+      "BSCDS-AI"
+    ]
+  },
+  "transaction_execution": {
+    "strategy": "Pure Prisma Client Managed Transaction (prisma.$transaction)",
+    "inserted_count": 50,
+    "skipped_count": 0,
+    "conflicts_count": 0,
+    "baseline_preserved_count": 7,
+    "post_import_subject_count": 57
+  },
+  "verification_gates": {
+    "verification_a_subject_count": {
+      "expected": 57,
+      "actual": 57,
+      "passed": true
+    },
+    "verification_b_canonical_coverage": {
+      "expected_codes_count": 50,
+      "actual_codes_matched": 50,
+      "mismatches": 0,
+      "passed": true
+    },
+    "verification_c_baseline_preservation": {
+      "expected_baseline_count": 7,
+      "actual_baseline_preserved": 7,
+      "all_fields_identical": true,
+      "passed": true
+    },
+    "verification_d_sqlite_integrity": {
+      "integrity_check": "ok",
+      "foreign_key_violations": 0,
+      "passed": true
+    },
+    "verification_e_table_reconciliation": {
+      "tables_audited": 26,
+      "unrelated_tables_modified": 0,
+      "subject_table_delta": 50,
+      "passed": true
+    },
+    "verification_f_type_safety": {
+      "tsc_exit_code": 0,
+      "passed": true
+    }
+  },
+  "idempotence_test": {
+    "dry_run_reexecution": true,
+    "newly_inserted": 0,
+    "existing_skipped": 50,
+    "final_count_preserved": 57,
+    "passed": true
+  }
+}

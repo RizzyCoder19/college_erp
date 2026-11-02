@@ -15,24 +15,26 @@ generator client {
 // -------------------------------------------------------------
 
 model AcademicYear {
-  id          String         @id @default(uuid())
-  code        String         @unique // e.g. 2026-27
-  name        String         // e.g. Academic Year 2026-2027
-  startDate   DateTime
-  endDate     DateTime
-  isCurrent   Boolean        @default(false)
-  terms       AcademicTerm[]
-  enrolments  Enrolment[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id            String         @id @default(uuid())
+  code          String         @unique // e.g. 2026-27
+  name          String // e.g. Academic Year 2026-2027
+  startDate     DateTime
+  endDate       DateTime
+  isCurrent     Boolean        @default(false)
+  terms         AcademicTerm[]
+  feeStructures FeeStructure[]
+  enrolments    Enrolment[]
+  examSessions  ExamSession[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model AcademicTerm {
   id             String       @id @default(uuid())
   academicYearId String
   academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
-  termType       String       // ODD, EVEN, ANNUAL
-  name           String       // e.g. Odd Semester Term
+  termType       String // ODD, EVEN, ANNUAL
+  name           String // e.g. Odd Semester Term
   startDate      DateTime
   endDate        DateTime
   isCurrent      Boolean      @default(false)
@@ -43,66 +45,74 @@ model AcademicTerm {
 }
 
 model Department {
-  id          String      @id @default(uuid())
-  code        String      @unique // e.g. CUL, HOSP, MGMT
-  name        String      // e.g. Department of Culinary Arts
-  hodStaffId  String?     @unique
-  programmes  Programme[]
-  staff       Staff[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id         String      @id @default(uuid())
+  code       String      @unique // e.g. CUL, HOSP, MGMT
+  name       String // e.g. Department of Culinary Arts
+  hodStaffId String?     @unique
+  programmes Programme[]
+  staff      Staff[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
 
 model Programme {
-  id            String       @id @default(uuid())
-  code          String       @unique // e.g. BSC-HS, BA-CUL
-  name          String       // e.g. B.Sc. in Hospitality Studies
-  degreeLevel   String       // UNDERGRADUATE, POSTGRADUATE, DIPLOMA
-  durationYears Int          @default(3)
+  id            String         @id @default(uuid())
+  code          String         @unique // e.g. BSC-HS, BA-CUL
+  name          String // e.g. B.Sc. in Hospitality Studies
+  degreeLevel   String // UNDERGRADUATE, POSTGRADUATE, DIPLOMA
+  durationYears Int            @default(3)
   departmentId  String
-  department    Department   @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  department    Department     @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   semesters     Semester[]
   enrolments    Enrolment[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  FeeStructure  FeeStructure[]
 
   @@index([departmentId])
 }
 
 model Semester {
-  id             String       @id @default(uuid())
-  programmeId    String
-  programme      Programme    @relation(fields: [programmeId], references: [id], onDelete: Cascade)
-  semesterNumber Int          // 1 to 6
-  termType       String       // ODD, EVEN
-  subjects       Subject[]
-  divisions      Division[]
-  enrolments     Enrolment[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                  String              @id @default(uuid())
+  programmeId         String
+  programme           Programme           @relation(fields: [programmeId], references: [id], onDelete: Cascade)
+  semesterNumber      Int // 1 to 6
+  termType            String // ODD, EVEN
+  subjects            Subject[]
+  divisions           Division[]
+  enrolments          Enrolment[]
+  timetableEntries    TimetableEntry[]
+  attendanceSessions  AttendanceSession[]
+  examResultSummaries ExamResultSummary[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
 
   @@unique([programmeId, semesterNumber])
   @@index([programmeId])
 }
 
 model Subject {
-  id                  String               @id @default(uuid())
-  code                String               @unique // e.g. FP-101, FBM-201
-  title               String               // e.g. Food Production I
-  credits             Float                @default(4.0)
-  subjectType         String               @default("THEORY") // THEORY, PRACTICAL_KITCHEN
-  semesterId          String
-  semester            Semester             @relation(fields: [semesterId], references: [id], onDelete: Restrict)
-  teachingAssignments TeachingAssignment[]
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
+  id                   String                @id @default(uuid())
+  code                 String                @unique // e.g. FP-101, FBM-201
+  title                String // e.g. Food Production I
+  credits              Float                 @default(4.0)
+  subjectType          String                @default("THEORY") // THEORY, PRACTICAL_KITCHEN
+  semesterId           String
+  semester             Semester              @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  teachingAssignments  TeachingAssignment[]
+  assessmentComponents AssessmentComponent[]
+  subjectResults       SubjectResultEntry[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  TimetableEntry       TimetableEntry[]
+  AttendanceSession    AttendanceSession[]
 
   @@index([semesterId])
 }
 
 model Division {
   id                  String               @id @default(uuid())
-  name                String               // e.g. Division A, Batch K1
+  name                String // e.g. Division A, Batch K1
   semesterId          String
   semester            Semester             @relation(fields: [semesterId], references: [id], onDelete: Restrict)
   maxCapacity         Int                  @default(60)
@@ -110,6 +120,8 @@ model Division {
   teachingAssignments TeachingAssignment[]
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
+  TimetableEntry      TimetableEntry[]
+  AttendanceSession   AttendanceSession[]
 
   @@unique([semesterId, name])
   @@index([semesterId])
@@ -120,26 +132,32 @@ model Division {
 // -------------------------------------------------------------
 
 model Student {
-  id              String       @id @default(uuid())
-  rollNumber      String       @unique // e.g. RPIHM-2026-001
-  prn             String       @unique // Permanent Registration Number: 202601640001001
-  fullName        String
-  email           String       @unique
-  phone           String
-  dob             DateTime
-  gender          String?      // MALE, FEMALE, OTHER
-  bloodGroup      String?
-  status          String       @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, ALUMNI
-  currentSemester Int          @default(1)
-  guardianName    String?
-  guardianRelationship String?
-  guardianPhone   String?
-  attendanceRate  Float?
-  mentorFaculty   String?
-  enrolments      Enrolment[]
-  userAccount     UserAccount?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id                       String                   @id @default(uuid())
+  rollNumber               String                   @unique // e.g. RPIHM-2026-001
+  prn                      String                   @unique // Permanent Registration Number: 202601640001001
+  fullName                 String
+  email                    String                   @unique
+  phone                    String
+  dob                      DateTime
+  gender                   String? // MALE, FEMALE, OTHER
+  bloodGroup               String?
+  status                   String                   @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, ALUMNI
+  currentSemester          Int                      @default(1)
+  guardianName             String?
+  guardianRelationship     String?
+  guardianPhone            String?
+  attendanceRate           Float?
+  mentorFaculty            String?
+  enrolments               Enrolment[]
+  attendanceRecords        AttendanceRecord[]
+  studentAssessmentEntries StudentAssessmentEntry[]
+  examResultSummaries      ExamResultSummary[]
+  feeInvoices              StudentFeeInvoice[]
+  feeReceipts              FeeReceipt[]
+  userAccount              UserAccount?
+  documents                StudentDocument[]
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
 
   @@index([status])
 }
@@ -150,8 +168,8 @@ model Staff {
   fullName            String
   email               String               @unique
   phone               String
-  designation         String               // e.g. Executive Chef Instructor
-  category            String               // TEACHING, TECHNICAL, ADMINISTRATIVE
+  designation         String // e.g. Executive Chef Instructor
+  category            String // TEACHING, TECHNICAL, ADMINISTRATIVE
   departmentId        String
   department          Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   dateOfJoining       DateTime
@@ -165,6 +183,7 @@ model Staff {
   userAccount         UserAccount?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
+  AttendanceSession   AttendanceSession[]
 
   @@index([departmentId])
   @@index([category])
@@ -175,20 +194,24 @@ model Staff {
 // -------------------------------------------------------------
 
 model Enrolment {
-  id             String       @id @default(uuid())
-  studentId      String
-  student        Student      @relation(fields: [studentId], references: [id], onDelete: Restrict)
-  academicYearId String
-  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
-  programmeId    String
-  programme      Programme    @relation(fields: [programmeId], references: [id], onDelete: Restrict)
-  semesterId     String
-  semester       Semester     @relation(fields: [semesterId], references: [id], onDelete: Restrict)
-  divisionId     String
-  division       Division     @relation(fields: [divisionId], references: [id], onDelete: Restrict)
-  status         String       @default("ENROLLED") // ENROLLED, PROMOTED, DETAINED
-  enrolledAt     DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                       String                   @id @default(uuid())
+  studentId                String
+  student                  Student                  @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  academicYearId           String
+  academicYear             AcademicYear             @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  programmeId              String
+  programme                Programme                @relation(fields: [programmeId], references: [id], onDelete: Restrict)
+  semesterId               String
+  semester                 Semester                 @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  divisionId               String
+  division                 Division                 @relation(fields: [divisionId], references: [id], onDelete: Restrict)
+  status                   String                   @default("ENROLLED") // ENROLLED, PROMOTED, DETAINED
+  enrolledAt               DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+  AttendanceRecord         AttendanceRecord[]
+  studentAssessmentEntries StudentAssessmentEntry[]
+  examResultSummaries      ExamResultSummary[]
+  feeInvoices              StudentFeeInvoice[]
 
   @@unique([studentId, academicYearId, semesterId])
   @@index([academicYearId])
@@ -197,16 +220,17 @@ model Enrolment {
 }
 
 model TeachingAssignment {
-  id          String    @id @default(uuid())
-  staffId     String
-  staff       Staff     @relation(fields: [staffId], references: [id], onDelete: Restrict)
-  subjectId   String
-  subject     Subject   @relation(fields: [subjectId], references: [id], onDelete: Restrict)
-  divisionId  String?
-  division    Division? @relation(fields: [divisionId], references: [id], onDelete: SetNull)
-  weeklyHours Int       @default(4)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             String           @id @default(uuid())
+  staffId        String
+  staff          Staff            @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  subjectId      String
+  subject        Subject          @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  divisionId     String?
+  division       Division?        @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  weeklyHours    Int              @default(4)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  TimetableEntry TimetableEntry[]
 
   @@unique([staffId, subjectId, divisionId])
   @@index([staffId])
@@ -218,21 +242,33 @@ model TeachingAssignment {
 // -------------------------------------------------------------
 
 model UserAccount {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  passwordHash String
-  salt         String
-  fullName     String
-  role         String    @default("STUDENT_VIEWER") // SYSTEM_ADMIN, ACADEMIC_ADMIN, FACULTY_MEMBER, STUDENT_VIEWER
-  isActive     Boolean   @default(true)
-  staffId      String?   @unique
-  staff        Staff?    @relation(fields: [staffId], references: [id], onDelete: SetNull)
-  studentId    String?   @unique
-  student      Student?  @relation(fields: [studentId], references: [id], onDelete: SetNull)
-  lastLoginAt  DateTime?
-  sessions     Session[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                         String                    @id @default(uuid())
+  email                      String                    @unique
+  passwordHash               String
+  salt                       String
+  fullName                   String
+  role                       String                    @default("STUDENT_VIEWER") // SYSTEM_ADMIN, ACADEMIC_ADMIN, FACULTY_MEMBER, STUDENT_VIEWER
+  isActive                   Boolean                   @default(true)
+  staffId                    String?                   @unique
+  staff                      Staff?                    @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  studentId                  String?                   @unique
+  student                    Student?                  @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  lastLoginAt                DateTime?
+  sessions                   Session[]
+  recordedAttendanceSessions AttendanceSession[]       @relation("RecordedBy")
+  amendedAttendanceSessions  AttendanceSession[]       @relation("AmendedBy")
+  amendedAttendanceRecords   AttendanceRecord[]        @relation("RecordAmendedBy")
+  publishedExamSessions      ExamSession[]             @relation("SessionPublishedBy")
+  enteredAssessmentMarks     StudentAssessmentEntry[]  @relation("MarksEnteredBy")
+  moderatedAssessmentMarks   StudentAssessmentEntry[]  @relation("MarksModeratedBy")
+  publishedExamResults       ExamResultSummary[]       @relation("ResultPublishedBy")
+  assessmentRevisionAudits   AssessmentRevisionAudit[]
+  generatedInvoices          StudentFeeInvoice[]       @relation("InvoiceGeneratedBy")
+  collectedReceipts          FeeReceipt[]              @relation("ReceiptCollectedBy")
+  uploadedDocuments          StudentDocument[]         @relation("DocumentUploadedBy")
+  verifiedDocuments          StudentDocumentVerification[] @relation("DocumentVerifiedBy")
+  createdAt                  DateTime                  @default(now())
+  updatedAt                  DateTime                  @updatedAt
 
   @@index([role])
 }
@@ -251,4 +287,374 @@ model Session {
 
   @@index([tokenHash])
   @@index([userId])
+}
+
+// -------------------------------------------------------------
+// 5. Timetable & Attendance Models (Milestone 4)
+// -------------------------------------------------------------
+
+model TimetableEntry {
+  id                   String              @id @default(uuid())
+  semesterId           String
+  semester             Semester            @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  divisionId           String?
+  division             Division?           @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  subjectId            String
+  subject              Subject             @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  teachingAssignmentId String
+  teachingAssignment   TeachingAssignment  @relation(fields: [teachingAssignmentId], references: [id], onDelete: Restrict)
+  dayOfWeek            String // MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY
+  startTime            String // HH:mm format, e.g. "09:00"
+  endTime              String // HH:mm format, e.g. "10:00"
+  room                 String? // e.g. "BTK Kitchen 1", "Room 302"
+  sessionType          String              @default("THEORY") // THEORY, PRACTICAL_LAB, TUTORIAL
+  status               String              @default("ACTIVE") // ACTIVE, CANCELLED
+  attendanceSessions   AttendanceSession[]
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@index([semesterId])
+  @@index([divisionId])
+  @@index([subjectId])
+  @@index([teachingAssignmentId])
+  @@index([dayOfWeek])
+}
+
+model AttendanceSession {
+  id                String             @id @default(uuid())
+  timetableEntryId  String?
+  timetableEntry    TimetableEntry?    @relation(fields: [timetableEntryId], references: [id], onDelete: SetNull)
+  semesterId        String
+  semester          Semester           @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  divisionId        String?
+  division          Division?          @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  subjectId         String
+  subject           Subject            @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  facultyId         String
+  faculty           Staff              @relation(fields: [facultyId], references: [id], onDelete: Restrict)
+  sessionDate       DateTime // Calendar day
+  startTime         String // HH:mm format
+  endTime           String // HH:mm format
+  sessionType       String             @default("THEORY") // THEORY, PRACTICAL_LAB, TUTORIAL
+  status            String             @default("DRAFT") // DRAFT, FINALIZED, CANCELLED
+  topicCovered      String?
+  recordedById      String
+  recordedBy        UserAccount        @relation("RecordedBy", fields: [recordedById], references: [id], onDelete: Restrict)
+  finalizedAt       DateTime?
+  amendedById       String?
+  amendedBy         UserAccount?       @relation("AmendedBy", fields: [amendedById], references: [id], onDelete: SetNull)
+  amendedAt         DateTime?
+  attendanceRecords AttendanceRecord[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@unique([timetableEntryId, sessionDate])
+  @@index([sessionDate])
+  @@index([semesterId])
+  @@index([divisionId])
+  @@index([subjectId])
+  @@index([facultyId])
+  @@index([status])
+}
+
+model AttendanceRecord {
+  id          String            @id @default(uuid())
+  sessionId   String
+  session     AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     Student           @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  enrolmentId String
+  enrolment   Enrolment         @relation(fields: [enrolmentId], references: [id], onDelete: Restrict)
+  status      String            @default("PRESENT") // PRESENT, ABSENT, LATE, EXCUSED
+  remarks     String?
+  markedAt    DateTime          @default(now())
+  amendedById String?
+  amendedBy   UserAccount?      @relation("RecordAmendedBy", fields: [amendedById], references: [id], onDelete: SetNull)
+  amendedAt   DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([sessionId, studentId])
+  @@index([sessionId])
+  @@index([studentId])
+  @@index([enrolmentId])
+  @@index([status])
+}
+
+// -------------------------------------------------------------
+// 6. Examination & Results Models (Milestone 5)
+// -------------------------------------------------------------
+
+model ExamSession {
+  id                   String                @id @default(uuid())
+  academicYearId       String
+  academicYear         AcademicYear          @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  name                 String
+  sessionCode          String                @unique
+  sessionType          String                @default("REGULAR") // REGULAR, ATKT_SUPPLEMENTARY, REVALUATION
+  startDate            DateTime
+  endDate              DateTime
+  status               String                @default("PLANNING") // PLANNING, ACTIVE, EVALUATION, MODERATION, APPROVED, PUBLISHED, ARCHIVED
+  publishedAt          DateTime?
+  publishedById        String?
+  publishedBy          UserAccount?          @relation("SessionPublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
+  assessmentComponents AssessmentComponent[]
+  examResultSummaries  ExamResultSummary[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  @@index([academicYearId])
+  @@index([status])
+}
+
+model AssessmentComponent {
+  id                  String                   @id @default(uuid())
+  examSessionId       String
+  examSession         ExamSession              @relation(fields: [examSessionId], references: [id], onDelete: Cascade)
+  subjectId           String
+  subject             Subject                  @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  name                String
+  componentType       String // THEORY_SEE, INTERNAL_IA, PRACTICAL_SEE, VIVA_VOCE
+  maxMarks            Float
+  minPassingMarks     Float?
+  weightagePercentage Float?
+  studentEntries      StudentAssessmentEntry[]
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  @@unique([examSessionId, subjectId, componentType])
+  @@index([examSessionId])
+  @@index([subjectId])
+}
+
+model StudentAssessmentEntry {
+  id             String                    @id @default(uuid())
+  componentId    String
+  component      AssessmentComponent       @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  studentId      String
+  student        Student                   @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  enrolmentId    String
+  enrolment      Enrolment                 @relation(fields: [enrolmentId], references: [id], onDelete: Restrict)
+  marksObtained  Float?
+  entryStatus    String                    @default("PENDING") // PENDING, ENTERED, ABSENT, EXEMPT, WITHHELD, MEDICAL_LEAVE
+  isPassed       Boolean?
+  remarks        String?
+  enteredById    String
+  enteredBy      UserAccount               @relation("MarksEnteredBy", fields: [enteredById], references: [id], onDelete: Restrict)
+  enteredAt      DateTime                  @default(now())
+  moderatedMarks Float?
+  moderatedById  String?
+  moderatedBy    UserAccount?              @relation("MarksModeratedBy", fields: [moderatedById], references: [id], onDelete: SetNull)
+  moderatedAt    DateTime?
+  revisionAudits AssessmentRevisionAudit[]
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  @@unique([componentId, studentId])
+  @@index([componentId])
+  @@index([studentId])
+  @@index([enrolmentId])
+}
+
+model ExamResultSummary {
+  id                 String               @id @default(uuid())
+  examSessionId      String
+  examSession        ExamSession          @relation(fields: [examSessionId], references: [id], onDelete: Cascade)
+  studentId          String
+  student            Student              @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  enrolmentId        String
+  enrolment          Enrolment            @relation(fields: [enrolmentId], references: [id], onDelete: Restrict)
+  semesterId         String
+  semester           Semester             @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  totalMaxMarks      Float
+  totalMarksObtained Float?
+  percentage         Float?
+  sgpa               Float?
+  letterGrade        String?
+  resultStatus       String               @default("PROVISIONAL") // PROVISIONAL, PASSED, ATKT, FAILED, WITHHELD, INCOMPLETE
+  approvalStatus     String               @default("DRAFT") // DRAFT, UNDER_REVIEW, APPROVED, PUBLISHED
+  publishedAt        DateTime?
+  publishedById      String?
+  publishedBy        UserAccount?         @relation("ResultPublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
+  subjectResults     SubjectResultEntry[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@unique([examSessionId, studentId, semesterId])
+  @@index([examSessionId])
+  @@index([studentId])
+  @@index([semesterId])
+  @@index([approvalStatus])
+}
+
+model SubjectResultEntry {
+  id                 String            @id @default(uuid())
+  resultSummaryId    String
+  resultSummary      ExamResultSummary @relation(fields: [resultSummaryId], references: [id], onDelete: Cascade)
+  subjectId          String
+  subject            Subject           @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  totalMaxMarks      Float
+  totalMarksObtained Float?
+  credits            Float
+  gradePoint         Float?
+  letterGrade        String?
+  status             String            @default("PENDING") // PENDING, PASS, FAIL, ABSENT, WITHHELD
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@unique([resultSummaryId, subjectId])
+  @@index([resultSummaryId])
+  @@index([subjectId])
+}
+
+model AssessmentRevisionAudit {
+  id             String                 @id @default(uuid())
+  entryId        String
+  entry          StudentAssessmentEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  previousScore  Float?
+  newScore       Float?
+  previousStatus String
+  newStatus      String
+  reason         String
+  revisedById    String
+  revisedBy      UserAccount            @relation(fields: [revisedById], references: [id], onDelete: Restrict)
+  revisedAt      DateTime               @default(now())
+
+  @@index([entryId])
+  @@index([revisedById])
+}
+
+// ==========================================
+// MILESTONE 6: STUDENT FEE LEDGERS & RECEIPTS
+// ==========================================
+
+model FeeStructure {
+  id             String              @id @default(uuid())
+  academicYearId String
+  academicYear   AcademicYear        @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  programmeId    String
+  programme      Programme           @relation(fields: [programmeId], references: [id], onDelete: Restrict)
+  semesterNumber Int
+  name           String // e.g. "B.Sc. Culinary Arts - Semester 1 (2026-27)"
+  totalAmount    Float // Computed sum of component fee heads
+  isActive       Boolean             @default(true)
+  feeHeads       FeeHead[]
+  invoices       StudentFeeInvoice[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([academicYearId, programmeId, semesterNumber])
+  @@index([academicYearId])
+  @@index([programmeId])
+}
+
+model FeeHead {
+  id             String       @id @default(uuid())
+  feeStructureId String
+  feeStructure   FeeStructure @relation(fields: [feeStructureId], references: [id], onDelete: Cascade)
+  headName       String // Tuition Fee, Kitchen Lab Fee, Knife-Kit & Uniform Fee, Exam & Library Fee
+  amount         Float
+  isOptional     Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([feeStructureId])
+}
+
+model StudentFeeInvoice {
+  id             String       @id @default(uuid())
+  invoiceNumber  String       @unique // e.g. "INV-2026-0001"
+  studentId      String
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  enrolmentId    String
+  enrolment      Enrolment    @relation(fields: [enrolmentId], references: [id], onDelete: Restrict)
+  feeStructureId String
+  feeStructure   FeeStructure @relation(fields: [feeStructureId], references: [id], onDelete: Restrict)
+  totalDemand    Float
+  dueDate        DateTime
+  status         String       @default("PENDING") // PENDING, PARTIALLY_PAID, PAID, OVERDUE, CANCELLED
+  remarks        String?
+  generatedById  String?
+  generatedBy    UserAccount? @relation("InvoiceGeneratedBy", fields: [generatedById], references: [id], onDelete: SetNull)
+  receipts       FeeReceipt[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([studentId, feeStructureId])
+  @@index([studentId])
+  @@index([enrolmentId])
+  @@index([feeStructureId])
+  @@index([status])
+}
+
+model FeeReceipt {
+  id                   String            @id @default(uuid())
+  receiptNumber        String            @unique // e.g. "REC-2026-0001"
+  invoiceId            String
+  invoice              StudentFeeInvoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  studentId            String
+  student              Student           @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  amountPaid           Float
+  paymentDate          DateTime          @default(now())
+  paymentMethod        String // UPI, NEFT_RTGS, CHEQUE, CASH, CARD, DEMAND_DRAFT
+  transactionReference String            @unique // Unique bank transaction ID / UTR / Voucher
+  payerName            String?
+  remarks              String?
+  collectedById        String
+  collectedBy          UserAccount       @relation("ReceiptCollectedBy", fields: [collectedById], references: [id], onDelete: Restrict)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([invoiceId])
+  @@index([studentId])
+  @@index([paymentDate])
+}
+
+// ==========================================
+// MILESTONE 2A.3: STUDENT DOCUMENT MANAGEMENT
+// ==========================================
+
+model StudentDocument {
+  id                 String                        @id @default(uuid())
+  studentId          String
+  student            Student                       @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  category           String                        // IDENTITY_PROOF, PHOTOGRAPH, PREVIOUS_MARKSHEET, LEAVING_CERTIFICATE, MIGRATION_CERTIFICATE, CASTE_CERTIFICATE, DOMICILE_CERTIFICATE, ADMISSION_FORM, OTHER
+  originalFileName   String
+  mimeType           String                        // application/pdf, image/jpeg, image/png
+  fileSize           Int                           // In bytes (bounded max 10MB)
+  storageProvider    String                        @default("LOCAL_PRIVATE") // LOCAL_PRIVATE, S3_COMPATIBLE
+  storageKey         String                        @unique // Unique internal storage path/key
+  checksum           String                        // SHA-256 binary hash
+  status             String                        @default("PENDING_VERIFICATION") // PENDING_VERIFICATION, VERIFIED, REJECTED, SUPERSEDED
+  version            Int                           @default(1)
+  isArchived         Boolean                       @default(false)
+  uploadedByUserId   String
+  uploadedByUser     UserAccount                   @relation("DocumentUploadedBy", fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+  replacedDocumentId String?
+  replacedDocument   StudentDocument?              @relation("DocumentVersionChain", fields: [replacedDocumentId], references: [id], onDelete: Restrict)
+  supersededBy       StudentDocument[]             @relation("DocumentVersionChain")
+  verifications      StudentDocumentVerification[]
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
+
+  @@index([studentId])
+  @@index([status])
+  @@index([category])
+  @@index([uploadedByUserId])
+  @@index([storageKey])
+}
+
+model StudentDocumentVerification {
+  id             String          @id @default(uuid())
+  documentId     String
+  document       StudentDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  reviewerUserId String
+  reviewer       UserAccount     @relation("DocumentVerifiedBy", fields: [reviewerUserId], references: [id], onDelete: Restrict)
+  previousStatus String
+  newStatus      String          // VERIFIED, REJECTED
+  reason         String?         // Required if newStatus === REJECTED
+  createdAt      DateTime        @default(now())
+
+  @@index([documentId])
+  @@index([reviewerUserId])
 }

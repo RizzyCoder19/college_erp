@@ -8,6 +8,11 @@ import { ModuleData } from "@/types/campus";
 import { AcademicsView } from "@/components/modules/AcademicsView";
 import { StudentsView } from "@/components/modules/students/StudentsView";
 import { FacultyView } from "@/components/modules/faculty/FacultyView";
+import { AttendanceView } from "@/components/modules/attendance/AttendanceView";
+import { ExaminationsView } from "@/components/modules/examinations/ExaminationsView";
+import { FinanceView } from "@/components/modules/finance/FinanceView";
+import ReportsView from "@/components/modules/reports/ReportsView";
+import SettingsView from "@/components/modules/settings/SettingsView";
 
 interface ModulePlaceholderProps {
   module: ModuleData;
@@ -27,6 +32,30 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({ module }) 
 
   if (module.slug === "faculty") {
     return <FacultyView />;
+  }
+
+  if (module.slug === "attendance") {
+    return <AttendanceView initialTab="mark" />;
+  }
+
+  if (module.slug === "timetable") {
+    return <AttendanceView initialTab="timetable" />;
+  }
+
+  if (module.slug === "examinations") {
+    return <ExaminationsView />;
+  }
+
+  if (module.slug === "finance" || module.slug === "fees") {
+    return <FinanceView />;
+  }
+
+  if (module.slug === "reports") {
+    return <ReportsView />;
+  }
+
+  if (module.slug === "settings") {
+    return <SettingsView />;
   }
 
   const filteredRows = module.mockRecords.rows.filter((row) =>

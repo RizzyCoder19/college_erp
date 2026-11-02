@@ -14,15 +14,38 @@
     --accent-red-hover: #B91C2A;
     --accent-red-light: #FDF2F2;
     
-    --workspace-bg: #F4F6F9;
-    --card-bg: #FFFFFF;
-    --border-subtle: #E2E8F0;
-    --border-card: #E5E9F0;
+    /* Visual Comfort Workspace & Surfaces */
+    --workspace-bg: #EDF2F7;
+    --card-bg: #FBFDFE;
+    --card-surface: #F8FAFD;
+    --card-surface-muted: #EFF4F9;
+    --border-subtle: #DCE3EC;
+    --border-card: #D5DFEB;
     
-    --text-primary: #0F172A;
+    --text-primary: #1E293B;
     --text-secondary: #475569;
     --text-muted: #64748B;
   }
+}
+
+/* Visual Comfort Utilities */
+.bg-workspace {
+  background-color: var(--workspace-bg);
+}
+.bg-card-comfort {
+  background-color: var(--card-bg);
+}
+.bg-card-surface {
+  background-color: var(--card-surface);
+}
+.bg-card-muted {
+  background-color: var(--card-surface-muted);
+}
+.border-comfort {
+  border-color: var(--border-card);
+}
+.border-comfort-subtle {
+  border-color: var(--border-subtle);
 }
 
 html {

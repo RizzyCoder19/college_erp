@@ -1,4 +1,4 @@
-﻿# dependencies
+# dependencies
 /node_modules
 /.pnp
 .pnp.*
@@ -32,9 +32,17 @@ yarn-error.log*
 .env*
 !.env.example
 
-# sqlite dev database
+# sqlite dev database & backups
 *.db
+*.db*
 *.db-journal
+*.bak*
+*.bak
+prisma/*.db*
+prisma/*.bak*
+prisma/*.manifest.json
+backups/
+/backups/
 
 # vercel
 .vercel
@@ -42,8 +50,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-prisma/*.db
-prisma/*.db-journal
 dev-admin-credentials.json
 dev-*-credentials.json
 dev-*.json
+
+# private document storage
+/storage/
+storage/*
+
+# temporary test outputs and automation captures
+temp_edge_*/
+*.png
+*.txt
+scratch/
+codes/

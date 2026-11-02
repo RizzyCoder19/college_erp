@@ -52,7 +52,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white text-slate-800 px-4 sm:px-6 shadow-2xs">
+      <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-comfort-subtle bg-card-comfort text-slate-800 px-4 sm:px-6 shadow-2xs">
         {/* Left: Mobile hamburger */}
         <div className="flex items-center space-x-3">
           <button
@@ -66,7 +66,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         {/* Center: Glowing Animated Global Search Bar (Stretched & Blended) */}
-        <div className="flex-1 max-w-2xl mx-3 sm:mx-6 flex items-center justify-center">
+        <div className="flex-1 max-w-2xl min-w-0 mx-1.5 sm:mx-6 flex items-center justify-center">
           <div id="poda" role="search" className="w-full">
             {/* Layered gradient frames */}
             <div className="glow" aria-hidden="true"></div>

@@ -351,6 +351,30 @@ export const MODULES_LIST: ModuleData[] = [
     },
   },
   {
+    slug: "timetable",
+    title: "Timetable & Scheduling",
+    department: "Academic Operations",
+    description: "Weekly lecture schedules, laboratory allocations, faculty timetables, and conflict-free room reservations under University of Mumbai schemes.",
+    icon: "clock",
+    category: "main",
+    status: "Active Preview",
+    stats: [
+      { label: "Scheduled Slots", value: "0 Active" },
+      { label: "Conflict State", value: "Clash-Free" },
+      { label: "Scheduling Engine", value: "Active SQLite" },
+    ],
+    plannedFeatures: [
+      "Clash-free automated lecture and laboratory schedule generation",
+      "Dynamic room and computer laboratory booking allocation",
+      "Faculty workload balancing and substitute faculty assignment",
+      "Student cohort personal timetable sync",
+    ],
+    mockRecords: {
+      columns: ["Slot Code", "Day", "Time", "Subject", "Division", "Faculty", "Room"],
+      rows: [],
+    },
+  },
+  {
     slug: "examinations",
     title: "Examinations & Results",
     department: "Controller of Examinations (CoE)",

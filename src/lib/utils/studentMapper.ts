@@ -86,7 +86,20 @@ export function mapStudentDbToRecord(dbStudent: StudentWithEnrolment): StudentRe
     division: divName,
     admissionDate: formattedAdmissionDate,
     enrollmentStatus,
-    feeStatus: "Not configured" as FeeStatus,
+    feeStatus: (() => {
+      if (dbStudent.feeInvoices && dbStudent.feeInvoices.length > 0) {
+        let demand = 0;
+        let paid = 0;
+        for (const inv of dbStudent.feeInvoices) {
+          demand += inv.totalDemand;
+          paid += inv.receipts.reduce((s: number, r: { amountPaid: number }) => s + r.amountPaid, 0);
+        }
+        if (paid >= demand && demand > 0) return "Paid" as FeeStatus;
+        if (paid > 0) return "Partial" as FeeStatus;
+        return "Pending" as FeeStatus;
+      }
+      return "Not configured" as FeeStatus;
+    })(),
     attendanceRate: typeof dbStudent.attendanceRate === "number" ? dbStudent.attendanceRate : 0,
     gpa: undefined,
     mentorFaculty: dbStudent.mentorFaculty || "",

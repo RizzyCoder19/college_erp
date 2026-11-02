@@ -103,11 +103,25 @@ export async function loginAction(dto: LoginDTO): Promise<Result<LoginResponse>>
       data: { lastLoginAt: new Date() },
     });
 
-    // Set secure HTTP-only cookie
+    // Cookie Security Policy:
+    // Production always defaults to secure: true, ensuring session cookies are protected
+    // even if optional URL environment variables are absent or invalid.
+    // In development, secure: false allows plain HTTP (localhost/mobile LAN), elevating to true
+    // only if an explicit HTTPS URL is configured.
+    const isProduction = process.env.NODE_ENV === "production";
+    const allowInsecureHttp = process.env.ALLOW_INSECURE_HTTP === "true" || process.env.SECURE_COOKIES === "false";
+    const isExplicitHttps = Boolean(
+      process.env.NEXTAUTH_URL?.startsWith("https://") ||
+      process.env.APP_URL?.startsWith("https://") ||
+      process.env.PUBLIC_URL?.startsWith("https://") ||
+      process.env.VERCEL_URL?.startsWith("https://")
+    );
+    const isSecure = isProduction ? !allowInsecureHttp : isExplicitHttps;
+
     const cookieStore = await cookies();
     cookieStore.set(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecure,
       sameSite: "lax",
       path: "/",
       maxAge: Math.floor(SESSION_TTL_MS / 1000),
@@ -351,3 +365,23 @@ export async function adminResetStaffPasswordAction(dto: {
     return { success: false, error: "Failed to reset password.", code: "INTERNAL_ERROR" };
   }
 }
+
+/**
+ * Clears the session cookie from the client.
+ * Must be executed within a Server Action context (not during Server Component render).
+ */
+export async function clearStaleSessionAction(): Promise<Result<boolean>> {
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete(SESSION_COOKIE_NAME);
+    return { success: true, data: true };
+  } catch (error: unknown) {
+    console.error("[Session Cookie Cleanup Error]:", error instanceof Error ? error.message : "Unknown error");
+    return {
+      success: false,
+      error: "Failed to clear session cookie.",
+      code: "COOKIE_ERROR",
+    };
+  }
+}
+

@@ -49,6 +49,7 @@ export function AnimatedLampLogin() {
   // Lamp state (Initially unlit as authored in original source)
   const [isOn, setIsOn] = useState(false);
   const [themeIndex, setThemeIndex] = useState(-1); // -1 = OFF
+  const [mobilePhase, setMobilePhase] = useState<"unlit" | "revealing" | "form-only">("unlit");
 
   // Post-login cinematic welcome transition user state
   const [welcomeUser, setWelcomeUser] = useState<AuthenticatedUser | null>(null);
@@ -236,15 +237,27 @@ export function AnimatedLampLogin() {
       const nextIdx = (prevIdx + 1) % (THEMES.length + 1);
 
       if (nextIdx === THEMES.length) {
-        // Turn OFF
+        // Turn OFF after cycling through themes (warm -> cyber -> violet -> OFF)
         setIsOn(false);
         playSound("switch");
         return -1;
       } else {
+        // Turn ON and apply next theme (wraparound to 0 = warm)
         setIsOn(true);
         playSound("switch");
         return nextIdx;
       }
+    });
+
+    // Advance mobile sequence: unlit -> revealing -> form-only
+    setMobilePhase((prev) => {
+      if (prev === "unlit") {
+        setTimeout(() => {
+          setMobilePhase("form-only");
+        }, 1000);
+        return "revealing";
+      }
+      return prev;
     });
   }, [playSound]);
 
@@ -404,8 +417,12 @@ export function AnimatedLampLogin() {
       if (res.data?.user) {
         setWelcomeUser(res.data.user);
       } else {
-        router.push("/");
-        router.refresh();
+        if (typeof window !== "undefined") {
+          window.location.href = "/";
+        } else {
+          router.push("/");
+          router.refresh();
+        }
       }
     } catch {
       setIsSubmitting(false);
@@ -418,21 +435,26 @@ export function AnimatedLampLogin() {
   const activeThemeName = themeIndex >= 0 && themeIndex < THEMES.length ? THEMES[themeIndex] : undefined;
 
   return (
-    <div id="lamp-login-root" className="relative w-full h-full min-h-screen overflow-hidden">
+    <div id="lamp-login-root" data-theme={activeThemeName} data-mobile-phase={mobilePhase} className="relative w-full h-full min-h-screen overflow-hidden">
       {welcomeUser && (
         <CinematicWelcomeTransition
           user={welcomeUser}
           onComplete={() => {
-            router.push("/");
-            router.refresh();
+            if (typeof window !== "undefined") {
+              window.location.href = "/";
+            } else {
+              router.push("/");
+              router.refresh();
+            }
           }}
         />
       )}
 
       <div
-        className={`room ${isOn ? "on" : ""}`}
+        className={`room ${isOn ? "on" : ""} mobile-${mobilePhase}`}
         ref={roomRef}
         data-theme={activeThemeName}
+        data-mobile-phase={mobilePhase}
       >
       {/* Night Sky Backdrop */}
       <div className="night-sky">
