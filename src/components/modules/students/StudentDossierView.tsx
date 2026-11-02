@@ -25,6 +25,16 @@ export const StudentDossierView: React.FC<StudentDossierViewProps> = ({ studentI
 
   const [dossier, setDossier] = useState<StudentDossier360Data | null>(null);
   const [activeTab, setActiveTab] = useState<DossierTab>("overview");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab") as DossierTab;
+      if (tab && ["overview", "academics", "attendance", "fees", "examinations", "documents"].includes(tab)) {
+        setActiveTab(tab);
+      }
+    }
+  }, []);
   const [isLoading, setIsLoading] = useState(true);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

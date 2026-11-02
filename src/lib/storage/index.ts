@@ -375,15 +375,15 @@ export class SupabasePrivateStorageProvider implements DocumentStorageProvider {
       return;
     }
 
-    const url = (options?.url || process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "");
+    const url = (options?.url || process.env.SUPABASE_URL || "").replace(/["']/g, "").trim().replace(/\/+$/, "");
     const serviceRoleKey = (
       options?.serviceRoleKey ||
       process.env.SUPABASE_SERVICE_ROLE_KEY ||
       process.env.SUPABASE_STORAGE_KEY ||
       process.env.SUPABASE_KEY ||
       ""
-    ).trim();
-    this.bucket = (options?.bucket || process.env.SUPABASE_STORAGE_BUCKET || "student-documents").trim();
+    ).replace(/["']/g, "").trim();
+    this.bucket = (options?.bucket || process.env.SUPABASE_STORAGE_BUCKET || "student-documents").replace(/["']/g, "").trim();
 
     if (!url || !serviceRoleKey) {
       throw new Error(
@@ -421,10 +421,11 @@ export class SupabasePrivateStorageProvider implements DocumentStorageProvider {
       .download(storageKey);
 
     if (error) {
+      const errStatus = (error as unknown as { status?: number }).status;
       if (
         error.message?.includes("not found") ||
         error.message?.includes("404") ||
-        (error as any).status === 404
+        errStatus === 404
       ) {
         return null;
       }
@@ -442,10 +443,11 @@ export class SupabasePrivateStorageProvider implements DocumentStorageProvider {
       .remove([storageKey]);
 
     if (error) {
+      const errStatus = (error as unknown as { status?: number }).status;
       if (
         error.message?.includes("not found") ||
         error.message?.includes("404") ||
-        (error as any).status === 404
+        errStatus === 404
       ) {
         return true;
       }
@@ -507,15 +509,10 @@ export function getStorageStatus(): StorageStatus {
     process.env.VERCEL === "1" ||
     Boolean(process.env.VERCEL_ENV);
 
-  if (!isProduction) {
-    return {
-      available: true,
-      providerType: "LOCAL_PRIVATE",
-      isProduction: false,
-    };
-  }
-
-  const explicit = (process.env.STORAGE_PROVIDER || "").toUpperCase();
+  const explicit = (process.env.STORAGE_PROVIDER || "")
+    .replace(/["']/g, "")
+    .trim()
+    .toUpperCase();
 
   // 1. S3 Check
   const hasS3 = Boolean(
@@ -525,7 +522,7 @@ export function getStorageStatus(): StorageStatus {
   );
   if (explicit === "S3" || (explicit === "" && hasS3)) {
     if (hasS3) {
-      return { available: true, providerType: "S3", isProduction: true };
+      return { available: true, providerType: "S3", isProduction };
     }
   }
 
@@ -533,7 +530,7 @@ export function getStorageStatus(): StorageStatus {
   const hasGCS = Boolean(process.env.GCS_BUCKET || process.env.GOOGLE_CLOUD_STORAGE_BUCKET);
   if (explicit === "GCS" || (explicit === "" && hasGCS)) {
     if (hasGCS) {
-      return { available: true, providerType: "GCS", isProduction: true };
+      return { available: true, providerType: "GCS", isProduction };
     }
   }
 
@@ -541,21 +538,43 @@ export function getStorageStatus(): StorageStatus {
   const hasAzure = Boolean(process.env.AZURE_STORAGE_ACCOUNT && process.env.AZURE_STORAGE_CONTAINER);
   if (explicit === "AZURE_BLOB" || explicit === "AZURE" || (explicit === "" && hasAzure)) {
     if (hasAzure) {
-      return { available: true, providerType: "AZURE_BLOB", isProduction: true };
+      return { available: true, providerType: "AZURE_BLOB", isProduction };
     }
   }
 
   // 4. Supabase Check
-  const hasSupabase = Boolean(
-    process.env.SUPABASE_URL &&
-    (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_STORAGE_KEY || process.env.SUPABASE_KEY)
-  );
+  const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/["']/g, "").trim();
+  const supabaseKey = (
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_STORAGE_KEY ||
+    process.env.SUPABASE_KEY ||
+    ""
+  ).replace(/["']/g, "").trim();
+  const hasSupabase = Boolean(supabaseUrl && supabaseKey);
   if (explicit === "SUPABASE" || (explicit === "" && hasSupabase)) {
     if (hasSupabase) {
-      return { available: true, providerType: "SUPABASE", isProduction: true };
+      return { available: true, providerType: "SUPABASE", isProduction };
+    }
+    if (explicit === "SUPABASE" && !hasSupabase) {
+      return {
+        available: false,
+        providerType: "NONE",
+        isProduction,
+        message: "Supabase storage is configured as STORAGE_PROVIDER but missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.",
+      };
     }
   }
 
+  // 5. Local Private Storage (Permitted in development/testing only)
+  if (!isProduction) {
+    return {
+      available: true,
+      providerType: "LOCAL_PRIVATE",
+      isProduction: false,
+    };
+  }
+
+  // Strict production fail-closed safeguard: no persistent cloud storage configured on serverless hosting
   return {
     available: false,
     providerType: "NONE",
@@ -565,6 +584,8 @@ export function getStorageStatus(): StorageStatus {
 }
 
 let activeProvider: DocumentStorageProvider | null = null;
+let cachedSupabaseProvider: SupabasePrivateStorageProvider | null = null;
+let cachedLocalProvider: LocalPrivateStorageProvider | null = null;
 
 export function getDocumentStorageProvider(): DocumentStorageProvider {
   if (activeProvider) {
@@ -580,9 +601,11 @@ export function getDocumentStorageProvider(): DocumentStorageProvider {
   }
 
   if (status.providerType === "LOCAL_PRIVATE") {
-    const provider = new LocalPrivateStorageProvider();
-    activeProvider = provider;
-    return provider;
+    if (!cachedLocalProvider) {
+      cachedLocalProvider = new LocalPrivateStorageProvider();
+    }
+    activeProvider = cachedLocalProvider;
+    return cachedLocalProvider;
   }
 
   if (status.providerType === "S3") {
@@ -604,16 +627,51 @@ export function getDocumentStorageProvider(): DocumentStorageProvider {
   }
 
   if (status.providerType === "SUPABASE") {
-    const provider = new SupabasePrivateStorageProvider();
-    activeProvider = provider;
-    return provider;
+    if (!cachedSupabaseProvider) {
+      cachedSupabaseProvider = new SupabasePrivateStorageProvider();
+    }
+    activeProvider = cachedSupabaseProvider;
+    return cachedSupabaseProvider;
   }
 
   throw new Error("No available storage provider.");
 }
 
+/**
+ * Resolves the appropriate storage provider for reading/downloading a specific historical document,
+ * based on the document's stored storageProvider metadata.
+ */
+export function getStorageProviderFor(providerType?: string | null): DocumentStorageProvider {
+  const norm = (providerType || "").toUpperCase();
+  if (norm === "LOCAL_PRIVATE" || norm === "LOCAL") {
+    const isProduction =
+      process.env.NODE_ENV === "production" ||
+      process.env.VERCEL === "1" ||
+      Boolean(process.env.VERCEL_ENV);
+    if (!isProduction) {
+      if (!cachedLocalProvider) {
+        cachedLocalProvider = new LocalPrivateStorageProvider();
+      }
+      return cachedLocalProvider;
+    }
+  }
+
+  if (norm === "SUPABASE") {
+    if (!cachedSupabaseProvider) {
+      cachedSupabaseProvider = new SupabasePrivateStorageProvider();
+    }
+    return cachedSupabaseProvider;
+  }
+
+  return getDocumentStorageProvider();
+}
+
 export function setDocumentStorageProvider(provider: DocumentStorageProvider | null): void {
   activeProvider = provider;
+  if (!provider) {
+    cachedSupabaseProvider = null;
+    cachedLocalProvider = null;
+  }
 }
 
 /**

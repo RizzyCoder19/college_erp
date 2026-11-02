@@ -40,6 +40,7 @@ export async function GET(
         fileSize: true,
         isArchived: true,
         storageKey: true,
+        storageProvider: true,
       },
     });
 
@@ -66,8 +67,8 @@ export async function GET(
     }
 
     // 4. Secure storage retrieval: signed URL redirect or binary stream
-    const { getDocumentStorageProvider } = await import("@/lib/storage");
-    const storage = getDocumentStorageProvider();
+    const { getStorageProviderFor } = await import("@/lib/storage");
+    const storage = getStorageProviderFor(document.storageProvider);
     const safeHeaderFileName = document.originalFileName.replace(/["\r\n\\]/g, "_");
 
     // If cloud storage provider supports signed URLs and request did not explicitly ask for stream, redirect

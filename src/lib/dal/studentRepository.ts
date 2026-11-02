@@ -10,6 +10,7 @@ import {
 } from "@/lib/storage/validation";
 import {
   getDocumentStorageProvider,
+  getStorageProviderFor,
   generateSafeStorageKey,
   getStorageStatus,
 } from "@/lib/storage";
@@ -2278,8 +2279,14 @@ export class StudentRepository {
         return { success: false, error: "Document not found.", code: "NOT_FOUND" };
       }
 
-      const storage = getDocumentStorageProvider();
-      const buffer = await storage.readDocument(doc.storageKey);
+      const storage = getStorageProviderFor(doc.storageProvider);
+      let buffer = await storage.readDocument(doc.storageKey);
+      if (!buffer) {
+        const fallbackStorage = getDocumentStorageProvider();
+        if (fallbackStorage !== storage) {
+          buffer = await fallbackStorage.readDocument(doc.storageKey);
+        }
+      }
       if (!buffer) {
         return {
           success: false,
