@@ -37,7 +37,8 @@ To prepare CampusOS for multi-tenant, concurrent, high-availability production d
 ### 1.2 Operational Database Inventory (`prisma/dev.db`)
 The operational SQLite database contains verified foundational institutional records:
 - **13 Active Student Profiles** across 7 degree and diploma programmes.
-- **2 Operational User Accounts** (`admin.local@sample.rpihm.ac.in` [`SYSTEM_ADMIN`] and `k.sharma@sample.rpihm.ac.in` [`ACADEMIC_ADMIN`]).
+- **14 Staff Profiles** (13 foundational staff + 1 teaching faculty Prof. Jeicy Sahaya in Technology & Computing).
+- **4 Operational User Accounts** (`admin.local@sample.rpihm.ac.in` [`SYSTEM_ADMIN`], `k.sharma@sample.rpihm.ac.in` [`ACADEMIC_ADMIN`], `khan.umar.26@rpihm.ac.in` [`STUDENT_VIEWER`], and `j.sahaya@sample.rpihm.ac.in` [`FACULTY_MEMBER`]).
 - **1 Academic Year** (`2026-27`), terms, departments, programmes, semesters, subjects, divisions, enrolments, timetable entries, attendance sessions/records, exam sessions, fee structures, invoices, and receipts.
 - **5 Operational Student Documents:**
   - 3 historical documents recorded under `LOCAL_PRIVATE` storage provider.
@@ -165,7 +166,9 @@ Reconciliation is the gating criterion for cutover. Migration is considered succ
 ### 4.1 Quantitative Reconciliation (Row Counts)
 Every model must match exact counts before and after migration:
 - `Student`: 13 records.
-- `UserAccount`: 2 records (`admin.local@sample.rpihm.ac.in` and `k.sharma@sample.rpihm.ac.in`).
+- `Staff`: 14 records (including 1 teaching faculty Prof. Jeicy Sahaya).
+- `UserAccount`: 4 records (`admin.local@sample.rpihm.ac.in`, `k.sharma@sample.rpihm.ac.in`, `khan.umar.26@rpihm.ac.in`, and `j.sahaya@sample.rpihm.ac.in`).
+- `TeachingAssignment`: 6 records.
 - `StudentFeeInvoice`: exactly 2 records (`INV-2026-7759` for Khan Umar, `INV-2026-5033` for Komal Soni).
 - `FeeReceipt`: exactly 3 records (`REC-2026-121403` for Khan Umar, `REC-2026-969942` and `REC-2026-948761` for Komal Soni).
 - `StudentDocument`: exactly 5 operational records (3 `LOCAL_PRIVATE` + 2 `SUPABASE`).
