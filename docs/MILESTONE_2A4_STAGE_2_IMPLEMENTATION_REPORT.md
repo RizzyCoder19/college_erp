@@ -13,7 +13,7 @@
 - **Pre-Migration Operational Backup:** `DF7B49BD5E1FBF5B90A36A0658D7DC83D6B21C8948EA1805934BF03608B670ED` (684,032 bytes, preserved in `backups/dev_db_pre_student_doc_migration_20261102_1325.db`)  
 - **Post-Prisma Migration Baseline (20261102133000):** `ee5637e0a00c2eb4579b0932f7bebb1dadbd4aaa2f802dc703d824a7230d84d3` (745,472 bytes)  
 - **Current Verified Operational Baseline:** `415b64ac68f85d57e32b5aa5f5323cefdb2986d5c44a75e1a4f4e53f153fb3d8` (745,472 bytes, 100% invariant through browser acceptance)  
-- **Forensic Status:** Operational database contains verified institutional records (13 Students, 2 UserAccounts, 1 FeeInvoice, 2 FeeReceipts, 5 StudentDocuments). Zero test records leaked from verification suites, which executed strictly against `prisma/isolated_test.db`.  
+- **Forensic Status:** Operational database contains verified institutional records (13 Students, 2 UserAccounts, 2 FeeInvoices, 3 FeeReceipts, 5 StudentDocuments). Zero test records leaked from verification suites, which executed strictly against `prisma/isolated_test.db`.  
 **Testing Database:** `prisma/isolated_test.db` (`APP_ENV=test`)  
 
 ---

@@ -425,3 +425,48 @@ Every milestone and phase must satisfy the following verification protocol befor
 2. **Persistence Integrity:** Any updated record must be verified by reading back the database row via direct Prisma query, reloading the page, and inspecting the rendered DOM.
 3. **Automated Browser Evidence:** Headless/interactive browser verification must capture timestamped visual artifacts for unlit, illuminated, transitioning, and dashboard states.
 4. **Zero-Side-Effect Rule:** No database schema alterations or migrations may occur without a verified pre-migration backup (`dev.db.bak`).
+
+---
+
+## PART 7 — PERMANENT DOCUMENTATION MAINTENANCE PROTOCOL (STANDING MANDATE)
+
+This protocol establishes a permanent engineering standard for all present and future CampusOS development:
+
+> [!IMPORTANT]
+> **Standing Institutional Mandate:** Whenever implementation work changes CampusOS functionality, architecture, database schema, permissions, workflows, security, integrations, UI behaviour, testing, deployment readiness, or operational assumptions, update the relevant existing documentation as part of that same work. Documentation updates must never be deferred or wait for explicit administrative requests.
+
+### 7.1 Canonical Living Documents
+
+The following canonical documents must be maintained continuously as living records of system truth (updating only those materially affected by a given change):
+1. **Master Blueprint & Strategic Roadmap:** [`docs/campusos_real_erp_blueprint_and_roadmap.md`](file:///g:/rpihm-campusos/docs/campusos_real_erp_blueprint_and_roadmap.md)
+2. **Product Reality Audit:** [`CAMPUSOS_PRODUCT_AUDIT.md`](file:///g:/rpihm-campusos/CAMPUSOS_PRODUCT_AUDIT.md)
+3. **Domain & Milestone Blueprints:** [`docs/PHASE_2A4_SELF_SERVICE_PORTALS_BLUEPRINT.md`](file:///g:/rpihm-campusos/docs/PHASE_2A4_SELF_SERVICE_PORTALS_BLUEPRINT.md)
+4. **Milestone Implementation Reports:**
+   - [`docs/MILESTONE_2A4_STAGE_2_IMPLEMENTATION_REPORT.md`](file:///g:/rpihm-campusos/docs/MILESTONE_2A4_STAGE_2_IMPLEMENTATION_REPORT.md)
+   - [`docs/MILESTONE_2A4_STAGE_1_IMPLEMENTATION_REPORT.md`](file:///g:/rpihm-campusos/docs/MILESTONE_2A4_STAGE_1_IMPLEMENTATION_REPORT.md)
+   - [`docs/MILESTONE_2A3_IMPLEMENTATION_REPORT.md`](file:///g:/rpihm-campusos/docs/MILESTONE_2A3_IMPLEMENTATION_REPORT.md)
+5. **Production Readiness & Migration Architecture:** [`docs/PRODUCTION_READINESS_AND_DATABASE_MIGRATION_PLAN.md`](file:///g:/rpihm-campusos/docs/PRODUCTION_READINESS_AND_DATABASE_MIGRATION_PLAN.md)
+6. **Cycle & Conversation Navigation Indexes:** [`docs/conversation-indexes/`](file:///g:/rpihm-campusos/docs/conversation-indexes/)
+
+### 7.2 The 10 Standing Documentation Rules
+
+1. **Blueprint and Roadmap Alignment:** Keep planned, in-progress, completed, deferred, and blocked work 100% accurate. Update milestone status, dependencies, decisions, and next steps whenever they evolve.
+2. **Product Audit Synchronization:** Maintain descriptions of implemented modules, missing capabilities, known defects, security boundaries, and outstanding limitations aligned with the live codebase.
+3. **Technical Architecture Currency:** Document meaningful changes to database models, relations, authentication, authorization, server actions, storage providers, integrations, and architectural decisions.
+4. **Milestone Delivery Tracking:** Update relevant milestone reports with implemented functionality, changed files, automated tests, browser verification evidence, known limitations, and acceptance criteria.
+5. **Production Readiness Realism:** Keep deployment, infrastructure, security, backup, migration, storage, environment, and operational readiness information accurate. Never mark a planned deployment or migration task as completed without verified execution evidence.
+6. **Cross-Document Consistency:** If a fact (such as a database record count, baseline hash, or architecture state) appears in multiple documents, update all materially affected references simultaneously. Contradictory statements across documents are unacceptable.
+7. **Historical Integrity:** Do not rewrite historical reports to pretend that a later capability existed earlier. Record subsequent modifications as dated updates, addenda, or remediation sections.
+8. **Evidence-Grounded Rigor:** Clearly distinguish verified test results, automated agent outputs, architectural assumptions, planned work, and unresolved questions. Never invent test assertions, institutional approvals, or production deployment status.
+9. **No Documentation Sprawl:** Prefer updating existing canonical documents over creating new ad-hoc markdown files. Create a new document only when an authentic, distinct lifecycle deliverable requires it.
+10. **No Documentation Dumps:** Do not dump entire blueprints, audits, or reports into conversation responses or final handovers. Maintain documents directly in the repository and provide concise summaries with exact file links and commit SHAs.
+
+### 7.3 Milestone Pre-Closure Protocol
+
+Before closing any engineering milestone or sub-task:
+- Identify which canonical primary documents were materially affected.
+- Apply proportionate, accurate documentation updates directly to those files.
+- Verify internal references, record counts, and cross-document consistency.
+- Confirm that completed and pending checklist statuses reflect reality.
+- Ensure the roadmap reflects the actual next milestone.
+- Include documentation files in the same logical commit as the implementation work whenever appropriate.

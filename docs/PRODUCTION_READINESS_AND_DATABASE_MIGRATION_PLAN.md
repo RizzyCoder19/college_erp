@@ -18,10 +18,10 @@
 
 CampusOS is currently running on a single-node SQLite operational database (`prisma/dev.db`) in local development. Milestone 2A.3 (Student Document Management) and Milestone 2A.4 Stage 2 (Private Cloud Storage Adapter) have successfully decoupled binary storage from the filesystem by implementing and verifying `SupabasePrivateStorageProvider` against a live Supabase project (`tofkfdwxsvskakuafqph`).
 
-To prepare CampusOS for multi-tenant, concurrent, high-availability production deployment on serverless infrastructure (Vercel), the core relational database must transition from local file-based SQLite to managed PostgreSQL. This document provides an exhaustive, low-risk, zero-data-loss engineering migration and production readiness plan.
+To prepare CampusOS for multi-tenant, concurrent, high-availability production deployment on serverless infrastructure (Vercel), the core relational database must transition from local file-based SQLite to managed PostgreSQL. This document provides an exhaustive, low-risk engineering migration and production readiness plan where zero data loss is established as the primary migration objective, strictly conditional upon verified pre-cutover backups, multi-tier reconciliation, comprehensive functional verification, and a disciplined, controlled maintenance cutover.
 
 > [!IMPORTANT]
-> **Strict Planning Boundary:** This document is an architectural planning and engineering guide only. In compliance with strict institutional instructions, no live schema migrations, datasource modifications, or operational database alterations will be executed during this phase. The operational database `prisma/dev.db` remains 100% invariant.
+> **Strict Planning Boundary & Current Local Hosting Status:** This document is an architectural planning and engineering guide only. **Neither PostgreSQL migration, production database cutover, nor Vercel deployment has occurred.** CampusOS remains hosted entirely in local development on SQLite (`prisma/dev.db`), which remains 100% invariant. In compliance with strict institutional instructions, no live schema migrations, datasource modifications, or operational database alterations will be executed during this phase.
 
 ---
 
@@ -98,7 +98,7 @@ datasource db {
 
 ## 3. Safe Institutional Data Migration Strategy
 
-To execute the transition with zero data loss and zero duplication, the migration is performed within a **controlled institutional maintenance window with a planned operational write freeze**, targeting zero data loss subject to 100% quantitative and qualitative reconciliation across all entities. The process follows a strict **Extraction -> Validation -> Transform -> Load -> Reconciliation** pipeline, backed by automated rollback procedures and strict no-split-brain safeguards.
+To pursue the objective of zero data loss and zero duplication without treating it as an unconditional guarantee, the migration is designed to execute within a **controlled institutional maintenance window with a planned operational write freeze**. Zero data loss is the explicit migration objective, conditional upon successful backup snapshots, 100% quantitative and qualitative reconciliation across all entities, post-load verification, and a controlled cutover. The process follows a strict **Extraction -> Validation -> Transform -> Load -> Reconciliation** pipeline, backed by automated rollback procedures and strict no-split-brain safeguards.
 
 ### 3.1 Migration Dependency Order (Parent-Child Topology)
 Tables must be extracted and inserted strictly adhering to foreign key constraints:
@@ -267,7 +267,7 @@ If post-migration reconciliation fails or a fatal application error occurs durin
 | Variable Name | Environment | Description | Sensitivity |
 | :--- | :--- | :--- | :--- |
 | `DATABASE_URL` | Staging, Prod | Supabase Pooled PostgreSQL connection string (Port 6543, `?pgbouncer=true`) | **Secret** |
-| `DIRECT_URL` | Staging, Prod | Supabase Direct connection string (Port 5432) for Prisma CLI | **Secret** |
+| `DIRECT_URL` | Staging, Prod | Supabase Direct connection string (example: Port 5432, unverified against actual project configuration; exact port and host must be confirmed from target project dashboard) for Prisma CLI | **Secret** |
 | `STORAGE_PROVIDER` | Staging, Prod | Must be explicitly set to `SUPABASE` | Public Configuration |
 | `SUPABASE_URL` | Staging, Prod | HTTPS endpoint of the Supabase project | Public Configuration |
 | `SUPABASE_STORAGE_BUCKET` | Staging, Prod | Private bucket name (`student-documents`) | Public Configuration |
@@ -319,12 +319,12 @@ timeline
 
 Before executing the migration roadmap, institutional administrators must formalize decisions on:
 1. **Target Cloud Region:** Confirmation of primary hosting region (`eu-west-1` vs. `ap-south-1` Mumbai) for data sovereignty compliance.
-2. **Maintenance Window Window:** Authorized day and time for the 30-minute operational write freeze (e.g., Sunday 02:00 IST).
+2. **Maintenance Window:** Authorized day and time for the 30-minute operational write freeze (e.g., Sunday 02:00 IST).
 3. **Historical Session Invalidation vs. Migration:** Whether active sessions should be migrated or gracefully expired requiring a fresh administrator login.
 4. **Float to Decimal Transition:** Approval to execute the subsequent precision hardening migration (`Decimal(12, 2)` for fee amounts) immediately following PostgreSQL cutover.
 
 ---
 
 *Authored by Antigravity Engineering for R. P. Institute of Hospitality & Management (CampusOS).*  
-*Verified Invariance: Local SQLite operational records remain 100% untouched (`prisma/dev.db` SHA-256: `415b64ac68f85d57e32b5aa5f5323cefdb2986d5c44a75e1a4f4e53f153fb3d8`).*  
+*Current Operational Baseline: Local SQLite operational records remain 100% active, invariant, and untouched in development (`prisma/dev.db` SHA-256: `415b64ac68f85d57e32b5aa5f5323cefdb2986d5c44a75e1a4f4e53f153fb3d8`). PostgreSQL migration, database cutover, and Vercel production deployment remain strictly future planned actions requiring institutional authorization.*  
 *Milestone 2A.4 Documents Module Status: Final browser acceptance and Supabase private storage integration verified with 100% success across desktop and mobile workflows.*
