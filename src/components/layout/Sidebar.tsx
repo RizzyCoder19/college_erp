@@ -27,6 +27,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
 
   const isDashboard = pathname === "/";
   const isStudent = currentUser?.role === "STUDENT_VIEWER" || pathname.startsWith("/portal/student");
+  const isFaculty = currentUser?.role === "FACULTY_MEMBER" || pathname.startsWith("/portal/faculty");
+  const isPortalUser = isStudent || isFaculty;
 
   // Filter modules into main navigation and system navigation
   const mainModules = MODULES_LIST.filter((m) => m.category === "main");
@@ -160,6 +162,75 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
               <span>Compliance Documents</span>
             </Link>
           </nav>
+        ) : isFaculty ? (
+          /* Faculty Self-Service Navigation */
+          <nav className="space-y-1">
+            <div className="px-3.5 text-xs font-bold uppercase tracking-wider text-blue-400 mb-2">
+              FACULTY WORKSPACE
+            </div>
+            <Link
+              href="/portal/faculty?tab=overview"
+              onClick={onNavigate}
+              className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 transition-all ${
+                pathname === "/portal/faculty"
+                  ? "magic-nav-active bg-[#1657D9] text-white font-semibold shadow-md"
+                  : "text-slate-300 hover:bg-[#13223E] hover:text-white"
+              }`}
+            >
+              <Icon
+                name="dashboard"
+                className={`h-5 w-5 shrink-0 ${
+                  pathname === "/portal/faculty" ? "text-white" : "text-slate-400"
+                }`}
+              />
+              <span>Overview & Workload</span>
+            </Link>
+
+            <Link
+              href="/portal/faculty?tab=classes"
+              onClick={onNavigate}
+              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
+            >
+              <Icon name="book-open" className="h-5 w-5 shrink-0 text-slate-400" />
+              <span>Assigned Classes</span>
+            </Link>
+
+            <Link
+              href="/portal/faculty?tab=timetable"
+              onClick={onNavigate}
+              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
+            >
+              <Icon name="calendar" className="h-5 w-5 shrink-0 text-slate-400" />
+              <span>Weekly Schedule</span>
+            </Link>
+
+            <Link
+              href="/portal/faculty?tab=roster"
+              onClick={onNavigate}
+              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
+            >
+              <Icon name="user-group" className="h-5 w-5 shrink-0 text-slate-400" />
+              <span>Class Rosters</span>
+            </Link>
+
+            <Link
+              href="/portal/faculty?tab=attendance"
+              onClick={onNavigate}
+              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
+            >
+              <Icon name="clipboard-check" className="h-5 w-5 shrink-0 text-slate-400" />
+              <span>Attendance History</span>
+            </Link>
+
+            <Link
+              href="/portal/faculty?tab=curriculum"
+              onClick={onNavigate}
+              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
+            >
+              <Icon name="academic-cap" className="h-5 w-5 shrink-0 text-slate-400" />
+              <span>Course Curriculum</span>
+            </Link>
+          </nav>
         ) : (
           <>
             {/* Dashboard Link with Magic Navigation Active Indicator */}
@@ -212,48 +283,68 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
           </>
         )}
 
-        {/* System Group */}
-        <div>
-          <div className="px-3.5 text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-            SYSTEM
+        {/* System Group: Only for Administrators; Support group for portal users */}
+        {isPortalUser ? (
+          <div>
+            <div className="px-3.5 text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              SUPPORT
+            </div>
+            <nav className="space-y-1">
+              <button
+                onClick={() => {
+                  if (onOpenHelp) onOpenHelp();
+                  if (onNavigate) onNavigate();
+                }}
+                className="w-full text-left flex items-center space-x-3 rounded-lg px-3.5 py-2 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all cursor-pointer"
+              >
+                <Icon name="question-mark-circle" className="h-5 w-5 shrink-0 text-slate-400" />
+                <span>Help & Support</span>
+              </button>
+            </nav>
           </div>
-          <nav className="space-y-1">
-            {systemModules.map((module) => {
-              const isActive = pathname === `/modules/${module.slug}`;
-              return (
-                <Link
-                  key={module.slug}
-                  href={`/modules/${module.slug}`}
-                  onClick={onNavigate}
-                  className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2 transition-all ${
-                    isActive
-                      ? "magic-nav-active bg-[#1657D9] text-white font-semibold shadow-md"
-                      : "text-slate-300 hover:bg-[#13223E] hover:text-white"
-                  }`}
-                >
-                  <Icon
-                    name={module.icon}
-                    className={`h-5 w-5 shrink-0 ${
-                      isActive ? "text-white" : "text-slate-400"
+        ) : (
+          <div>
+            <div className="px-3.5 text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              SYSTEM
+            </div>
+            <nav className="space-y-1">
+              {systemModules.map((module) => {
+                const isActive = pathname === `/modules/${module.slug}`;
+                return (
+                  <Link
+                    key={module.slug}
+                    href={`/modules/${module.slug}`}
+                    onClick={onNavigate}
+                    className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2 transition-all ${
+                      isActive
+                        ? "magic-nav-active bg-[#1657D9] text-white font-semibold shadow-md"
+                        : "text-slate-300 hover:bg-[#13223E] hover:text-white"
                     }`}
-                  />
-                  <span>{module.title}</span>
-                </Link>
-              );
-            })}
+                  >
+                    <Icon
+                      name={module.icon}
+                      className={`h-5 w-5 shrink-0 ${
+                        isActive ? "text-white" : "text-slate-400"
+                      }`}
+                    />
+                    <span>{module.title}</span>
+                  </Link>
+                );
+              })}
 
-            <button
-              onClick={() => {
-                if (onOpenHelp) onOpenHelp();
-                if (onNavigate) onNavigate();
-              }}
-              className="w-full text-left flex items-center space-x-3 rounded-lg px-3.5 py-2 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all cursor-pointer"
-            >
-              <Icon name="question-mark-circle" className="h-5 w-5 shrink-0 text-slate-400" />
-              <span>Help & Support</span>
-            </button>
-          </nav>
-        </div>
+              <button
+                onClick={() => {
+                  if (onOpenHelp) onOpenHelp();
+                  if (onNavigate) onNavigate();
+                }}
+                className="w-full text-left flex items-center space-x-3 rounded-lg px-3.5 py-2 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all cursor-pointer"
+              >
+                <Icon name="question-mark-circle" className="h-5 w-5 shrink-0 text-slate-400" />
+                <span>Help & Support</span>
+              </button>
+            </nav>
+          </div>
+        )}
       </div>
 
       {/* Institutional System Footer with Camouflage Backdrop & Hover Zoom */}

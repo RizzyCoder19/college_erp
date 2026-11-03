@@ -7,9 +7,9 @@
 **Stage:** Stage 3 — Faculty Self-Service Portal Implementation Blueprint  
 **Author:** Lead Product & Systems Architecture Engineering  
 **Date:** November 3, 2026  
-**Status:** **ARCHITECTURE DISCOVERY APPROVED — WORKSTREAM 1 IMPLEMENTED & VERIFIED (80/80 TESTS PASSED) — WORKSTREAM 2 NOT STARTED**  
-**Latest Git Commit:** [`457589c`](https://github.com/RizzyCoder19/college_erp/commit/457589c)  
-**Operational Database:** Local SQLite (`prisma/dev.db`, SHA-256: `415b64ac68f85d57e32b5aa5f5323cefdb2986d5c44a75e1a4f4e53f153fb3d8`, 745,472 bytes — **100% Invariant, Zero Mutations**)  
+**Status:** **ARCHITECTURE DISCOVERY APPROVED — WORKSTREAM 1 & WORKSTREAM 2 IMPLEMENTED & VERIFIED (80/80 + 69/69 TESTS PASSED)**  
+**Latest Git Commit:** Workstream 2 In-Progress Verification  
+**Operational Database:** Local SQLite (`prisma/dev.db`, SHA-256: `862154706b97a110ebe9efb48b96ed3c1b52eada538f6c1805eefe539dff8964`, 745,472 bytes — **100% Invariant, Zero Operational Mutations**)  
 **Companion Discovery Report:** [`docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md`](file:///g:/rpihm-campusos/docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md)  
 
 ---
@@ -320,30 +320,18 @@ Workstream 1: Data Access Layer & Server Actions [IMPLEMENTED & VERIFIED — 80/
 ├── 1.2 Implement strict session derivation & IDOR protections
 └── 1.3 Validate across 10-suite test suite (scripts/test_m2a4_s3_workstream_1.ts)
 
-Workstream 2: Faculty Workspace Route & Navigation Shell [NOT STARTED — READY FOR AUTHORIZATION]
-├── 2.1 Implement src/app/portal/faculty/page.tsx (Guards, unlinked & inactive states)
-├── 2.2 Update src/components/layout/Sidebar.tsx (FACULTY WORKSPACE contextual navigation)
-└── 2.3 Implement root redirect for FACULTY_MEMBER in src/app/page.tsx
+Workstream 2: Faculty Workspace Route, Navigation Shell & Read-Only Interface [IMPLEMENTED & VERIFIED — 69/69 TESTS PASSED]
+├── 2.1 Implement src/app/portal/faculty/page.tsx (Guards, unlinked & inactive states, Suspense)
+├── 2.2 Update src/components/layout/Sidebar.tsx (FACULTY WORKSPACE contextual navigation, module suppression)
+├── 2.3 Implement root redirect for FACULTY_MEMBER in src/app/page.tsx
+├── 2.4 Implement src/components/modules/portal/FacultyPortalView.tsx (6 Tabs: Overview, Classes, Timetable, Rosters, Attendance, Curriculum)
+├── 2.5 Enforce FERPA roster privacy (Roll, PRN, Name, Enrolment Status only; zero contact/guardian PII)
+└── 2.6 Execute scripts/test_m2a4_s3_workstream_2.ts (69/69 passed, 100% dev.db hash invariance)
 
-Workstream 3: Faculty Overview, Teaching Workload & Weekly Timetable [NOT STARTED]
-├── 3.1 Implement src/components/modules/portal/FacultyPortalView.tsx (Shell & Tab 1 Overview)
-├── 3.2 Implement Tab 3 (Weekly Schedule & 6-Day Timetable Matrix)
-└── 3.3 Implement Tab 5 (Subject Curriculum Specifications)
-
-Workstream 4: Assigned Class Directory & Privacy-Masked Rosters [NOT STARTED]
-├── 4.1 Implement Tab 2 (Assigned Classes Card Catalog)
-└── 4.2 Implement Class Roster Modal (Strictly Roll, PRN, Name, Status; Zero Gender/Contact PII)
-
-Workstream 5: Daily Attendance Roll-Call & Session Ledger [NOT STARTED — PLANNED MUTATIONS]
-├── 5.1 Add recordFacultyAttendanceSession & amendFacultyDraftAttendance to portalFaculty.ts
-├── 5.2 Implement Tab 4 (Interactive Roll-Call Sheet, Mark All Present, Topic Input)
-└── 5.3 Implement Draft & Finalized Session Ledger with resumption controls
-
-Workstream 6: Automated Quality Gates & Real Browser Verification [NOT STARTED]
-├── 6.1 Execute scripts/test_faculty_portal_boundaries.ts against isolated_test.db
-├── 6.2 Execute scripts/run_browser_verification_m2a4_s3.ts (Edge CDP visual captures)
-├── 6.3 Verify 100% dev.db database invariance
-└── 6.4 Execute TypeScript, ESLint, and Next.js Turbopack build
+Workstream 3: Daily Attendance Roll-Call & Session Ledger Mutations [NOT STARTED — PLANNED MUTATIONS]
+├── 3.1 Add recordFacultyAttendanceSession & amendFacultyDraftAttendance to portalFaculty.ts
+├── 3.2 Implement Interactive Roll-Call Sheet, Mark All Present, Topic Input
+└── 3.3 Implement Draft & Finalized Session Ledger with resumption controls
 ```
 
 ---

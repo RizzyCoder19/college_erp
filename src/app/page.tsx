@@ -19,6 +19,11 @@ async function AuthenticatedDashboard() {
     redirect("/portal/student");
   }
 
+  // Automatic redirect to role-specific workspace for faculty
+  if (user.role === "FACULTY_MEMBER") {
+    redirect("/portal/faculty");
+  }
+
   const [studentCount, staffCount, programmeCount, divisionCount, anomaliesRes] = await Promise.all([
     prisma.student.count(),
     prisma.staff.count(),
