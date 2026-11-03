@@ -6,8 +6,9 @@
 **Milestone:** 2A.4 — Student & Faculty Self-Service Portals  
 **Stage:** Stage 3 — Faculty Self-Service Portal Implementation Blueprint  
 **Author:** Lead Product & Systems Architecture Engineering  
-**Date:** November 2, 2026  
-**Status:** **PROPOSED ARCHITECTURE SPECIFICATION — READY FOR REVIEW**  
+**Date:** November 3, 2026  
+**Status:** **PROPOSED ARCHITECTURE SPECIFICATION — STRICTLY PROPOSED / NOT IMPLEMENTED — AWAITING STAKEHOLDER APPROVAL**  
+**Companion Discovery Report:** [`docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md`](file:///g:/rpihm-campusos/docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md)  
 
 ---
 

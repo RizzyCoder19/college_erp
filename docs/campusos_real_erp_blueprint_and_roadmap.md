@@ -440,7 +440,10 @@ This protocol establishes a permanent engineering standard for all present and f
 The following canonical documents must be maintained continuously as living records of system truth (updating only those materially affected by a given change):
 1. **Master Blueprint & Strategic Roadmap:** [`docs/campusos_real_erp_blueprint_and_roadmap.md`](file:///g:/rpihm-campusos/docs/campusos_real_erp_blueprint_and_roadmap.md)
 2. **Product Reality Audit:** [`CAMPUSOS_PRODUCT_AUDIT.md`](file:///g:/rpihm-campusos/CAMPUSOS_PRODUCT_AUDIT.md)
-3. **Domain & Milestone Blueprints:** [`docs/PHASE_2A4_SELF_SERVICE_PORTALS_BLUEPRINT.md`](file:///g:/rpihm-campusos/docs/PHASE_2A4_SELF_SERVICE_PORTALS_BLUEPRINT.md)
+3. **Domain & Milestone Blueprints:**
+   - [`docs/PHASE_2A4_SELF_SERVICE_PORTALS_BLUEPRINT.md`](file:///g:/rpihm-campusos/docs/PHASE_2A4_SELF_SERVICE_PORTALS_BLUEPRINT.md)
+   - [`docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md`](file:///g:/rpihm-campusos/docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md) *(Milestone 2A.4 Stage 3: Architecture Discovery & Plan — Proposed / Not Implemented)*
+   - [`docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_BLUEPRINT.md`](file:///g:/rpihm-campusos/docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_BLUEPRINT.md) *(Milestone 2A.4 Stage 3: Blueprint — Proposed / Not Implemented)*
 4. **Milestone Implementation Reports:**
    - [`docs/MILESTONE_2A4_STAGE_2_IMPLEMENTATION_REPORT.md`](file:///g:/rpihm-campusos/docs/MILESTONE_2A4_STAGE_2_IMPLEMENTATION_REPORT.md)
    - [`docs/MILESTONE_2A4_STAGE_1_IMPLEMENTATION_REPORT.md`](file:///g:/rpihm-campusos/docs/MILESTONE_2A4_STAGE_1_IMPLEMENTATION_REPORT.md)

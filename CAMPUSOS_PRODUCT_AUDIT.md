@@ -55,6 +55,8 @@ R.P. Institute of Hospitality & Management (RPIHM) **CampusOS** is a specialized
 | **Notices & Communication**| `/modules/notices` | **UI Only / Prototype** | `mockData.ts` (Static 5 rows) | Search circular mock rows | Notices cannot be drafted, targeted by department, or published. |
 | **Reports & Analytics** | `/modules/reports` | **UI Only / Prototype** | `mockData.ts` (Static 5 rows) | Search report catalog mock rows | No report generator or CSV/PDF export for statutory compliances. |
 | **System Settings** | `/modules/settings` | **UI Only / Prototype** | `mockData.ts` (Static 5 rows) | Search configuration mock rows | Role permissions and system preferences cannot be edited from the UI. |
+| **Student Self-Service Portal** | `/portal/student` | **Verified working** | Live SQLite (`Student`, `TimetableEntry`, `AttendanceRecord`, `ExamScorecard`, `StudentFeeInvoice`, `FeeReceipt`) | View personal identity, schedule, raw attendance opportunities, published exam scorecards, fee ledger, receipt voucher | Delivered and verified under Milestone 2A.4 Stage 2. Strict session derivation, zero student IDOR. |
+| **Faculty Self-Service Portal** | `/portal/faculty` | **Proposed / Not Implemented** | Planned: Live SQLite (`Staff`, `TeachingAssignment`, `TimetableEntry`, `AttendanceSession`) | Architecture discovery and blueprint complete; awaiting approval | Route does not yet exist (HTTP 404); operational DB currently has 0 faculty user accounts and 0 timetable entries. |
 
 ---
 
