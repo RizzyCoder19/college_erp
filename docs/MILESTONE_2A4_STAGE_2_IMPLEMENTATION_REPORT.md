@@ -38,8 +38,13 @@ All automated tests, fixtures, and browser verification sessions executed strict
   - `UserAccount`: exactly 2 accounts (`admin.local` and `k.sharma`), zero additions or deletions.
   - `Student`: exactly 13 student records, zero additions or deletions.
   - `ExamResultSummary`: exactly 2 records (both `DRAFT`), 100% identical to baseline.
-  - `StudentFeeInvoice`: 1 invoice (`INV-2026-5033` for student Komal Patel, ₹50,000, `PARTIALLY_PAID`).
-  - `FeeReceipt`: 2 receipts (`REC-2026-969942` for ₹29,998 and `REC-2026-948761` for ₹2.0 for student Komal Patel).
+  - `StudentFeeInvoice`: exactly 2 operational invoices:
+    - `INV-2026-7759`: Historical baseline invoice for student Khan Umar (`RPIHM-2026DS041`), ₹50,000 demand, status `PAID` (cleared 2026-10-30).
+    - `INV-2026-5033`: Operational invoice for student Komal Soni (`RPIHM-2026DS042`), ₹50,000 demand, status `PARTIALLY_PAID` (recorded 2026-11-02).
+  - `FeeReceipt`: exactly 3 operational receipts:
+    - `REC-2026-121403`: Historical baseline receipt linked to Khan Umar / `INV-2026-7759`, amount ₹50,000, payment method UPI (recorded 2026-10-30).
+    - `REC-2026-969942`: Operational receipt linked to Komal Soni / `INV-2026-5033`, amount ₹29,998, payment method NEFT_RTGS (recorded 2026-11-02).
+    - `REC-2026-948761`: Operational receipt linked to Komal Soni / `INV-2026-5033`, amount ₹2.00, payment method UPI (recorded 2026-11-02).
   - `StudentDocument`: exactly 5 operational records (3 historical `LOCAL_PRIVATE` and 2 verified `SUPABASE` documents).
   - All test fixtures created during automated lifecycle and browser verification suites executed against `prisma/isolated_test.db` and were purged without altering `prisma/dev.db`.
 
@@ -139,11 +144,13 @@ All automated tests, fixtures, and browser verification sessions executed strict
   - Student ownership is strictly verified: requesting a receipt belonging to another student returns `403 FORBIDDEN`.
 
 #### Receipt Data Provenance & Operational Distinction
-To maintain rigorous evidence integrity, the implementation explicitly distinguishes between operational records and isolated test fixtures:
-- **Operational Database Record (`REC-2026-121403`):** The authentic operational database (`prisma/dev.db`) contains exactly one genuine paid fee receipt: `REC-2026-121403` (linked to student Khan Umar, amount ₹50,000, payment method UPI, invoice `INV-2026-7759`).
+To maintain rigorous evidence integrity, the documentation explicitly distinguishes between historical operational snapshots, current verified operational records, and isolated test fixtures:
+- **Historical Baseline Snapshot (`REC-2026-121403` / `INV-2026-7759`):** The foundational operational database baseline (from Stage 1 / Milestone 2A.1 closure) contains the historical paid fee receipt `REC-2026-121403` (linked to student Khan Umar, roll `RPIHM-2026DS041`, amount ₹50,000, payment method UPI, clearing invoice `INV-2026-7759`).
+- **Subsequent Operational Records (`REC-2026-969942` & `REC-2026-948761` / `INV-2026-5033`):** During Milestone 2A.4 development, invoice `INV-2026-5033` (student Komal Soni, roll `RPIHM-2026DS042`, demand ₹50,000, `PARTIALLY_PAID`) and two partial payment receipts were recorded in the operational database: `REC-2026-969942` (₹29,998 via NEFT_RTGS) and `REC-2026-948761` (₹2.00 via UPI).
+- **Current Verified Operational Inventory:** The authentic operational database (`prisma/dev.db`) contains exactly two (2) invoices (`INV-2026-7759` and `INV-2026-5033`) and three (3) receipts (`REC-2026-121403`, `REC-2026-969942`, and `REC-2026-948761`) across the two student accounts.
 - **Isolated Test Database Fixture (`REC-2026-0042`):** Receipt `REC-2026-0042` (linked to synthetic test student Aarav Patel, amount ₹25,000) was generated solely inside `prisma/isolated_test.db` by the automated browser test runner (`scripts/run_browser_verification_m2a4_s2.ts`). It is purely synthetic test fixture data and is **never described as an authentic institutional transaction**.
 - **Browser Screenshots:** Browser screenshot `m2a4_s2_09_receipt_voucher_modal.png` captures the test fixture modal displaying `REC-2026-0042` from `prisma/isolated_test.db`.
-- **Dynamic Retrieval Verification:** The live student portal UI (`StudentPortalView.tsx`) dynamically renders `{selectedReceipt.receiptNumber}` and receipt metadata retrieved from `FeeRepository`. Neither `REC-2026-121403` nor `REC-2026-0042` is hardcoded anywhere in the application source code.
+- **Dynamic Retrieval Verification:** The live student portal UI (`StudentPortalView.tsx`) dynamically renders `{selectedReceipt.receiptNumber}` and receipt metadata retrieved from `FeeRepository`. Neither `REC-2026-121403`, `REC-2026-969942`, nor `REC-2026-0042` is hardcoded anywhere in the application source code.
 
 ---
 

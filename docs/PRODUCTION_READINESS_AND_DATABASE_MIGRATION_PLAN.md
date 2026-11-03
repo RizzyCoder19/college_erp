@@ -3,7 +3,8 @@
 **Institutional Target:** R. P. Institute of Hospitality & Management (RPIHM)  
 **System:** CampusOS ERP  
 **Document Classification:** Architecture & Engineering Operational Deliverable  
-**Current Baseline Commit:** `31bb97c59f1638af651a8f75bbbcf2269e7fd303`  
+**Current GitHub Baseline Commit:** `930a44cfc855fdba0cc1ba2dfa6cd167d541bb59` (`fix(documents): complete browser acceptance, Supabase storage adapter, and production readiness documentation`)  
+**Previous Baseline Commit:** `31bb97c59f1638af651a8f75bbbcf2269e7fd303` (`feat(storage): integrate Supabase private document storage`)  
 **Current Operational Database:** Local SQLite (`prisma/dev.db`, SHA-256: `415b64ac68f85d57e32b5aa5f5323cefdb2986d5c44a75e1a4f4e53f153fb3d8`, 745,472 bytes)  
 - *Historical Baseline (Stage 1 closure):* `2F092C9633F565F416051E4551A6D0751DAB601163271D10F3AC49AA0BD0B162` (684,032 bytes)  
 - *Pre-Migration Backup (before StudentDocument):* `DF7B49BD5E1FBF5B90A36A0658D7DC83D6B21C8948EA1805934BF03608B670ED` (684,032 bytes, preserved in `backups/dev_db_pre_student_doc_migration_20261102_1325.db`)  
@@ -60,19 +61,19 @@ The operational SQLite database contains verified foundational institutional rec
 
 ### 2.1 Managed Database Infrastructure
 - **Provider:** Supabase Managed PostgreSQL (AWS `eu-west-1` or target production region).
-- **PostgreSQL Version:** 15.x or 16.x.
+- **PostgreSQL Version:** The currently connected reference project (`tofkfdwxsvskakuafqph`) reports PostgreSQL version 17 (Supabase 17.x). Note that the eventual institutional production target database instance and PostgreSQL version must be verified separately prior to deployment.
 - **Connection Architecture:**
-  - **Transaction Pooler (PgBouncer / Supavisor):** Port `6543` for ephemeral serverless execution on Vercel. Essential to prevent connection exhaustion during concurrent traffic spikes.
-  - **Direct Connection:** Port `5432` for administrative tasks, Prisma CLI schema migrations, and ETL batch scripts.
+  - **Transaction Pooler (Supavisor):** Port `6543` (transaction mode) for ephemeral serverless execution on Vercel. Essential to prevent connection exhaustion during concurrent traffic spikes.
+  - **Direct Connection:** Dedicated direct database endpoint (e.g., `db.[REF].supabase.co:5432` with IPv4/IPv6 support, or session mode depending on network architecture) for administrative tasks, Prisma CLI schema migrations, and ETL batch scripts.
 
-### 2.2 Dual-URL Environment Configuration
-In production Next.js / Prisma, configure two distinct connection strings in `.env`:
+### 2.2 Dual-URL Environment Configuration (Unverified Reference Templates)
+In production Next.js / Prisma, configure two distinct connection strings in `.env`. The examples below are **unverified architectural reference templates** and must not be used without verification:
 ```env
-# Serverless Runtime Connection (Pooled via PgBouncer / Supavisor)
+# Serverless Runtime Connection Template (Pooled via Supavisor on Port 6543)
 DATABASE_URL="postgresql://postgres.[REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=10"
 
-# Direct Connection for Prisma Migrations & Admin Tasks
-DIRECT_URL="postgresql://postgres.[REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
+# Direct Connection Template (Direct DB host on Port 5432 — verify exact hostname from Supabase Dashboard)
+DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres?sslmode=require"
 ```
 
 In `prisma/schema.prisma`:
@@ -85,7 +86,11 @@ datasource db {
 ```
 
 > [!WARNING]
-> **Mandatory Pre-Implementation Connection Verification:** The connection strings above are architectural reference templates. They must be strictly verified against the actual Supabase project database connection settings (correct pooler hostname format, project reference, port, and password) before any migration script is executed.
+> **Mandatory Pre-Implementation Connection Verification (Strictly Non-Executing):** 
+> 1. The connection strings above are **unverified reference templates** and do not represent verified operational connection details.
+> 2. **Do NOT present or assume the pooler hostname on port 5432 as a verified direct connection.** Supabase provides distinct connection strings depending on IPv4/IPv6 routing (direct host `db.[REF].supabase.co:5432` vs. Supavisor session mode pooler).
+> 3. Exact hostnames, port numbers, SSL parameters (`sslmode=require`), connection limits, and Prisma ORM compatibility must be confirmed directly from the target project's Supabase Database Connection Settings panel before any connection or migration script is configured or executed.
+> 4. **No database connection or migration is performed during this phase.** The system remains strictly on local SQLite (`prisma/dev.db`), which remains 100% invariant.
 > 
 > **Indian Institutional Data-Residency Advisory:** The current connected Supabase project (`tofkfdwxsvskakuafqph`) resides in AWS region `eu-west-1` (Ireland). **Do NOT assume** that an EU-hosted database satisfies Indian institutional data-protection (DPDP Act 2023), University of Mumbai, or state regulatory data-residency requirements for student educational records. Institutional administrators must confirm whether a project in an Indian cloud region (such as AWS `ap-south-1` Mumbai) must be provisioned before production database cutover.
 
@@ -93,7 +98,7 @@ datasource db {
 
 ## 3. Safe Institutional Data Migration Strategy
 
-To guarantee zero loss, zero duplication, and zero operational downtime during the transition, the migration follows a strict **Extraction -> Validation -> Transform -> Load -> Reconciliation** pipeline.
+To execute the transition with zero data loss and zero duplication, the migration is performed within a **controlled institutional maintenance window with a planned operational write freeze**, targeting zero data loss subject to 100% quantitative and qualitative reconciliation across all entities. The process follows a strict **Extraction -> Validation -> Transform -> Load -> Reconciliation** pipeline, backed by automated rollback procedures and strict no-split-brain safeguards.
 
 ### 3.1 Migration Dependency Order (Parent-Child Topology)
 Tables must be extracted and inserted strictly adhering to foreign key constraints:
@@ -161,8 +166,10 @@ Reconciliation is the gating criterion for cutover. Migration is considered succ
 Every model must match exact counts before and after migration:
 - `Student`: 13 records.
 - `UserAccount`: 2 records (`admin.local@sample.rpihm.ac.in` and `k.sharma@sample.rpihm.ac.in`).
-- `StudentDocument`: Exact count matching baseline.
-- `Programme`, `Semester`, `Subject`, `Division`, `Enrolment`, `FeeStructure`, `StudentFeeInvoice`, `FeeReceipt`: Exact parity across all operational tables.
+- `StudentFeeInvoice`: exactly 2 records (`INV-2026-7759` for Khan Umar, `INV-2026-5033` for Komal Soni).
+- `FeeReceipt`: exactly 3 records (`REC-2026-121403` for Khan Umar, `REC-2026-969942` and `REC-2026-948761` for Komal Soni).
+- `StudentDocument`: exactly 5 operational records (3 `LOCAL_PRIVATE` + 2 `SUPABASE`).
+- `Programme`, `Semester`, `Subject`, `Division`, `Enrolment`, `FeeStructure`, `ExamSession`, `ExamResultSummary`: Exact parity across all operational tables.
 
 ### 4.2 Qualitative Reconciliation (Financial & Academic Ledger Integrity)
 - **Fee Ledger Balancing:**
