@@ -35,13 +35,21 @@ A rigorous read-only empirical query of `prisma/dev.db` and inspection of applic
 | **`UserAccount` (`role: FACULTY_MEMBER`)** | **0 accounts**. | No operational users currently hold the `FACULTY_MEMBER` role. Mass onboarding is deferred to Milestone 2B. Stage 3 development must utilize isolated test fixtures in `prisma/isolated_test.db`. |
 | **`Staff` Records** | **13 staff profiles** across Culinary Arts (`CUL`) and Technology & Computing (`TC`). | Foundational faculty directory is established. |
 | **Staff-to-User Linkages** | **1 linkage** (`k.sharma` linked to `Staff` ID `0f277036...` [Khushali Sharma]). 12 staff profiles currently have `userAccount === null`. | Unlinked faculty profiles must be handled gracefully in UI with a structured "Staff Profile Not Linked" state. |
-| **`TeachingAssignment`** | **5 active assignments** across 4 faculty members and 2 departments. | Details below. |
+| **`TeachingAssignment`** | **5 active assignments** across **5 distinct staff members** and 2 departments. | Details below. |
 | **Assignment Division Scoping** | All 5 assignments have non-null `divisionId` (4 assigned to `Div A`, 1 to `Div B`). | The schema supports nullable `divisionId` (`null` denotes cohort-wide lectures). Existing DB records are division-specific. |
-| **`TimetableEntry`** | **0 records**. | Exactly like the Student Portal in Stage 2, the operational database currently has 0 timetable entries. The portal UI must render an honest, neutral empty state without schedule fabrication or arbitrary fallback. |
-| **`AttendanceSession`** | **1 record** (Status: `FINALIZED`, Subject: `AI-101`, Faculty: `86951ea0...` [Prof. Snehal Kulkarni], Date: `2026-10-07`). | Existing prototype session. |
-| **`AttendanceRecord`** | **2 records** linked to the finalized session above. | Existing prototype records. |
+| **TimetableEntry** | **0 records**. | Exactly like the Student Portal in Stage 2, the operational database currently has 0 timetable entries. The portal UI must render an honest, neutral empty state without schedule fabrication or arbitrary fallback. |
+| **AttendanceSession** | **1 record** (Status: `FINALIZED`, Subject: `AI-101`, Faculty: `86951ea0...` [Prof. Snehal Kulkarni], Date: `2026-10-07`). | Existing prototype session. |
+| **AttendanceRecord** | **2 records** linked to the finalized session above. | Existing prototype records. |
 
-### 2.2 Active Teaching Assignments in `prisma/dev.db`
+### 2.2 User Category Distinctions & Operational Realities
+
+To prevent architectural ambiguity between staff directory entries and authentication states, four distinct categories are formally defined:
+1. **Teaching-Assignment Holders (5 staff in `dev.db`):** Staff records possessing $\ge 1$ active `TeachingAssignment` (Chef Vikramaditya Kapoor, Prof. Sneha Pillai, Prof. Snehal Kulkarni, Chef Laurent Deschanel, Khushali Sharma).
+2. **Linked Staff Accounts (1 staff in `dev.db`):** Staff profiles with an associated `UserAccount` (`staff.userAccount !== null`). Currently, only Khushali Sharma is linked (`k.sharma`), but her user account holds the role `ACADEMIC_ADMIN`. The remaining 12 staff profiles in `dev.db` have `userAccount === null` (unlinked).
+3. **Active `FACULTY_MEMBER` User Accounts (0 in `dev.db`):** User accounts provisioned with `role === "FACULTY_MEMBER"` and `isActive === true`. Zero currently exist in the operational database.
+4. **Eligible Faculty Portal Users:** Accounts that are authenticated, possess `role === "FACULTY_MEMBER"`, have a non-null `staffId`, and link to an existing `Staff` record with `status === "ACTIVE"`. If any condition is violated, the system safely rejects access (`FORBIDDEN`, `UNLINKED_STAFF_PROFILE`, or `INACTIVE_STAFF_ACCOUNT`).
+
+### 2.3 Active Teaching Assignments in `prisma/dev.db`
 
 1. **Chef Vikramaditya Kapoor** (`RPIHM-FAC-012`): `FP-101` (Classical Culinary Foundation, 6 hrs/wk) $\to$ **Div A**
 2. **Prof. Sneha Pillai** (`RPIHM-FAC-024`): `FBM-101` (F&B Service Techniques, 4 hrs/wk) $\to$ **Div B**
@@ -49,7 +57,15 @@ A rigorous read-only empirical query of `prisma/dev.db` and inspection of applic
 4. **Chef Laurent Deschanel** (`RPIHM-FAC-059`): `BAK-101` (French Viennoiserie & Artisan Breads, 6 hrs/wk) $\to$ **Div A**
 5. **Khushali Sharma** (`RPIHM-FAC-999`): `AI-101` (Python for AI & Data Science, 4 hrs/wk) $\to$ **Div B**
 
-### 2.3 Existing Faculty Access Posture (Code Review)
+### 2.4 Workload Metric Definitions
+
+To ensure metric precision without confusing contract or schedule reality:
+- **Prescribed Assignment Hours:** Sum of `TeachingAssignment.weeklyHours` across active courses assigned to the instructor. **Important:** This represents curricular subject contact allocations assigned by the Academic Council, **never** a verified employment contract or payroll specification.
+- **Scheduled Timetable Hours:** Sum of hours from published `TimetableEntry` records scheduled for the active week. (Currently **0.0 hours** in `dev.db`).
+- **Actual Recorded Attendance Sessions:** Count of `AttendanceSession` records recorded by the instructor.
+- **Attendance Completion Integrity:** Attendance completion must **never** be calculated as a percentage against nonexistent schedules. If scheduled hours are zero, the portal displays raw opportunity counts rather than dividing by zero or fabricating a schedule.
+
+### 2.5 Existing Faculty Access Posture (Code Review)
 
 - **Route `/portal/faculty`:** Currently returns **HTTP 404** (route does not exist).
 - **Route `/portal/student`:** Authenticated `FACULTY_MEMBER` is blocked with HTTP 403 (*"Workspace Access Denied"* card).
@@ -155,7 +171,7 @@ For every proposed faculty action, the server-side authorization boundaries, own
 | **`getFacultySelfProfile`** | Authenticated; `role === "FACULTY_MEMBER"` | `portalFaculty.ts` server action | Unconditionally queries `Staff` by `session.user.staffId` | Own staff profile and department | None | No | Client cannot supply `staffId`. Parameter tampering impossible. |
 | **`getFacultySelfTeachingAssignments`** | Authenticated; `role === "FACULTY_MEMBER"` | `portalFaculty.ts` server action | `where: { staffId: session.user.staffId }` | Own `TeachingAssignment[]` with `Subject` and `Division` | None | No | Filter bound strictly to session staff ID. |
 | **`getFacultySelfTimetable`** | Authenticated; `role === "FACULTY_MEMBER"` | `portalFaculty.ts` server action | `where: { teachingAssignment: { staffId: session.user.staffId } }` | Own scheduled `TimetableEntry[]` | None | No | Ignores client `staffId`. Returns empty array if 0 entries exist. |
-| **`getFacultyClassRoster`** | Authenticated; `role === "FACULTY_MEMBER"` | `portalFaculty.ts` server action | Asserts `teachingAssignment.staffId === session.user.staffId` before querying cohort | Masked student roster (`rollNumber`, `prn`, `fullName`, `gender`, `status`) | None | No | Requesting roster for unassigned assignment returns HTTP 403 `FORBIDDEN`. |
+| **`getFacultyClassRoster`** | Authenticated; `role === "FACULTY_MEMBER"` | `portalFaculty.ts` server action | Asserts `teachingAssignment.staffId === session.user.staffId` before querying cohort | Privacy-filtered student roster (`id`, `rollNumber`, `prn`, `fullName`, `status`) | None | No | Requesting roster for unassigned assignment returns HTTP 403 `FORBIDDEN`. Client cannot query arbitrary students. |
 | **`getFacultyAttendanceSessions`** | Authenticated; `role === "FACULTY_MEMBER"` | `portalFaculty.ts` server action | `where: { facultyId: session.user.staffId }` | Own recorded `AttendanceSession[]` and counts | None | No | Faculty cannot list sessions recorded by other instructors. |
 | **`recordFacultyAttendanceSession`** | Authenticated; `role === "FACULTY_MEMBER"`; Perm: `RECORD_ATTENDANCE` | `portalFaculty.ts` server action; validates teaching assignment | Verifies `TeachingAssignment` exists for `session.user.staffId` + `subjectId` + `divisionId` | Enrolled cohort for validation | Creates/updates `AttendanceSession` & `AttendanceRecord[]` | Yes (`recordedById: user.id`) | Cross-cohort students rejected; unassigned class rejected (`UNASSIGNED_CLASS_ACCESS_DENIED`). |
 | **`amendFacultyDraftAttendance`** | Authenticated; `role === "FACULTY_MEMBER"` | `portalFaculty.ts` server action | Asserts `session.status === "DRAFT"` AND `session.facultyId === user.staffId` | Existing draft session records | Updates `AttendanceRecord` | Yes | Modifying finalized sessions is blocked with `FINALIZED_RECORD_LOCKED` (requires Admin). |
@@ -166,10 +182,10 @@ For every proposed faculty action, the server-side authorization boundaries, own
 
 To safeguard student privacy and comply with institutional data governance, the data exposed to faculty is strictly segregated:
 
-### 6.1 Roster Information Genuinely Necessary for Faculty
+### 6.1 Default Roster Information Genuinely Necessary for Faculty
 - **Academic Identifiers:** Student Full Name, Institutional Roll Number, Permanent Registration Number (PRN).
-- **Practical Lab Attributes:** Gender (strictly necessary in culinary and hospitality practicals for commercial kitchen station allocation, uniform sizing, and locker management).
 - **Academic Enrolment Status:** `status: "ENROLLED"`, active semester, and division placement.
+- **Strict Gender Exclusion:** Gender is strictly **excluded** from default faculty rosters. No gender-based operational assumptions or allocations are introduced. Any future additional disclosure requires a documented institutional justification and explicit administrative approval.
 - **Subject Attendance Count:** Raw number of sessions attended in this specific subject.
 
 ### 6.2 Strict Student Privacy & PII Restrictions (Withheld from Faculty)
@@ -178,6 +194,9 @@ To safeguard student privacy and comply with institutional data governance, the 
 - **Zero Financial Peeking:** Complete exclusion of `StudentFeeInvoice`, `FeeReceipt`, payment history, and fee clearance status. Faculty have zero access to student financial records.
 - **Zero Student Document Access:** Compliance documents (`StudentDocument`, identity proofs, transfer certificates) remain strictly restricted to `ACADEMIC_ADMIN` and `SYSTEM_ADMIN`.
 - **Cross-Subject Grade Isolation:** Faculty cannot view student examination results or grade cards for subjects taught by other faculty members.
+
+### 6.3 Defense Against Generic `READ_STUDENTS` Privilege Bypass
+Even though the `FACULTY_MEMBER` role holds the broad `READ_STUDENTS` permission in `src/lib/auth/roles.ts` (historically used for administrative student directories), the Faculty Self-Service Portal **never** exposes unconstrained student queries. All student data returned by `portalFaculty.ts` is strictly derived through active `TeachingAssignment` division rosters. Passing an arbitrary `studentId` or attempting to enumerate the institutional student population through the portal is physically impossible at the action layer.
 
 ---
 
@@ -344,24 +363,34 @@ All testing will execute strictly against `prisma/isolated_test.db` with `APP_EN
 
 ---
 
-## 14. Explicit Decisions Requiring User Approval
+## 14. Stakeholder Decisions & Architecture Approvals
 
-Before writing any application code, the following architectural and operational decisions are submitted for approval:
+The architectural discovery and implementation plan were reviewed and formally authorized on November 3, 2026, with the following refined directions:
 
-1. **Ad-Hoc Attendance Capability:**
-   - *Question:* Should faculty be permitted to record attendance for unscheduled classes (e.g. makeup practical labs) that lack a pre-configured timetable slot, provided the class matches an assigned subject and division?
-   - *Recommendation:* **Approve constrained ad-hoc recording**. Since `dev.db` currently contains 0 timetable entries, timetable-only recording would completely prevent faculty from testing or using attendance roll-call until timetables are populated.
-2. **Attendance Finalization Lock:**
-   - *Question:* Should submitting attendance as `FINALIZED` immediately lock the record to administrative-only amendments, or should faculty have a 2-hour grace window?
-   - *Recommendation:* **Enforce immediate lock upon finalization**. Faculty should utilize the `DRAFT` status while class is in session, verifying entries before clicking `FINALIZED`.
-3. **Student Contact Privacy Policy:**
-   - *Question:* Should faculty rosters display student personal email and phone numbers, or strictly academic identifiers (Roll Number, PRN, Full Name, Gender, Enrolment Status)?
-   - *Recommendation:* **Display strictly academic identifiers and mask personal phone/email and guardian PII** to protect student data privacy.
-4. **Direct Route for Authenticated Faculty:**
-   - *Question:* Should faculty users navigating to the root URL (`/`) be automatically redirected to `/portal/faculty` (matching the student portal behavior)?
-   - *Recommendation:* **Approve redirect**. Directs faculty straight to their daily agenda while preserving access to any permitted administrative switchboard links.
+1. **Constrained Ad-Hoc Attendance: APPROVED**
+   - Faculty may record unscheduled sessions only for their own active teaching assignments.
+   - Server-side validates subject, division, semester, active student enrolment, and faculty assignment ownership.
+   - Duplicate-session protection is preserved.
+   - Records session date, time, and relevant metadata.
+   - Arbitrary student IDs or unrelated cohorts are strictly prohibited.
+2. **Immediate Finalization Lock: APPROVED**
+   - Faculty may create, pause, and edit their own `DRAFT` sessions.
+   - Once submitted as `FINALIZED`, the session becomes strictly immutable to faculty.
+   - Administrative corrections must use explicitly authorized server-side functionality and leave an auditable record.
+   - Zero grace window or unverified edit periods.
+3. **Student Privacy: APPROVED WITH REVISION**
+   - Default roster fields: Roll Number, PRN, Full Name, and Enrolment Status.
+   - **Gender is strictly excluded from default rosters.**
+   - All guardian information, personal phone/email, addresses, DOB, blood group, financial records, and compliance documents are completely excluded.
+   - No gender-based operational assumptions or allocations are introduced.
+   - Any future additional disclosure requires a documented institutional justification and explicit approval.
+4. **Faculty Root Redirection: APPROVED**
+   - Authenticated `FACULTY_MEMBER` users navigating to `/` are automatically redirected to `/portal/faculty`.
+   - Faculty receive a dedicated, scoped navigation experience in `Sidebar.tsx`.
+   - Administrative module links are never exposed to faculty in the generic navigation.
+   - Server-side authorization remains mandatory and independent of UI link visibility.
 
 ---
 
 *Authored by Antigravity Engineering for R. P. Institute of Hospitality & Management (CampusOS).*  
-*Status: Architecture Discovery & Plan Complete — Standing strictly in planning mode with zero code written — Awaiting approval.*
+*Status: Architecture Discovery & Plan Approved — Proceeding with Workstream 1: Faculty Data Access Layer.*

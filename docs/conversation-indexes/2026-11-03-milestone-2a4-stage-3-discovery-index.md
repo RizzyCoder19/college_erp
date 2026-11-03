@@ -57,12 +57,21 @@
 
 ---
 
-## 4. Decisions Submitted for Administrative Approval
+## 4. Decisions Approved & Architecture Refinements
 
-1. **Ad-Hoc Attendance Recording:** Approve constrained ad-hoc attendance recording for assigned subjects/divisions to prevent complete workflow blocking caused by 0 operational timetable entries.
-2. **Attendance Finalization Lock:** Enforce immediate administrative-only lock upon `FINALIZED` submission; instruct faculty to use `DRAFT` status while class is in progress.
-3. **Student Privacy Protection:** Strictly mask student personal contact numbers, personal emails, and guardian PII in faculty class rosters, exposing only academic identifiers (Roll, PRN, Name, Gender, Enrolment Status).
-4. **Root Route Redirection:** Automatically redirect authenticated `FACULTY_MEMBER` users from `/` to `/portal/faculty`.
+1. **Constrained Ad-Hoc Attendance: APPROVED** (Faculty may record unscheduled sessions for assigned subjects/divisions only; server validates cohort & assignment; duplicate protection preserved).
+2. **Immediate Finalization Lock: APPROVED** (Faculty can create/edit DRAFT sessions; finalized sessions become immutable to faculty; administrative corrections auditable; zero grace window).
+3. **Student Privacy: APPROVED WITH REVISION** (Default roster: Roll Number, PRN, Full Name, Enrolment Status; gender strictly excluded; guardian/contact PII masked; zero gender-based operational assumptions).
+4. **Faculty Root Redirection: APPROVED** (Authenticated `FACULTY_MEMBER` users redirected from `/` to `/portal/faculty`; dedicated navigation experience).
 
 ---
-*Authored by Antigravity Systems & Product Engineering — Milestone 2A.4 Stage 3 Discovery Complete — Strictly No Code — Awaiting Approval.*
+
+## 5. Workstream 1 Implementation: Faculty Data Access Layer
+
+| # | Artifact | Project-Relative File Path | Implementation Details |
+| :- | :--- | :--- | :--- |
+| 1 | **Faculty Server Actions** | [`src/lib/actions/portalFaculty.ts`](file:///g:/rpihm-campusos/src/lib/actions/portalFaculty.ts) | Implemented 5 read operations: `getFacultySelfProfile()`, `getFacultySelfTeachingAssignments()`, `getFacultySelfTimetable()`, `getFacultyClassRoster(teachingAssignmentId)`, and `getFacultyAttendanceSessions()`. Strictly derives identity from session cookie; rejects client `staffId`; enforces `FACULTY_MEMBER` role; handles unlinked/inactive staff; verifies assignment ownership before returning rosters; privacy-filters rosters (Roll, PRN, Name, Status; excludes gender & contact details); uses existing repositories without logic duplication. |
+| 2 | **Workstream 1 Automated Test Suite** | [`scripts/test_m2a4_s3_workstream_1.ts`](file:///g:/rpihm-campusos/scripts/test_m2a4_s3_workstream_1.ts) | Comprehensive 10-suite automated test executing strictly against `prisma/isolated_test.db` validating unauthenticated rejection, role rejection, unlinked/inactive handling, self-profile & workload calculations, cross-faculty assignment isolation, timetable retrieval, class roster authorization & privacy filtering, attendance ledger scoping, student portal regression immunity, and `dev.db` hash invariance. **Result: 80 / 80 assertions passed (100%).** |
+
+---
+*Authored by Antigravity Systems & Product Engineering — Milestone 2A.4 Stage 3: Workstream 1 Complete — Ready for Workstream 2 Review.*

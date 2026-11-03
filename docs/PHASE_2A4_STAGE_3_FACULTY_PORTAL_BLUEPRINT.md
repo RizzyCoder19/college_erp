@@ -21,7 +21,7 @@ The Faculty Self-Service Portal (`/portal/faculty`) provides authenticated facul
 1. **Faculty Identity & Workload Console:** Personal profile, designation, department, employee ID, assigned workload hours, and summary of active teaching assignments.
 2. **Assigned Classes & Class Directory:** Comprehensive listing of subjects and divisions assigned to the instructor, with active student counts and academic placement details.
 3. **Faculty Weekly Schedule & Timetable Matrix:** Day-by-day (Monday to Saturday) class schedule showing time slots, subjects, rooms, session types (Theory/Practical Kitchen), and direct action links to record attendance.
-4. **Class Roster & Student Directory:** Division-specific student lists (Roll Number, PRN, Full Name, Gender, Enrolment Status) restricted strictly to assigned classes.
+4. **Class Roster & Student Directory:** Division-specific student lists (Roll Number, PRN, Full Name, Enrolment Status; strictly excluding gender, personal contact details, guardian PII, and financial records) restricted strictly to assigned classes.
 5. **Daily Attendance Recording & Session Ledger:**
    - Interactive roll-call marking sheet for scheduled timetable slots or ad-hoc sessions.
    - Bulk actions (*"Mark All Present"*), individual status toggles (`PRESENT`, `ABSENT`, `LATE`, `EXCUSED`), topic covered field.
