@@ -231,7 +231,16 @@ export const TopBar: React.FC<TopBarProps> = ({
               </div>
               <div className="text-[11px] text-slate-400 font-medium">
                 {currentUser
-                  ? currentUser.designation || (currentUser.role === "SYSTEM_ADMIN" ? "System Administrator" : currentUser.role === "ACADEMIC_ADMIN" ? "Academic Administrator" : "Institutional User")
+                  ? currentUser.designation ||
+                    (currentUser.role === "STUDENT_VIEWER"
+                      ? "Student Scholar • SY"
+                      : currentUser.role === "FACULTY_MEMBER"
+                      ? "Faculty Instructor"
+                      : currentUser.role === "SYSTEM_ADMIN"
+                      ? "System Administrator"
+                      : currentUser.role === "ACADEMIC_ADMIN"
+                      ? "Academic Administrator"
+                      : "Institutional User")
                   : "Unauthenticated"}
               </div>
             </div>

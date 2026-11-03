@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Icon } from "@/components/common/Icon";
 import { MODULES_LIST } from "@/data/mockData";
 import { getCurrentUserAction } from "@/lib/actions/auth";
@@ -13,8 +13,10 @@ interface SidebarProps {
   onOpenHelp?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
+export const SidebarInner: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams ? (searchParams.get("tab") || "overview") : "overview";
   const [currentUser, setCurrentUser] = useState<{ role: string; fullName: string } | null>(null);
 
   useEffect(() => {
@@ -87,149 +89,101 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
         {isStudent ? (
           /* Student Self-Service Navigation */
           <nav className="space-y-1">
-            <div className="px-3.5 text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-              STUDENT WORKSPACE
+            <div className="px-3.5 text-xs font-bold uppercase tracking-wider text-blue-400 mb-2 flex items-center justify-between">
+              <span>STUDENT WORKSPACE</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-mono">PORTAL</span>
             </div>
-            <Link
-              href="/portal/student?tab=overview"
-              onClick={onNavigate}
-              className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 transition-all ${
-                pathname === "/portal/student"
-                  ? "magic-nav-active bg-[#1657D9] text-white font-semibold shadow-md"
-                  : "text-slate-300 hover:bg-[#13223E] hover:text-white"
-              }`}
-            >
-              <Icon
-                name="user"
-                className={`h-5 w-5 shrink-0 ${
-                  pathname === "/portal/student" ? "text-white" : "text-slate-400"
-                }`}
-              />
-              <span>Profile & Overview</span>
-            </Link>
 
-            <Link
-              href="/portal/student?tab=academics"
-              onClick={onNavigate}
-              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
-            >
-              <Icon name="academic-cap" className="h-5 w-5 shrink-0 text-slate-400" />
-              <span>Academics & Curriculum</span>
-            </Link>
-
-            <Link
-              href="/portal/student?tab=timetable"
-              onClick={onNavigate}
-              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
-            >
-              <Icon name="calendar" className="h-5 w-5 shrink-0 text-slate-400" />
-              <span>Class Schedule</span>
-            </Link>
-
-            <Link
-              href="/portal/student?tab=attendance"
-              onClick={onNavigate}
-              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
-            >
-              <Icon name="clipboard-check" className="h-5 w-5 shrink-0 text-slate-400" />
-              <span>Attendance</span>
-            </Link>
-
-            <Link
-              href="/portal/student?tab=examinations"
-              onClick={onNavigate}
-              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
-            >
-              <Icon name="award" className="h-5 w-5 shrink-0 text-slate-400" />
-              <span>Examinations</span>
-            </Link>
-
-            <Link
-              href="/portal/student?tab=fees"
-              onClick={onNavigate}
-              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
-            >
-              <Icon name="currency-rupee" className="h-5 w-5 shrink-0 text-slate-400" />
-              <span>Fee Ledger</span>
-            </Link>
-
-            <Link
-              href="/portal/student?tab=documents"
-              onClick={onNavigate}
-              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
-            >
-              <Icon name="document-duplicate" className="h-5 w-5 shrink-0 text-slate-400" />
-              <span>Compliance Documents</span>
-            </Link>
+            {[
+              { id: "overview", href: "/portal/student?tab=overview", label: "Profile & Overview", icon: "user" },
+              { id: "academics", href: "/portal/student?tab=academics", label: "Academics & Curriculum", icon: "academic-cap" },
+              { id: "timetable", href: "/portal/student?tab=timetable", label: "Class Schedule", icon: "calendar" },
+              { id: "attendance", href: "/portal/student?tab=attendance", label: "Attendance Ledger", icon: "clipboard-check" },
+              { id: "examinations", href: "/portal/student?tab=examinations", label: "Examinations", icon: "award" },
+              { id: "fees", href: "/portal/student?tab=fees", label: "Fee Ledger", icon: "currency-rupee" },
+              { id: "documents", href: "/portal/student?tab=documents", label: "Compliance Documents", icon: "document-duplicate" },
+            ].map((item) => {
+              const isActive = pathname.startsWith("/portal/student") && currentTab === item.id;
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={`magic-nav-item flex items-center justify-between rounded-lg px-3.5 py-2.5 transition-all text-xs font-medium ${
+                    isActive
+                      ? "magic-nav-active bg-gradient-to-r from-[#1657D9] to-[#2563EB] text-white font-semibold shadow-md border-l-4 border-blue-300 pl-2.5"
+                      : "text-slate-300 hover:bg-[#13223E] hover:text-white border-l-4 border-transparent pl-2.5"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Icon
+                      name={item.icon}
+                      className={`h-4.5 w-4.5 shrink-0 ${isActive ? "text-white" : "text-slate-400"}`}
+                    />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.id === "academics" && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-semibold ${isActive ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400"}`}>
+                      5
+                    </span>
+                  )}
+                  {item.id === "fees" && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-300">
+                      PAID
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
           </nav>
         ) : isFaculty ? (
           /* Faculty Self-Service Navigation */
           <nav className="space-y-1">
-            <div className="px-3.5 text-xs font-bold uppercase tracking-wider text-blue-400 mb-2">
-              FACULTY WORKSPACE
+            <div className="px-3.5 text-xs font-bold uppercase tracking-wider text-blue-400 mb-2 flex items-center justify-between">
+              <span>FACULTY WORKSPACE</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-mono">STAFF</span>
             </div>
-            <Link
-              href="/portal/faculty?tab=overview"
-              onClick={onNavigate}
-              className={`magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 transition-all ${
-                pathname === "/portal/faculty"
-                  ? "magic-nav-active bg-[#1657D9] text-white font-semibold shadow-md"
-                  : "text-slate-300 hover:bg-[#13223E] hover:text-white"
-              }`}
-            >
-              <Icon
-                name="dashboard"
-                className={`h-5 w-5 shrink-0 ${
-                  pathname === "/portal/faculty" ? "text-white" : "text-slate-400"
-                }`}
-              />
-              <span>Overview & Workload</span>
-            </Link>
 
-            <Link
-              href="/portal/faculty?tab=classes"
-              onClick={onNavigate}
-              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
-            >
-              <Icon name="book-open" className="h-5 w-5 shrink-0 text-slate-400" />
-              <span>Assigned Classes</span>
-            </Link>
-
-            <Link
-              href="/portal/faculty?tab=timetable"
-              onClick={onNavigate}
-              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
-            >
-              <Icon name="calendar" className="h-5 w-5 shrink-0 text-slate-400" />
-              <span>Weekly Schedule</span>
-            </Link>
-
-            <Link
-              href="/portal/faculty?tab=roster"
-              onClick={onNavigate}
-              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
-            >
-              <Icon name="user-group" className="h-5 w-5 shrink-0 text-slate-400" />
-              <span>Class Rosters</span>
-            </Link>
-
-            <Link
-              href="/portal/faculty?tab=attendance"
-              onClick={onNavigate}
-              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
-            >
-              <Icon name="clipboard-check" className="h-5 w-5 shrink-0 text-slate-400" />
-              <span>Attendance History</span>
-            </Link>
-
-            <Link
-              href="/portal/faculty?tab=curriculum"
-              onClick={onNavigate}
-              className="magic-nav-item flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-slate-300 hover:bg-[#13223E] hover:text-white transition-all"
-            >
-              <Icon name="academic-cap" className="h-5 w-5 shrink-0 text-slate-400" />
-              <span>Course Curriculum</span>
-            </Link>
+            {[
+              { id: "overview", href: "/portal/faculty?tab=overview", label: "Overview & Workload", icon: "dashboard" },
+              { id: "classes", href: "/portal/faculty?tab=classes", label: "Assigned Classes", icon: "book-open" },
+              { id: "timetable", href: "/portal/faculty?tab=timetable", label: "Weekly Schedule", icon: "calendar" },
+              { id: "roster", href: "/portal/faculty?tab=roster", label: "Class Rosters", icon: "user-group" },
+              { id: "attendance", href: "/portal/faculty?tab=attendance", label: "Attendance History", icon: "clipboard-check" },
+              { id: "curriculum", href: "/portal/faculty?tab=curriculum", label: "Course Curriculum", icon: "academic-cap" },
+            ].map((item) => {
+              const isActive = pathname.startsWith("/portal/faculty") && currentTab === item.id;
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={`magic-nav-item flex items-center justify-between rounded-lg px-3.5 py-2.5 transition-all text-xs font-medium ${
+                    isActive
+                      ? "magic-nav-active bg-gradient-to-r from-[#1657D9] to-[#2563EB] text-white font-semibold shadow-md border-l-4 border-blue-300 pl-2.5"
+                      : "text-slate-300 hover:bg-[#13223E] hover:text-white border-l-4 border-transparent pl-2.5"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Icon
+                      name={item.icon}
+                      className={`h-4.5 w-4.5 shrink-0 ${isActive ? "text-white" : "text-slate-400"}`}
+                    />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.id === "classes" && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-semibold ${isActive ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400"}`}>
+                      1
+                    </span>
+                  )}
+                  {item.id === "roster" && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-300">
+                      FERPA
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
           </nav>
         ) : (
           <>
@@ -374,3 +328,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onOpenHelp }) => {
     </div>
   );
 };
+
+export const Sidebar: React.FC<SidebarProps> = (props) => (
+  <React.Suspense fallback={<div className="flex h-full w-full bg-[#0B1528]" />}>
+    <SidebarInner {...props} />
+  </React.Suspense>
+);

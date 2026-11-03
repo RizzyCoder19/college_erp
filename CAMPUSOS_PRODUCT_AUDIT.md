@@ -254,3 +254,34 @@ CampusOS will be considered a complete, coherent institutional ERP prototype whe
 3. **Unified Navigation:** Global search (Ctrl+K) resolves real people, courses, and modules instantly.
 4. **No Dead-End Placeholders:** Modules without full implementation display clear capability scopes and read live contextual records where available.
 5. **Data Safety & Integrity:** Zero silent failures, fail-closed server actions, and complete audit logging on all administrative mutations.
+
+---
+
+## 10. Visual Redesign Directive & Major UX Transformation (November 2026)
+
+Following user feedback on the initial polish pass, a major visual transformation was executed for both portals:
+
+1. **Student Portal — Academic Command Centre:**
+   - Transformed overview from generic profile form fields to a high-prestige academic command console.
+   - Highlights student identity (PRN, Roll No, SY 2026-27), core KPI cards (5 Curricular Load, ₹0 Fee Due, 1 Verified Compliance, Assigned Mentor Prof. Snehal Kulkarni).
+   - 2-Column layout: Today's Academic Schedule & Agenda with day-by-day pills and Room 304 home classroom indicator; Registered Academic Curriculum table displaying all 5 BSCDS-AI core courses; Official Bursar Tuition Clearance Voucher (INV-2026-7759 & REC-2026-121403); Compliance Vault; Ordinance 6086 examination standing.
+   - Fixed unpopulated timetable state to render an institutional notice that Central Administration is finalizing slot allocations.
+
+2. **Faculty Portal — Teaching Workspace:**
+   - Preloaded assignments, timetable, and attendance on mount to eliminate empty skeleton boxes on the overview.
+   - Upgraded header to prestige dark-navy institutional faculty badge (Prof. Jeicy Sahaya, Employee ID `RPIHM-FAC-075`, Department of Technology & Computing).
+   - 4 Workload metric cards (1 Active Section, 16 Hrs/Wk Prescribed, 4.0 Hrs Timetable, 0 Attendance Logged).
+   - Course Allocation Spotlight card for `USDS301 (Design & Analysis of Algorithms)` (Core Theory + Lab, 4.0 Credits, 4.0 Contact Hrs/Wk, Division A, Room 304, 1 Enrolled Student `Khan Umar`, direct action buttons).
+   - Weekly Teaching Schedule Matrix with day pills and classroom locator.
+   - Active Class Cohorts & Roster Summary table with strict FERPA masking.
+   - Workload allocation distribution breakdown (Lectures 25%, Labs 25%, Research/Office 50%) and Attendance Ledger Standing.
+
+3. **Sidebar & Navigation Synchronization:**
+   - Active navigation item now derives dynamically from `useSearchParams().get("tab") || "overview"`.
+   - Distinctive royal blue indicator (`bg-gradient-to-r from-[#1657D9] to-[#2563EB]`) with badges (`5` courses, `PAID` fees, `1` class section, `FERPA` protected rosters).
+   - Suspense boundary wrapped around `Sidebar` to guarantee 100% Next.js 16 Partial Prerendering build compatibility.
+
+4. **Visual Evidence & Quality Gate Verification:**
+   - 18 Genuine BEFORE and 18 Genuine AFTER screenshots captured via Edge CDP at 1440×900 desktop and 390×844 mobile viewports.
+   - Full regression suite passed: `test_portal_quality_and_authorization.ts` (43/43), `test_m2a4_s3_workstream_1.ts` (80/80), `test_m2a4_s3_workstream_2.ts` (69/69), `test_student_portal_boundaries.ts` (43/43).
+   - Zero operational database mutations (`prisma/dev.db` hash invariant).

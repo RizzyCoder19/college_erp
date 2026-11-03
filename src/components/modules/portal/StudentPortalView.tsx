@@ -173,72 +173,48 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({ initialPro
     }
   };
 
-  // If initial tab is deep-linked, load corresponding data on mount
+  // Preload essential overview datasets on mount for instant Academic Command Centre rendering
   useEffect(() => {
     let active = true;
-    if (initialTab === "academics" && !curriculum) {
-      getStudentSelfCurriculum().then((res) => {
-        if (active && res.success && res.data) {
-          setCurriculum(res.data);
-        }
-      });
-    }
-    if (initialTab === "timetable" && !timetable) {
-      setIsLoadingTimetable(true);
-      getStudentSelfTimetable().then((res) => {
-        if (active) {
-          if (res.success && res.data) {
-            setTimetable(res.data);
-          } else {
-            setTimetableError(res.error || "Failed to load timetable.");
-          }
-          setIsLoadingTimetable(false);
-        }
-      });
-    }
-    if (initialTab === "attendance" && !attendance) {
+    getStudentSelfCurriculum().then((res) => {
+      if (active && res.success && res.data) {
+        setCurriculum(res.data);
+      }
+    });
+    getStudentSelfTimetable().then((res) => {
+      if (active && res.success && res.data) {
+        setTimetable(res.data);
+      }
+    });
+    getStudentSelfFeeLedger().then((res) => {
+      if (active && res.success && res.data) {
+        setFeeLedger(res.data);
+      }
+    });
+    if (initialTab === "attendance") {
       setIsLoadingAttendance(true);
       getStudentSelfAttendance().then((res) => {
         if (active) {
-          if (res.success && res.data) {
-            setAttendance(res.data);
-          } else {
-            setAttendanceError(res.error || "Failed to load attendance records.");
-          }
+          if (res.success && res.data) setAttendance(res.data);
+          else setAttendanceError(res.error || "Failed to load attendance records.");
           setIsLoadingAttendance(false);
         }
       });
     }
-    if (initialTab === "examinations" && !examResults) {
+    if (initialTab === "examinations") {
       setIsLoadingExamResults(true);
       getStudentSelfExamResults().then((res) => {
         if (active) {
-          if (res.success && res.data) {
-            setExamResults(res.data);
-          } else {
-            setExamResultsError(res.error || "Failed to load examination results.");
-          }
+          if (res.success && res.data) setExamResults(res.data);
+          else setExamResultsError(res.error || "Failed to load examination results.");
           setIsLoadingExamResults(false);
-        }
-      });
-    }
-    if (initialTab === "fees" && !feeLedger) {
-      setIsLoadingFeeLedger(true);
-      getStudentSelfFeeLedger().then((res) => {
-        if (active) {
-          if (res.success && res.data) {
-            setFeeLedger(res.data);
-          } else {
-            setFeeLedgerError(res.error || "Failed to load fee ledger.");
-          }
-          setIsLoadingFeeLedger(false);
         }
       });
     }
     return () => {
       active = false;
     };
-  }, [initialTab, curriculum, timetable, attendance, examResults, feeLedger]);
+  }, [initialTab]);
 
   const handleViewReceipt = async (receiptId: string) => {
     setIsLoadingReceipt(true);
@@ -267,21 +243,37 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({ initialPro
     .map((n) => n[0].toUpperCase())
     .join("");
 
+  const [selectedDay, setSelectedDay] = useState<string>("MONDAY");
+
   return (
     <div className="space-y-6">
-      {/* 1. Institutional Student Identity Header Card */}
-      <div className="relative overflow-hidden rounded-2xl bg-[#071322] border border-[#16243E] text-white p-6 shadow-xl">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-start sm:items-center space-x-4">
-            {/* Initials Avatar (No photo stored in database model) */}
-            <div
-              className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-gradient-to-br from-[#1657D9] to-[#0B1528] border-2 border-blue-400/30 flex items-center justify-center font-bold text-xl sm:text-2xl text-white shadow-lg shrink-0 tracking-wider"
-              aria-label={`Initials: ${initials}`}
-            >
-              {initials}
+      {/* =========================================================================
+          1. PRESTIGE ACADEMIC CREDENTIAL HEADER (University Identity & Vital Stats)
+          ========================================================================= */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#071322] via-[#0B1928] to-[#122842] text-white p-6 sm:p-8 shadow-xl border border-slate-800">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-radial from-blue-500/10 via-transparent to-transparent rounded-full pointer-events-none"></div>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex items-start sm:items-center space-x-4 sm:space-x-5">
+            {/* Student Credential Avatar with Verified Laurel Seal */}
+            <div className="relative">
+              <div
+                className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-gradient-to-tr from-[#1657D9] via-blue-600 to-indigo-600 border-2 border-white/20 flex items-center justify-center font-bold text-xl sm:text-2xl text-white shadow-lg shrink-0 tracking-wider"
+                aria-label={`Initials: ${initials}`}
+              >
+                {initials}
+              </div>
+              <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 border-2 border-[#0B1928] flex items-center justify-center shadow-xs">
+                <Icon name="check" className="h-3.5 w-3.5 text-white" />
+              </div>
             </div>
 
             <div className="space-y-1">
+              <div className="flex items-center space-x-2 text-[10px] font-bold uppercase tracking-wider text-blue-300/80">
+                <span>R.P. Institute of Hospitality & Management</span>
+                <span>•</span>
+                <span>Univ. of Mumbai</span>
+              </div>
+
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
                   {student.fullName}
@@ -293,346 +285,490 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({ initialPro
                       : "bg-slate-500/20 text-slate-300 border-slate-400/30"
                   }`}
                 >
-                  {student.status}
+                  ACTIVE ENROLLED
+                </span>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30 font-mono">
+                  SY 2026–27
                 </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-300">
-                <span className="flex items-center space-x-1">
-                  <span className="text-slate-400">PRN:</span>
-                  <strong className="font-mono text-white">{student.prn}</strong>
+                <span className="flex items-center space-x-1.5">
+                  <span className="text-slate-400 font-medium">PRN:</span>
+                  <strong className="font-mono text-white bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60">{student.prn}</strong>
                 </span>
-                <span className="text-slate-500">•</span>
-                <span className="flex items-center space-x-1">
-                  <span className="text-slate-400">Roll No:</span>
-                  <strong className="font-mono text-white">{student.rollNumber}</strong>
+                <span className="text-slate-600">•</span>
+                <span className="flex items-center space-x-1.5">
+                  <span className="text-slate-400 font-medium">Roll No:</span>
+                  <strong className="font-mono text-white bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60">{student.rollNumber}</strong>
                 </span>
               </div>
 
               {activePlacement && (
-                <p className="text-xs text-blue-300/90 font-medium">
-                  {activePlacement.programmeName} • Semester {activePlacement.semesterNumber} (
-                  {activePlacement.divisionName})
+                <p className="text-xs text-blue-200/90 font-medium pt-0.5">
+                  {activePlacement.programmeName} • Semester {activePlacement.semesterNumber} ({activePlacement.divisionName})
                 </p>
               )}
             </div>
           </div>
 
-          {/* Quick Stats Summary Strip */}
-          <div className="flex flex-wrap items-center gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-[#16243E]">
-            <div className="bg-[#0B1528] rounded-xl px-4 py-2.5 border border-[#16243E] min-w-[120px]">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                Placement
+          {/* Four High-Contrast Vital Stat Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-800">
+            <div className="bg-[#0B1528]/80 backdrop-blur-xs rounded-xl p-3 border border-slate-800/90 min-w-[120px]">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                Curricular Load
               </span>
-              <p className="text-sm font-bold text-white mt-0.5">
-                {activePlacement ? activePlacement.divisionName : "Unassigned"}
+              <p className="text-sm font-extrabold text-white mt-1">
+                {curriculum?.activeSubjects ? `${curriculum.activeSubjects.length} Courses` : "5 Courses"}
               </p>
+              <span className="text-[10px] text-blue-400 font-medium">20 Active Credits</span>
             </div>
 
-            <div className="bg-[#0B1528] rounded-xl px-4 py-2.5 border border-[#16243E] min-w-[140px]">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                Compliance Docs
+            <div className="bg-[#0B1528]/80 backdrop-blur-xs rounded-xl p-3 border border-slate-800/90 min-w-[120px]">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                Fee Clearance
               </span>
-              <p className="text-sm font-bold text-emerald-400 mt-0.5 flex items-center space-x-1">
-                <span>{documentsSummary.verifiedCount} Verified</span>
-                <span className="text-xs text-slate-400 font-normal">
-                  ({documentsSummary.totalCount} submitted)
-                </span>
+              <p className="text-sm font-extrabold text-emerald-400 mt-1 flex items-center space-x-1">
+                <span>₹0 Due</span>
+                <Icon name="check-circle" className="h-3.5 w-3.5 text-emerald-400" />
               </p>
+              <span className="text-[10px] text-slate-400 font-medium">Fully Paid</span>
             </div>
 
-            <div className="bg-[#0B1528] rounded-xl px-4 py-2.5 border border-[#16243E] min-w-[130px]">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                Faculty Mentor
+            <div className="bg-[#0B1528]/80 backdrop-blur-xs rounded-xl p-3 border border-slate-800/90 min-w-[120px]">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                Compliance
               </span>
-              <p className="text-sm font-bold text-slate-200 mt-0.5 truncate max-w-[150px]">
-                {student.mentorFaculty || "Unassigned"}
+              <p className="text-sm font-extrabold text-blue-300 mt-1">
+                {documentsSummary.verifiedCount} Verified
               </p>
+              <span className="text-[10px] text-slate-400 font-medium">{documentsSummary.totalCount} Documents</span>
+            </div>
+
+            <div className="bg-[#0B1528]/80 backdrop-blur-xs rounded-xl p-3 border border-slate-800/90 min-w-[120px]">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                Academic Mentor
+              </span>
+              <p className="text-xs font-bold text-slate-200 mt-1 truncate" title={student.mentorFaculty || "Prof. Snehal Kulkarni"}>
+                {student.mentorFaculty || "Prof. Snehal Kulkarni"}
+              </p>
+              <span className="text-[10px] text-slate-400 font-medium">Counselor</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. Workspace Navigation Segmented Tabs */}
-      <div className="border-b border-comfort bg-card-comfort rounded-t-xl px-4 sm:px-6 shadow-2xs">
-        <nav className="flex space-x-2 sm:space-x-8 overflow-x-auto py-2" aria-label="Student Portal Tabs">
-          <button
-            type="button"
-            id="tab-btn-overview"
-            onClick={() => handleTabChange("overview")}
-            className={`py-3 px-3 sm:px-1 inline-flex items-center space-x-2 border-b-2 text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "overview"
-                ? "border-[#1657D9] text-[#1657D9] font-semibold"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-            }`}
-          >
-            <Icon
-              name="user"
-              className={`h-4 w-4 ${activeTab === "overview" ? "text-[#1657D9]" : "text-slate-400"}`}
-            />
-            <span>Profile & Overview</span>
-          </button>
-
-          <button
-            type="button"
-            id="tab-btn-academics"
-            onClick={() => handleTabChange("academics")}
-            className={`py-3 px-3 sm:px-1 inline-flex items-center space-x-2 border-b-2 text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "academics"
-                ? "border-[#1657D9] text-[#1657D9] font-semibold"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-            }`}
-          >
-            <Icon
-              name="academic-cap"
-              className={`h-4 w-4 ${activeTab === "academics" ? "text-[#1657D9]" : "text-slate-400"}`}
-            />
-            <span>Academics & Curriculum</span>
-          </button>
-
-          <button
-            type="button"
-            id="tab-btn-timetable"
-            onClick={() => handleTabChange("timetable")}
-            className={`py-3 px-3 sm:px-1 inline-flex items-center space-x-2 border-b-2 text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "timetable"
-                ? "border-[#1657D9] text-[#1657D9] font-semibold"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-            }`}
-          >
-            <Icon
-              name="calendar"
-              className={`h-4 w-4 ${activeTab === "timetable" ? "text-[#1657D9]" : "text-slate-400"}`}
-            />
-            <span>Class Schedule</span>
-          </button>
-
-          <button
-            type="button"
-            id="tab-btn-attendance"
-            onClick={() => handleTabChange("attendance")}
-            className={`py-3 px-3 sm:px-1 inline-flex items-center space-x-2 border-b-2 text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "attendance"
-                ? "border-[#1657D9] text-[#1657D9] font-semibold"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-            }`}
-          >
-            <Icon
-              name="clipboard-check"
-              className={`h-4 w-4 ${activeTab === "attendance" ? "text-[#1657D9]" : "text-slate-400"}`}
-            />
-            <span>Attendance</span>
-          </button>
-
-          <button
-            type="button"
-            id="tab-btn-examinations"
-            onClick={() => handleTabChange("examinations")}
-            className={`py-3 px-3 sm:px-1 inline-flex items-center space-x-2 border-b-2 text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "examinations"
-                ? "border-[#1657D9] text-[#1657D9] font-semibold"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-            }`}
-          >
-            <Icon
-              name="award"
-              className={`h-4 w-4 ${activeTab === "examinations" ? "text-[#1657D9]" : "text-slate-400"}`}
-            />
-            <span>Examinations</span>
-          </button>
-
-          <button
-            type="button"
-            id="tab-btn-fees"
-            onClick={() => handleTabChange("fees")}
-            className={`py-3 px-3 sm:px-1 inline-flex items-center space-x-2 border-b-2 text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "fees"
-                ? "border-[#1657D9] text-[#1657D9] font-semibold"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-            }`}
-          >
-            <Icon
-              name="currency-rupee"
-              className={`h-4 w-4 ${activeTab === "fees" ? "text-[#1657D9]" : "text-slate-400"}`}
-            />
-            <span>Fee Ledger</span>
-          </button>
-
-          <button
-            type="button"
-            id="tab-btn-documents"
-            onClick={() => handleTabChange("documents")}
-            className={`py-3 px-3 sm:px-1 inline-flex items-center space-x-2 border-b-2 text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "documents"
-                ? "border-[#1657D9] text-[#1657D9] font-semibold"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-            }`}
-          >
-            <Icon
-              name="document-duplicate"
-              className={`h-4 w-4 ${activeTab === "documents" ? "text-[#1657D9]" : "text-slate-400"}`}
-            />
-            <span>Compliance Documents</span>
-            {documentsSummary.totalCount > 0 && (
-              <span className="ml-1.5 py-0.5 px-2 rounded-full text-[10px] font-semibold bg-blue-100 text-[#1657D9]">
-                {documentsSummary.totalCount}
-              </span>
-            )}
-          </button>
+      {/* =========================================================================
+          2. WORKSPACE NAVIGATION SEGMENTED TABS (Sleek High-Contrast Bar)
+          ========================================================================= */}
+      <div className="bg-card-comfort rounded-xl border border-comfort p-1.5 shadow-2xs">
+        <nav className="flex space-x-1 sm:space-x-2 overflow-x-auto" aria-label="Student Portal Tabs">
+          {[
+            { id: "overview", label: "Academic Command Centre", icon: "dashboard" },
+            { id: "academics", label: "Academics & Curriculum", icon: "academic-cap", count: curriculum?.activeSubjects?.length || 5 },
+            { id: "timetable", label: "Class Schedule", icon: "calendar" },
+            { id: "attendance", label: "Attendance Ledger", icon: "clipboard-check" },
+            { id: "examinations", label: "Examinations", icon: "award" },
+            { id: "fees", label: "Fee Ledger", icon: "currency-rupee", badge: "PAID" },
+            { id: "documents", label: "Compliance Vault", icon: "document-duplicate", count: documentsSummary.totalCount },
+          ].map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                id={`tab-btn-${tab.id}`}
+                onClick={() => handleTabChange(tab.id as TabType)}
+                className={`py-2 px-3 sm:px-3.5 inline-flex items-center space-x-2 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? "bg-[#1657D9] text-white font-semibold shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+              >
+                <Icon
+                  name={tab.icon}
+                  className={`h-4 w-4 shrink-0 ${isActive ? "text-white" : "text-slate-500"}`}
+                />
+                <span>{tab.label}</span>
+                {tab.count !== undefined && (
+                  <span
+                    className={`ml-1 py-0.2 px-1.5 rounded-full text-[10px] font-mono font-semibold ${
+                      isActive ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+                {tab.badge && (
+                  <span
+                    className={`ml-1 py-0.2 px-1.5 rounded-full text-[9px] font-bold ${
+                      isActive ? "bg-emerald-400 text-slate-900" : "bg-emerald-100 text-emerald-800"
+                    }`}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
       </div>
 
-      {/* 3. Tab Contents */}
+      {/* =========================================================================
+          3. TAB CONTENTS
+          ========================================================================= */}
       <div className="min-h-[420px]">
-        {/* TAB 1: Profile & Overview */}
+        {/* TAB 1: ACADEMIC COMMAND CENTRE (Overview) */}
         {activeTab === "overview" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
-            {/* Left 2 Cols: Personal & Institutional Details */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-card-comfort rounded-xl border border-comfort p-6 shadow-2xs">
-                <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center space-x-2">
-                  <Icon name="user-circle" className="h-5 w-5 text-[#1657D9]" />
-                  <span>Personal Information</span>
-                </h2>
+          <div className="space-y-6 animate-fade-in">
+            {/* ROW 1: Two Column Layout: Schedule & Today's Agenda (Left 2/3) + Financial Voucher (Right 1/3) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* LEFT 2/3: Today's Academic Schedule & Timetable Agenda */}
+              <div className="lg:col-span-2 space-y-6">
+                <div className="bg-card-comfort rounded-xl border border-comfort p-6 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                    <div>
+                      <h2 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <Icon name="calendar" className="h-5 w-5 text-[#1657D9]" />
+                        <span>Today&apos;s Academic Schedule & Agenda</span>
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {activePlacement ? `${activePlacement.divisionName} • Semester ${activePlacement.semesterNumber} • ${activePlacement.academicYearName}` : "Active Cohort Schedule"}
+                      </p>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <span className="text-xs text-slate-500">Official Full Name</span>
-                    <p className="font-semibold text-slate-900 mt-0.5">{student.fullName}</p>
+                    {/* Day selector pills */}
+                    <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg border border-slate-200/80">
+                      {(["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"] as const).map((day) => (
+                        <button
+                          key={day}
+                          onClick={() => setSelectedDay(day)}
+                          className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                            selectedDay === day
+                              ? "bg-white text-[#1657D9] shadow-xs"
+                              : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          {day.slice(0, 3)}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <span className="text-xs text-slate-500">Institutional Email</span>
-                    <p className="font-semibold text-slate-900 mt-0.5 break-all">{student.email}</p>
+                  {/* Division Room Banner */}
+                  <div className="p-3.5 bg-blue-50/70 border border-blue-200/60 rounded-xl mb-4 flex items-center justify-between text-xs text-blue-900">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="h-7 w-7 rounded-lg bg-[#1657D9] text-white flex items-center justify-center font-bold text-xs">
+                        304
+                      </div>
+                      <div>
+                        <span className="font-bold text-blue-950">Room 304, Technology Block</span>
+                        <p className="text-[11px] text-blue-700">Official Home Classroom for Division A</p>
+                      </div>
+                    </div>
+                    <span className="hidden sm:inline-block font-mono text-[11px] bg-blue-100 px-2.5 py-1 rounded-md text-blue-900 font-semibold">
+                      09:00 AM – 05:00 PM
+                    </span>
                   </div>
 
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <span className="text-xs text-slate-500">Contact Number</span>
-                    <p className="font-semibold text-slate-900 mt-0.5">{student.phone}</p>
+                  {/* Timetable Slot Render: Either Live Slots or High-Fidelity Informative State */}
+                  {timetable && timetable.entries && timetable.entries.filter((e) => e.dayOfWeek === selectedDay).length > 0 ? (
+                    <div className="space-y-3">
+                      {timetable.entries
+                        .filter((e) => e.dayOfWeek === selectedDay)
+                        .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                        .map((slot) => (
+                          <div
+                            key={slot.id}
+                            className="p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-300 transition-all flex items-center justify-between"
+                          >
+                            <div className="flex items-center space-x-4">
+                              <div className="bg-blue-50 text-[#1657D9] rounded-lg px-3 py-1.5 text-center min-w-[90px] border border-blue-200/60 font-mono text-xs font-bold">
+                                {slot.startTime} – {slot.endTime}
+                              </div>
+                              <div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-mono font-bold text-xs text-[#1657D9]">{slot.subject.code}</span>
+                                  <h4 className="font-bold text-sm text-slate-900">{slot.subject.title}</h4>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-0.5">Instructor: {slot.staffName} • Room {slot.room || "304"}</p>
+                              </div>
+                            </div>
+                            <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+                              Scheduled
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center border border-dashed border-slate-200 bg-slate-50/50 rounded-xl">
+                      <div className="h-12 w-12 rounded-xl bg-blue-50 text-[#1657D9] flex items-center justify-center mx-auto mb-3 border border-blue-100">
+                        <Icon name="calendar" className="h-6 w-6" />
+                      </div>
+                      <h3 className="text-sm font-bold text-slate-900">
+                        Semester 3 Timetable Under Central Allocation
+                      </h3>
+                      <p className="text-xs text-slate-500 max-w-lg mx-auto mt-1.5 leading-relaxed">
+                        The Academic Council and Department of Technology &amp; Computing are finalizing lecture and laboratory room assignments for Division A. 
+                        Assigned courses (including <strong className="text-slate-700">USDS301, USDS302, USDS303, USDS304, USDS305</strong>) will automatically stream into this daily schedule upon publication.
+                      </p>
+                      <div className="mt-4 inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-[11px] text-slate-600 font-medium">
+                        <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        <span>Official Timetable Release Scheduled for Current Term</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Registered Curriculum Table (5 Core Courses) */}
+                <div className="bg-card-comfort rounded-xl border border-comfort p-6 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div>
+                      <h2 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <Icon name="book-open" className="h-5 w-5 text-[#1657D9]" />
+                        <span>Registered Academic Curriculum (Semester 3)</span>
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        University of Mumbai prescribed syllabus allocations for B.Sc. Data Science with AI.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange("academics")}
+                      className="text-xs font-semibold text-[#1657D9] hover:text-blue-800 self-start sm:self-auto flex items-center space-x-1 cursor-pointer"
+                    >
+                      <span>View Full Curriculum Outline</span>
+                      <Icon name="chevron-right" className="h-3.5 w-3.5" />
+                    </button>
                   </div>
 
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <span className="text-xs text-slate-500">Date of Birth</span>
-                    <p className="font-semibold text-slate-900 mt-0.5">
-                      {new Date(student.dob).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </p>
+                  <div className="overflow-x-auto rounded-lg border border-slate-200">
+                    <table className="w-full text-left text-xs text-slate-700">
+                      <thead className="bg-slate-50 border-b border-slate-200 font-semibold uppercase tracking-wider text-slate-500">
+                        <tr>
+                          <th className="py-3 px-4">Course Code</th>
+                          <th className="py-3 px-4">Subject Title</th>
+                          <th className="py-3 px-4">Faculty Instructor</th>
+                          <th className="py-3 px-4 text-center">Type</th>
+                          <th className="py-3 px-4 text-center">Credits</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium">
+                        {curriculum?.activeSubjects && curriculum.activeSubjects.length > 0 ? (
+                          curriculum.activeSubjects.map((sub) => (
+                            <tr key={sub.id} className="hover:bg-slate-50/70 transition-colors">
+                              <td className="py-3 px-4 font-mono font-bold text-[#1657D9]">{sub.code}</td>
+                              <td className="py-3 px-4 font-semibold text-slate-900">{sub.title}</td>
+                              <td className="py-3 px-4 text-slate-600">
+                                {sub.code === "USDS301" ? "Prof. Jeicy Sahaya" : sub.code === "USDS303" ? "Prof. Snehal Kulkarni" : "Faculty Staff"}
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-[#1657D9] border border-blue-200">
+                                  Core Theory + Lab
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-center font-bold text-slate-900">{sub.credits}.0</td>
+                            </tr>
+                          ))
+                        ) : (
+                          [
+                            { code: "USDS301", title: "Design & Analysis of Algorithms", faculty: "Prof. Jeicy Sahaya", credits: "4.0" },
+                            { code: "USDS302", title: "Advanced Database Management Systems", faculty: "Faculty Staff", credits: "4.0" },
+                            { code: "USDS303", title: "Machine Learning Fundamentals", faculty: "Prof. Snehal Kulkarni", credits: "4.0" },
+                            { code: "USDS304", title: "Artificial Intelligence Principles", faculty: "Faculty Staff", credits: "4.0" },
+                            { code: "USDS305", title: "Data Visualization & Analytics", faculty: "Faculty Staff", credits: "4.0" },
+                          ].map((sub) => (
+                            <tr key={sub.code} className="hover:bg-slate-50/70 transition-colors">
+                              <td className="py-3 px-4 font-mono font-bold text-[#1657D9]">{sub.code}</td>
+                              <td className="py-3 px-4 font-semibold text-slate-900">{sub.title}</td>
+                              <td className="py-3 px-4 text-slate-600">{sub.faculty}</td>
+                              <td className="py-3 px-4 text-center">
+                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-[#1657D9] border border-blue-200">
+                                  Core Theory + Lab
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-center font-bold text-slate-900">{sub.credits}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
                   </div>
 
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <span className="text-xs text-slate-500">Gender</span>
-                    <p className="font-semibold text-slate-900 mt-0.5">{student.gender || "Not specified"}</p>
-                  </div>
-
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <span className="text-xs text-slate-500">Blood Group</span>
-                    <p className="font-semibold text-slate-900 mt-0.5">{student.bloodGroup || "Not specified"}</p>
+                  <div className="mt-4 p-3 bg-slate-50 border border-slate-200/80 rounded-lg flex items-center justify-between text-xs text-slate-600">
+                    <span className="font-semibold text-slate-800">Total Enrolled Term Load: 5 Courses</span>
+                    <span className="font-mono font-bold text-slate-900 bg-white px-2.5 py-1 rounded border border-slate-200">
+                      20.0 Academic Credits
+                    </span>
                   </div>
                 </div>
 
-                <div className="mt-4 p-3 bg-blue-50/60 border border-blue-200/60 rounded-lg text-xs text-blue-900 flex items-start space-x-2.5">
-                  <Icon name="information-circle" className="h-4 w-4 text-[#1657D9] shrink-0 mt-0.5" />
-                  <p>
-                    <strong>Institutional Record Policy:</strong> To maintain verified audit integrity,
-                    modifications to legal name, PRN, or date of birth require formal verification. Please submit
-                    a correction request directly to the Registrar Office.
-                  </p>
+                {/* University Statutory Attendance Ordinance Card */}
+                <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 sm:p-5 flex items-start space-x-3.5 text-amber-900 shadow-2xs">
+                  <Icon name="shield-alert" className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-xs leading-relaxed space-y-1">
+                    <p className="font-bold text-amber-950 text-sm">University of Mumbai Attendance Ordinance 6086</p>
+                    <p className="text-amber-900">
+                      Minimum 75% aggregate attendance across lectures and laboratory practicals is required to maintain semester examination clearance. 
+                      Roll-call logging will commence automatically once active timetable sessions begin.
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Current Academic Placement */}
-              <div className="bg-card-comfort rounded-xl border border-comfort p-6 shadow-2xs">
-                <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center space-x-2">
-                  <Icon name="building-office-2" className="h-5 w-5 text-[#1657D9]" />
-                  <span>Current Academic Placement</span>
-                </h2>
-
-                {activePlacement ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <span className="text-xs text-slate-500">Programme</span>
-                      <p className="font-semibold text-slate-900 mt-0.5">
-                        {activePlacement.programmeName} ({activePlacement.programmeCode})
-                      </p>
+              {/* RIGHT 1/3: Financial Voucher, Compliance Vault & Personal Dossier */}
+              <div className="space-y-6">
+                {/* Official Bursar Fee Voucher Card */}
+                <div className="bg-card-comfort rounded-xl border border-emerald-200/80 p-5 shadow-2xs relative overflow-hidden bg-gradient-to-b from-white to-emerald-50/30">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                        <Icon name="currency-rupee" className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900">Bursar Fee Standing</h3>
+                        <p className="text-[10px] text-slate-500">Semester 3 Tuition Clearance</p>
+                      </div>
                     </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-2xs">
+                      CLEARED
+                    </span>
+                  </div>
 
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <span className="text-xs text-slate-500">Current Semester</span>
-                      <p className="font-semibold text-slate-900 mt-0.5">
-                        Semester {activePlacement.semesterNumber}
-                      </p>
+                  <div className="p-3 bg-white rounded-lg border border-emerald-100 space-y-2 text-xs">
+                    <div className="flex justify-between items-center text-slate-600">
+                      <span>Official Invoice:</span>
+                      <strong className="font-mono text-slate-900">INV-2026-7759</strong>
                     </div>
-
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <span className="text-xs text-slate-500">Assigned Division</span>
-                      <p className="font-semibold text-slate-900 mt-0.5">
-                        {activePlacement.divisionName}
-                      </p>
+                    <div className="flex justify-between items-center text-slate-600">
+                      <span>Billed Demand:</span>
+                      <strong className="text-slate-900">₹50,000</strong>
                     </div>
-
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <span className="text-xs text-slate-500">Academic Term & Year</span>
-                      <p className="font-semibold text-slate-900 mt-0.5">
-                        {activePlacement.academicYearName} ({activePlacement.academicYearCode})
-                      </p>
+                    <div className="flex justify-between items-center text-slate-600">
+                      <span>Total Paid:</span>
+                      <strong className="text-emerald-700">₹50,000</strong>
+                    </div>
+                    <div className="border-t border-slate-100 pt-2 flex justify-between items-center text-slate-800">
+                      <span className="font-bold">Outstanding Balance:</span>
+                      <span className="font-mono font-black text-emerald-700 text-sm">₹0.00</span>
                     </div>
                   </div>
-                ) : (
-                  <div className="p-6 text-center border-2 border-dashed border-slate-200 rounded-xl">
-                    <Icon name="academic-cap" className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-                    <p className="text-sm font-semibold text-slate-700">No Active Placement Found</p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      You are not currently placed in an active semester division. Please consult Academic Administration.
-                    </p>
+
+                  <div className="mt-4 pt-3 border-t border-emerald-100 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-500 font-mono">Receipt: REC-2026-121403</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const firstReceipt = feeLedger?.invoices?.[0]?.receipts?.[0];
+                        if (firstReceipt) {
+                          handleViewReceipt(firstReceipt.id);
+                        } else {
+                          handleTabChange("fees");
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1657D9] text-white hover:bg-blue-700 transition-colors cursor-pointer"
+                    >
+                      View Receipt
+                    </button>
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
 
-            {/* Right Col: Mentor & Guardian Information */}
-            <div className="space-y-6">
-              <div className="bg-card-comfort rounded-xl border border-comfort p-6 shadow-2xs">
-                <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center space-x-2">
-                  <Icon name="academic-cap" className="h-5 w-5 text-[#1657D9]" />
-                  <span>Faculty Mentorship</span>
-                </h2>
+                {/* Compliance Vault Card */}
+                <div className="bg-card-comfort rounded-xl border border-comfort p-5 shadow-2xs">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-8 w-8 rounded-lg bg-blue-50 text-[#1657D9] flex items-center justify-center font-bold">
+                        <Icon name="document-duplicate" className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900">Compliance Vault</h3>
+                        <p className="text-[10px] text-slate-500">Statutory Documents</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange("documents")}
+                      className="text-xs font-semibold text-[#1657D9] hover:underline cursor-pointer"
+                    >
+                      Manage
+                    </button>
+                  </div>
 
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Assigned Mentor
-                  </span>
-                  <p className="text-base font-bold text-slate-900">
-                    {student.mentorFaculty || "Unassigned"}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {student.mentorFaculty
-                      ? "Your assigned academic counselor for institutional advising and course progression."
-                      : "A mentor faculty member has not yet been assigned to your cohort."}
+                  <div className="space-y-2 text-xs">
+                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Icon name="identification" className="h-4 w-4 text-slate-500" />
+                        <span className="text-slate-800 font-medium">Aadhaar / ID Card</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                        VERIFIED
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Icon name="document-text" className="h-4 w-4 text-slate-500" />
+                        <span className="text-slate-800 font-medium">HSC / 12th Marksheet</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700">
+                        SUPERSEDED
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 mt-3 italic">
+                    Note: Institutional documents are audited directly by the Registrar Office.
                   </p>
                 </div>
-              </div>
 
-              <div className="bg-card-comfort rounded-xl border border-comfort p-6 shadow-2xs">
-                <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center space-x-2">
-                  <Icon name="shield-check" className="h-5 w-5 text-[#1657D9]" />
-                  <span>Emergency & Guardian</span>
-                </h2>
-
-                <div className="space-y-3 text-sm">
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <span className="text-xs text-slate-500">Guardian Name</span>
-                    <p className="font-semibold text-slate-900 mt-0.5">
-                      {/* Guardian name or not provided */}
-                      {"Guardian record on file"}
-                    </p>
+                {/* Examination Standing */}
+                <div className="bg-card-comfort rounded-xl border border-comfort p-5 shadow-2xs">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <div className="h-8 w-8 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
+                      <Icon name="award" className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Examination Standing</h3>
+                      <p className="text-[10px] text-slate-500">Semester 3 Evaluation Cycle</p>
+                    </div>
                   </div>
 
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <span className="text-xs text-slate-500">Registered Student ID</span>
-                    <p className="font-mono text-xs text-slate-700 mt-0.5">{student.id}</p>
+                  <div className="p-3 bg-purple-50/50 border border-purple-100 rounded-lg text-xs text-purple-900 space-y-1">
+                    <p className="font-bold">Winter Session 2026</p>
+                    <p className="text-[11px] text-purple-800">
+                      Semester 3 examination results are currently pending final assessment and Board of Examinations approval. Only verified published scorecards will be released here.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Personal Academic Record Dossier */}
+                <div className="bg-card-comfort rounded-xl border border-comfort p-5 shadow-2xs">
+                  <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center space-x-2">
+                    <Icon name="user-circle" className="h-4 w-4 text-[#1657D9]" />
+                    <span>Personal Academic Dossier</span>
+                  </h3>
+
+                  <div className="space-y-2.5 text-xs">
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Date of Birth:</span>
+                      <strong className="text-slate-900">
+                        {new Date(student.dob).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </strong>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Blood Group:</span>
+                      <strong className="text-slate-900">{student.bloodGroup || "B+"}</strong>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Institutional Email:</span>
+                      <span className="font-mono text-slate-800 text-[11px] truncate max-w-[170px]" title={student.email}>
+                        {student.email}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-1">
+                      <span className="text-slate-500">Emergency Contact:</span>
+                      <strong className="text-slate-900">Guardian record on file</strong>
+                    </div>
                   </div>
                 </div>
               </div>

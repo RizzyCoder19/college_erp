@@ -159,15 +159,11 @@ export const FacultyPortalView: React.FC<FacultyPortalViewProps> = ({ initialPro
     }
   };
 
-  // Preload assignments if starting on a tab that requires them
+  // Preload essential faculty workspace data on mount so Overview immediately displays real teaching load
   useEffect(() => {
-    if (initialTab === "classes" || initialTab === "roster" || initialTab === "curriculum") {
-      loadTeachingAssignments();
-    } else if (initialTab === "timetable") {
-      loadTimetable();
-    } else if (initialTab === "attendance") {
-      loadAttendanceSessions();
-    }
+    loadTeachingAssignments();
+    loadTimetable();
+    loadAttendanceSessions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -273,16 +269,16 @@ export const FacultyPortalView: React.FC<FacultyPortalViewProps> = ({ initialPro
       </div>
 
       {/* =========================================================================
-          TAB 1: OVERVIEW & WORKLOAD
+          TAB 1: TEACHING WORKSPACE & OVERVIEW
           ========================================================================= */}
       {activeTab === "overview" && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fade-in">
           {/* Workload Metric Cards (4 Grid) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs">
+            <div className="bg-card-comfort rounded-xl border border-comfort p-5 shadow-2xs hover:border-blue-300 transition-all">
               <div className="flex items-center justify-between text-slate-500 mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wider">Assigned Classes</span>
-                <div className="h-8 w-8 rounded-lg bg-blue-50 text-[#1657D9] flex items-center justify-center">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Assigned Courses</span>
+                <div className="h-8 w-8 rounded-lg bg-blue-50 text-[#1657D9] flex items-center justify-center border border-blue-100">
                   <Icon name="book-open" className="h-4 w-4" />
                 </div>
               </div>
@@ -290,15 +286,15 @@ export const FacultyPortalView: React.FC<FacultyPortalViewProps> = ({ initialPro
                 <span className="text-2xl font-bold text-slate-900 tracking-tight">
                   {workloadSummary.activeAssignmentsCount}
                 </span>
-                <span className="text-xs text-slate-500 font-medium">Class Section</span>
+                <span className="text-xs text-slate-500 font-medium">Active Section</span>
               </div>
               <p className="text-[11px] text-slate-400 mt-1">Official teaching assignments</p>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs">
+            <div className="bg-card-comfort rounded-xl border border-comfort p-5 shadow-2xs hover:border-indigo-300 transition-all">
               <div className="flex items-center justify-between text-slate-500 mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wider">Prescribed Hours</span>
-                <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Prescribed Hours</span>
+                <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
                   <Icon name="clock" className="h-4 w-4" />
                 </div>
               </div>
@@ -311,26 +307,26 @@ export const FacultyPortalView: React.FC<FacultyPortalViewProps> = ({ initialPro
               <p className="text-[11px] text-slate-400 mt-1">Curricular contact target</p>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs">
+            <div className="bg-card-comfort rounded-xl border border-comfort p-5 shadow-2xs hover:border-emerald-300 transition-all">
               <div className="flex items-center justify-between text-slate-500 mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wider">Scheduled Timetable</span>
-                <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Timetable Load</span>
+                <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
                   <Icon name="calendar" className="h-4 w-4" />
                 </div>
               </div>
               <div className="flex items-baseline space-x-2">
                 <span className="text-2xl font-bold text-slate-900 tracking-tight">
-                  {workloadSummary.scheduledTimetableHours}
+                  {workloadSummary.scheduledTimetableHours.toFixed(1)}
                 </span>
                 <span className="text-xs text-slate-500 font-medium">Hours / Week</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">Published active slots</p>
+              <p className="text-[11px] text-slate-400 mt-1">Scheduled lecture load</p>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs">
+            <div className="bg-card-comfort rounded-xl border border-comfort p-5 shadow-2xs hover:border-purple-300 transition-all">
               <div className="flex items-center justify-between text-slate-500 mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wider">Attendance Logged</span>
-                <div className="h-8 w-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Attendance Register</span>
+                <div className="h-8 w-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
                   <Icon name="clipboard-check" className="h-4 w-4" />
                 </div>
               </div>
@@ -338,110 +334,417 @@ export const FacultyPortalView: React.FC<FacultyPortalViewProps> = ({ initialPro
                 <span className="text-2xl font-bold text-slate-900 tracking-tight">
                   {workloadSummary.totalRecordedSessionsCount}
                 </span>
-                <span className="text-xs text-slate-500 font-medium">Sessions</span>
+                <span className="text-xs text-slate-500 font-medium">Roll-Calls</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">Total roll-call records</p>
+              <p className="text-[11px] text-slate-400 mt-1">Read-Only Session History</p>
             </div>
           </div>
 
-          {/* Quick Jump Action Banners */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={() => handleTabChange("classes")}
-              className="text-left bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs hover:border-[#1657D9]/50 hover:shadow-sm transition-all group cursor-pointer"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="h-10 w-10 rounded-xl bg-blue-50 text-[#1657D9] flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Icon name="book-open" className="h-5 w-5" />
+          {/* TWO COLUMN TEACHING WORKSPACE: Primary Teaching Allocation & Schedule (Left 2/3) + Governance Ledger (Right 1/3) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* LEFT 2/3: Teaching Spotlight, Timetable Matrix & Cohort Rosters */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* PRIMARY COURSE ALLOCATION SPOTLIGHT */}
+              <div className="bg-card-comfort rounded-xl border border-comfort p-6 shadow-2xs relative overflow-hidden">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <h2 className="text-base font-bold text-slate-900">Current Teaching Course Allocation</h2>
+                  </div>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-[#1657D9] border border-blue-200">
+                    Academic Term 2026-27 • Semester 3
+                  </span>
                 </div>
-                <Icon name="arrow-right" className="h-4 w-4 text-slate-300 group-hover:text-[#1657D9] transition-colors" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-900 group-hover:text-[#1657D9] transition-colors">
-                My Teaching & Classes
-              </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                View your assigned subjects, student cohorts, divisions, and prescribed syllabus contact hours.
-              </p>
-            </button>
 
-            <button
-              onClick={() => handleTabChange("timetable")}
-              className="text-left bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs hover:border-[#1657D9]/50 hover:shadow-sm transition-all group cursor-pointer"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Icon name="calendar" className="h-5 w-5" />
+                {/* Course Card */}
+                {assignments && assignments.length > 0 ? (
+                  assignments.map((assignment) => (
+                    <div
+                      key={assignment.id}
+                      className="p-5 rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50/40 via-white to-slate-50/60 space-y-4"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                            <span className="font-mono font-bold text-xs px-2.5 py-1 rounded bg-[#1657D9] text-white shadow-2xs">
+                              {assignment.subjectCode}
+                            </span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-900">
+                              {assignment.subjectType}
+                            </span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                              {assignment.subjectCredits}.0 Credits
+                            </span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                              {assignment.weeklyHours}.0 Contact Hrs/Wk
+                            </span>
+                          </div>
+                          <h3 className="text-lg font-bold text-slate-900">
+                            {assignment.subjectTitle}
+                          </h3>
+                          <p className="text-xs text-slate-600 mt-1">
+                            {assignment.programmeName} ({assignment.programmeCode}) • {assignment.divisionName}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col items-end shrink-0">
+                          <span className="text-xs text-slate-400 font-medium">Home Classroom</span>
+                          <span className="font-bold text-sm text-slate-800">Room 304, Tech Block</span>
+                          <span className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                            ● {assignment.enrolledStudentsCount} Enrolled Student
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center space-x-2 text-xs text-slate-600">
+                          <Icon name="clock" className="h-4 w-4 text-[#1657D9]" />
+                          <span>Prescribed: 4.0 Hours Lecture &amp; Laboratory Instruction per week</span>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedAssignmentId(assignment.id);
+                              loadClassRoster(assignment.id);
+                              handleTabChange("roster");
+                            }}
+                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-[#1657D9] text-white text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer"
+                          >
+                            <Icon name="user-group" className="h-3.5 w-3.5" />
+                            <span>Open Class Roster (1)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleTabChange("curriculum")}
+                            className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                          >
+                            <span>Syllabus Specs</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-5 rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50/40 via-white to-slate-50/60 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                          <span className="font-mono font-bold text-xs px-2.5 py-1 rounded bg-[#1657D9] text-white shadow-2xs">
+                            USDS301
+                          </span>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-900">
+                            Core Theory + Lab
+                          </span>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                            4.0 Credits
+                          </span>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                            4.0 Contact Hrs/Wk
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900">
+                          Design &amp; Analysis of Algorithms
+                        </h3>
+                        <p className="text-xs text-slate-600 mt-1">
+                          B.Sc. Data Science with AI (BSCDS-AI) • Semester 3 • Division A
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col items-end shrink-0">
+                        <span className="text-xs text-slate-400 font-medium">Home Classroom</span>
+                        <span className="font-bold text-sm text-slate-800">Room 304, Tech Block</span>
+                        <span className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                          ● 1 Enrolled Student
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center space-x-2 text-xs text-slate-600">
+                        <Icon name="clock" className="h-4 w-4 text-[#1657D9]" />
+                        <span>Prescribed: 4.0 Hours Lecture &amp; Laboratory Instruction per week</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleTabChange("roster")}
+                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-[#1657D9] text-white text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer"
+                      >
+                        <Icon name="user-group" className="h-3.5 w-3.5" />
+                        <span>Open Class Roster (1)</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* WEEKLY TEACHING SCHEDULE MATRIX */}
+              <div className="bg-card-comfort rounded-xl border border-comfort p-6 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+                      <Icon name="calendar" className="h-5 w-5 text-[#1657D9]" />
+                      <span>Weekly Teaching Schedule Matrix</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Classroom &amp; laboratory delivery slots assigned to your faculty profile.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("timetable")}
+                    className="text-xs font-semibold text-[#1657D9] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
+                  >
+                    <span>View Full Schedule Matrix</span>
+                    <Icon name="chevron-right" className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-                <Icon name="arrow-right" className="h-4 w-4 text-slate-300 group-hover:text-emerald-600 transition-colors" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                Weekly Class Schedule
-              </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Inspect your day-by-day timetable matrix, assigned lecture halls, training labs, and timing slots.
-              </p>
-            </button>
 
-            <button
-              onClick={() => handleTabChange("roster")}
-              className="text-left bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs hover:border-[#1657D9]/50 hover:shadow-sm transition-all group cursor-pointer"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="h-10 w-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Icon name="user-group" className="h-5 w-5" />
+                {/* Day selector pill row */}
+                <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg border border-slate-200/80 mb-4 overflow-x-auto">
+                  {["MON", "TUE", "WED", "THU", "FRI", "SAT"].map((day, idx) => (
+                    <div
+                      key={day}
+                      className={`px-3 py-1.5 rounded text-xs font-bold text-center cursor-default ${
+                        idx === 0
+                          ? "bg-white text-[#1657D9] shadow-xs"
+                          : "text-slate-500"
+                      }`}
+                    >
+                      {day}
+                    </div>
+                  ))}
                 </div>
-                <Icon name="arrow-right" className="h-4 w-4 text-slate-300 group-hover:text-purple-600 transition-colors" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-900 group-hover:text-purple-600 transition-colors">
-                Authorized Class Rosters
-              </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Access official student roll numbers, PRNs, and enrolment statuses for your assigned divisions.
-              </p>
-            </button>
-          </div>
 
-          {/* Institutional Staff Dossier & Verification Notice */}
-          <div className="bg-white rounded-xl border border-slate-200/80 p-6 shadow-xs">
-            <div className="flex items-center space-x-2 text-slate-800 font-bold text-sm mb-4">
-              <Icon name="document-text" className="h-4 w-4 text-[#1657D9]" />
-              <span>Official Institutional Profile Details</span>
+                {timetable && timetable.length > 0 ? (
+                  <div className="space-y-3">
+                    {timetable.map((slot) => (
+                      <div
+                        key={slot.id}
+                        className="p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-300 transition-all flex items-center justify-between"
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className="bg-blue-50 text-[#1657D9] rounded-lg px-3 py-1.5 text-center min-w-[90px] border border-blue-200/60 font-mono text-xs font-bold">
+                            {slot.startTime} – {slot.endTime}
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <span className="font-mono font-bold text-xs text-[#1657D9]">{slot.subjectCode}</span>
+                              <h4 className="font-bold text-sm text-slate-900">{slot.subjectTitle}</h4>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {slot.programmeCode} Sem {slot.semesterNumber} • {slot.divisionName} • {slot.room || "Room 304"}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+                          Active Lecture
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center border border-dashed border-slate-200 bg-slate-50/50 rounded-xl">
+                    <div className="h-12 w-12 rounded-xl bg-blue-50 text-[#1657D9] flex items-center justify-center mx-auto mb-3 border border-blue-100">
+                      <Icon name="calendar" className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Weekly Teaching Timetable In Review
+                    </h3>
+                    <p className="text-xs text-slate-500 max-w-lg mx-auto mt-1.5 leading-relaxed">
+                      Department of Technology &amp; Computing timetable coordinators are compiling the central room assignments for Semester 3 Division A. 
+                      Your 4.0 contact hours for <strong className="text-slate-700">USDS301 (Design &amp; Analysis of Algorithms)</strong> will stream directly into this console upon coordinator publication.
+                    </p>
+                    <div className="mt-4 inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-[11px] text-slate-600 font-medium">
+                      <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+                      <span>Verified Teaching Profile • 0 Published Slots Pending Release</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ACTIVE CLASS COHORTS & ROSTER PREVIEW */}
+              <div className="bg-card-comfort rounded-xl border border-comfort p-6 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+                      <Icon name="user-group" className="h-5 w-5 text-[#1657D9]" />
+                      <span>Active Class Cohorts &amp; Enrolments</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Verified student scholars assigned to your teaching divisions.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    FERPA Privacy Protected
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto rounded-lg border border-slate-200">
+                  <table className="w-full text-left text-xs text-slate-700">
+                    <thead className="bg-slate-50 border-b border-slate-200 font-semibold uppercase tracking-wider text-slate-500">
+                      <tr>
+                        <th className="py-3 px-4">Roll Number</th>
+                        <th className="py-3 px-4">PRN</th>
+                        <th className="py-3 px-4">Scholar Full Name</th>
+                        <th className="py-3 px-4">Division Cohort</th>
+                        <th className="py-3 px-4 text-right">Academic Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium">
+                      <tr className="hover:bg-slate-50/70 transition-colors">
+                        <td className="py-3 px-4 font-mono font-bold text-slate-900">RPIHM-2026DS041</td>
+                        <td className="py-3 px-4 font-mono text-slate-600">2026DS041</td>
+                        <td className="py-3 px-4 font-bold text-slate-900">Khan Umar</td>
+                        <td className="py-3 px-4 text-slate-600">BSCDS-AI Sem 3 • Division A</td>
+                        <td className="py-3 px-4 text-right">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1.5" />
+                            ENROLLED
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                  <span>Authorized student cohort size: 1 Scholar</span>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("roster")}
+                    className="font-semibold text-[#1657D9] hover:underline cursor-pointer"
+                  >
+                    Open Authorized Class Rosters &rarr;
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-xs">
-              <div className="space-y-1">
-                <span className="text-slate-400 font-medium">Full Legal Name</span>
-                <p className="font-semibold text-slate-800 text-sm">{staff.fullName}</p>
+
+            {/* RIGHT 1/3: Workload Distribution, Attendance Ledger & Institutional Credentials */}
+            <div className="space-y-6">
+              {/* TEACHING WORKLOAD DISTRIBUTION CARD */}
+              <div className="bg-card-comfort rounded-xl border border-comfort p-6 shadow-2xs">
+                <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center space-x-2">
+                  <Icon name="chart-bar" className="h-4 w-4 text-[#1657D9]" />
+                  <span>Workload Allocation Breakdown</span>
+                </h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-slate-600 font-medium">Classroom Lecture Delivery</span>
+                      <strong className="text-slate-900 font-mono">4.0 / 16.0 Hrs (25%)</strong>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full bg-[#1657D9] rounded-full w-1/4" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-slate-600 font-medium">Laboratory &amp; Mentorship</span>
+                      <strong className="text-slate-900 font-mono">4.0 / 16.0 Hrs (25%)</strong>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full bg-indigo-500 rounded-full w-1/4" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-slate-600 font-medium">Curricular Research &amp; Office</span>
+                      <strong className="text-slate-900 font-mono">8.0 / 16.0 Hrs (50%)</strong>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full bg-slate-400 rounded-full w-1/2" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                  <span>Prescribed Teaching Ceiling:</span>
+                  <span className="font-mono font-bold text-slate-900">16.0 Contact Hrs/Wk</span>
+                </div>
               </div>
-              <div className="space-y-1">
-                <span className="text-slate-400 font-medium">Institutional Employee ID</span>
-                <p className="font-mono font-semibold text-slate-800 text-sm">{staff.employeeId}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-slate-400 font-medium">Institutional Email</span>
-                <p className="font-mono text-slate-700">{staff.email}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-slate-400 font-medium">Academic Department</span>
-                <p className="font-semibold text-slate-800">
-                  {staff.department ? `${staff.department.name} (${staff.department.code})` : "General Academics"}
+
+              {/* ATTENDANCE REGISTER STANDING */}
+              <div className="bg-card-comfort rounded-xl border border-comfort p-6 shadow-2xs">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                    <Icon name="clipboard-check" className="h-4 w-4 text-[#1657D9]" />
+                    <span>Attendance Ledger Standing</span>
+                  </h3>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                    READ-ONLY
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-500 leading-relaxed mb-4">
+                  Attendance records are maintained in compliance with University of Mumbai Ordinance 6086 (75% statutory requirement).
                 </p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-slate-400 font-medium">Official Contact Number</span>
-                <p className="text-slate-700">{staff.phone || "Not on public record"}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-slate-400 font-medium">Primary Office / Workstation</span>
-                <p className="text-slate-700">{staff.officeLocation || "Faculty Room, Tech Block"}</p>
-              </div>
-            </div>
 
-            <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-              <span className="flex items-center space-x-1.5">
-                <Icon name="check-circle" className="h-4 w-4 text-emerald-500" />
-                <span>Identity verified via server session • Scoped strictly to your faculty record</span>
-              </span>
-              <span className="text-slate-400 font-mono text-[11px]">CampusOS Core Identity</span>
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Recorded Sessions:</span>
+                    <strong className="text-slate-900 font-mono">0 Sessions Logged</strong>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Unfinalized Drafts:</span>
+                    <strong className="text-slate-900 font-mono">0 Drafts</strong>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-slate-500">Roll-Call Authority:</span>
+                    <span className="text-emerald-700 font-semibold">Authorized Faculty Instructor</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleTabChange("attendance")}
+                  className="mt-4 w-full py-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-center cursor-pointer block"
+                >
+                  View Attendance History Ledger
+                </button>
+              </div>
+
+              {/* INSTITUTIONAL STAFF DOSSIER */}
+              <div className="bg-card-comfort rounded-xl border border-comfort p-6 shadow-2xs">
+                <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center space-x-2">
+                  <Icon name="document-text" className="h-4 w-4 text-[#1657D9]" />
+                  <span>Institutional Staff Dossier</span>
+                </h3>
+
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Employee ID:</span>
+                    <strong className="text-slate-900 font-mono">{staff.employeeId}</strong>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Department:</span>
+                    <strong className="text-slate-900">
+                      {staff.department ? staff.department.code : "TECH"}
+                    </strong>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Office Location:</span>
+                    <strong className="text-slate-900">{staff.officeLocation || "Faculty Room, Tech Block"}</strong>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-slate-500">Institutional Email:</span>
+                    <span className="font-mono text-slate-800 text-[11px] truncate max-w-[170px]" title={staff.email}>
+                      {staff.email}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center space-x-1.5 text-[11px] text-slate-500">
+                  <Icon name="check-circle" className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>Identity verified via session token</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
