@@ -339,7 +339,7 @@ async function main() {
   assert(assignmentsRes.success, "Teaching assignments retrieve successfully");
   assert(assignmentsRes.data?.length === 1, "Faculty has exactly 1 teaching assignment");
   assert(assignmentsRes.data?.[0].weeklyHours === 4, "Assigned weekly hours is 4");
-  assert(assignmentsRes.data?.[0].enrolledStudentsCount >= 1, "Enrolled students count reflects active enrolments");
+  assert((assignmentsRes.data?.[0]?.enrolledStudentsCount ?? 0) >= 1, "Enrolled students count reflects active enrolments");
 
   const timetableRes = await getFacultySelfTimetable();
   assert(timetableRes.success, "Timetable retrieves successfully");
@@ -347,7 +347,7 @@ async function main() {
 
   const rosterRes = await getFacultyClassRoster(assignment.id);
   assert(rosterRes.success, "Class roster retrieves successfully");
-  assert(rosterRes.data?.totalCount >= 1, "Roster contains enrolled student");
+  assert((rosterRes.data?.totalCount ?? 0) >= 1, "Roster contains enrolled student");
 
   const foundStudent = rosterRes.data?.students.find(s => s.rollNumber === "WS2-2026DS041");
   assert(!!foundStudent, "Roster student is found by rollNumber");

@@ -267,8 +267,12 @@ export async function getStudentSelfProfile(): Promise<Result<StudentSelfProfile
 
   const { studentId } = sessionRes.data;
 
-  // Retrieve comprehensive dossier
-  const dossierRes = await StudentRepository.getStudentDossier360(studentId);
+  // Retrieve comprehensive dossier and document counts in parallel
+  const [dossierRes, docsRes] = await Promise.all([
+    StudentRepository.getStudentDossier360(studentId),
+    StudentRepository.getStudentDocuments(studentId),
+  ]);
+
   if (!dossierRes.success || !dossierRes.data) {
     return {
       success: false,
@@ -277,8 +281,6 @@ export async function getStudentSelfProfile(): Promise<Result<StudentSelfProfile
     };
   }
 
-  // Retrieve document counts
-  const docsRes = await StudentRepository.getStudentDocuments(studentId);
   const docsSummary = docsRes.success && docsRes.data
     ? {
         totalCount: docsRes.data.totalCount,

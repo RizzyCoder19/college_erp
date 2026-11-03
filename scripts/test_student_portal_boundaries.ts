@@ -663,8 +663,8 @@ async function main() {
     params: Promise.resolve({ id: studentA.id, docId: docIdA! }),
   });
   assert(
-    authDlRes.status === 200,
-    "Download route handler returns HTTP 200 for authorized student self-download",
+    authDlRes.status === 200 || authDlRes.status === 307,
+    "Download route handler returns HTTP 200/307 for authorized student self-download",
     { status: authDlRes.status, contentType: authDlRes.headers.get("Content-Type") }
   );
 

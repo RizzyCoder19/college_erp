@@ -124,9 +124,15 @@ export const MODULE_REQUIRED_PERMISSIONS: Record<string, Permission[]> = {
 
 /**
  * Checks whether a role holds authorization to access a given module.
+ * Strictly partitions self-service portal roles (STUDENT_VIEWER, FACULTY_MEMBER)
+ * away from administrative back-office modules (/modules/*).
  */
 export function hasModuleAccess(role: string, moduleSlug: string): boolean {
   if (role === "SYSTEM_ADMIN") return true;
+  // Portal accounts are strictly restricted to /portal/student and /portal/faculty
+  if (role === "STUDENT_VIEWER" || role === "FACULTY_MEMBER") {
+    return false;
+  }
   const required = MODULE_REQUIRED_PERMISSIONS[moduleSlug];
   if (!required || required.length === 0) return true;
   return required.some((perm) => hasPermission(role, perm));

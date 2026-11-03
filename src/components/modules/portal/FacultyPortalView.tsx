@@ -59,14 +59,14 @@ export const FacultyPortalView: React.FC<FacultyPortalViewProps> = ({ initialPro
 
   const [, startTransition] = useTransition();
 
-  // Synchronize tab changes with URL query string
+  // Synchronize tab changes with URL query string without triggering expensive Next.js RSC re-renders
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
-    startTransition(() => {
+    if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.set("tab", tab);
-      router.replace(url.pathname + url.search, { scroll: false });
-    });
+      window.history.replaceState(null, "", url.pathname + url.search);
+    }
 
     // Lazy load data on tab change if not already fetched
     if (tab === "classes" && !assignments && !isLoadingAssignments) {

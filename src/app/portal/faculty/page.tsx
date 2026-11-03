@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth/guards";
 import { AppShell } from "@/components/layout/AppShell";
 import { FacultyPortalView } from "@/components/modules/portal/FacultyPortalView";
 import { getFacultySelfProfile } from "@/lib/actions/portalFaculty";
+import { AccessDeniedView } from "@/components/auth/AccessDeniedView";
 import { Icon } from "@/components/common/Icon";
 
 async function FacultyPortalContent() {
@@ -19,27 +20,13 @@ async function FacultyPortalContent() {
   // 2. Role enforcement: Strictly FACULTY_MEMBER
   if (user.role !== "FACULTY_MEMBER") {
     return (
-      <AppShell>
-        <div className="max-w-xl mx-auto my-16 bg-white rounded-2xl border border-rose-200/80 p-8 shadow-sm text-center">
-          <div className="h-14 w-14 rounded-2xl bg-rose-50 text-[#D92534] flex items-center justify-center mx-auto mb-4 border border-rose-100">
-            <Icon name="shield-alert" className="h-7 w-7" />
-          </div>
-          <h1 className="text-xl font-bold text-slate-900">Workspace Access Denied</h1>
-          <p className="text-sm text-slate-600 mt-2">
-            The Faculty Self-Service Workspace is reserved strictly for authenticated faculty members.
-            Your current role (<strong className="font-semibold text-slate-800">{user.role}</strong>) does not have access.
-          </p>
-          <div className="mt-6">
-            <Link
-              href="/"
-              className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-lg bg-[#1657D9] text-white text-xs font-semibold hover:bg-blue-700 transition-colors shadow-xs"
-            >
-              <Icon name="arrow-left" className="h-4 w-4" />
-              <span>Return to Dashboard</span>
-            </Link>
-          </div>
-        </div>
-      </AppShell>
+      <AccessDeniedView
+        userRole={user.role}
+        workspaceName="Faculty Self-Service Workspace"
+        title="ACCESS RESTRICTED — Workspace Access Denied"
+        subtitle="This workspace is reserved for faculty members."
+        description={`Your current institutional role (${user.role}) does not authorize access to the Faculty Self-Service Workspace.`}
+      />
     );
   }
 

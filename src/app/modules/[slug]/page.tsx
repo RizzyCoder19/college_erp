@@ -10,6 +10,8 @@ import { ModulePlaceholder } from "@/components/modules/ModulePlaceholder";
 import { MODULES_LIST } from "@/data/mockData";
 import { Icon } from "@/components/common/Icon";
 
+import { AccessDeniedView } from "@/components/auth/AccessDeniedView";
+
 interface PageProps {
   params: Promise<{
     slug: string;
@@ -32,29 +34,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-function AccessDeniedView({ slug, role }: { slug: string; role: string }) {
-  return (
-    <div className="flex min-h-[400px] flex-col items-center justify-center rounded-2xl border border-red-200 bg-red-50/40 p-8 text-center shadow-xs">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 mb-4">
-        <Icon name="shield-alert" className="h-6 w-6" />
-      </div>
-      <h2 className="text-lg font-bold text-slate-900">Access Restricted</h2>
-      <p className="mt-1 max-w-md text-xs text-slate-600">
-        Your assigned role (<span className="font-semibold text-slate-900">{role}</span>) does not possess the institutional permissions required to access the <span className="font-semibold text-slate-900 capitalize">{slug}</span> module.
-      </p>
-      <div className="mt-6 flex items-center space-x-3">
-        <Link
-          href="/"
-          className="inline-flex items-center space-x-2 rounded-xl bg-[#1657D9] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#1246ad] transition-colors"
-        >
-          <Icon name="arrow-left" className="h-3.5 w-3.5" />
-          <span>Return to Dashboard</span>
-        </Link>
-      </div>
-    </div>
-  );
-}
-
 async function AuthenticatedModule({ params }: PageProps) {
   await connection();
   const { slug } = await params;
@@ -69,9 +48,13 @@ async function AuthenticatedModule({ params }: PageProps) {
   const isAuthorized = hasModuleAccess(user.role, slug);
   if (!isAuthorized) {
     return (
-      <AppShell>
-        <AccessDeniedView slug={slug} role={user.role} />
-      </AppShell>
+      <AccessDeniedView
+        userRole={user.role}
+        workspaceName={`Administrative Module: ${slug.toUpperCase()}`}
+        title="ACCESS RESTRICTED"
+        subtitle={`The ${slug} administrative module is restricted.`}
+        description={`Your current institutional role (${user.role}) does not have administrative permissions for this operational module.`}
+      />
     );
   }
 

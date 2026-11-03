@@ -235,8 +235,22 @@ export async function getFacultySelfProfile(): Promise<Result<FacultySelfProfile
   const { staffId } = authRes.data;
 
   try {
-    // 1. Fetch staff profile with department using repository
-    const staffRes = await FacultyRepository.getStaffById(staffId);
+    // 1-4. Parallelize staff profile, active assignments, timetable, and attendance sessions queries
+    const [staffRes, activeAssignments, timetableRes, totalRecordedSessionsCount] = await Promise.all([
+      FacultyRepository.getStaffById(staffId),
+      prisma.teachingAssignment.findMany({
+        where: { staffId },
+        select: { weeklyHours: true },
+      }),
+      TimetableRepository.getTimetable({ staffId }),
+      prisma.attendanceSession.count({
+        where: {
+          facultyId: staffId,
+          status: { not: "CANCELLED" },
+        },
+      }),
+    ]);
+
     if (!staffRes.success || !staffRes.data) {
       return {
         success: false,
@@ -247,35 +261,18 @@ export async function getFacultySelfProfile(): Promise<Result<FacultySelfProfile
 
     const staffData = staffRes.data;
 
-    // 2. Query active assignments for prescribed hours
-    const activeAssignments = await prisma.teachingAssignment.findMany({
-      where: { staffId },
-      select: { weeklyHours: true },
-    });
-
     const activeAssignmentsCount = activeAssignments.length;
     const prescribedWeeklyHours = activeAssignments.reduce(
       (sum, a) => sum + (a.weeklyHours || 0),
       0
     );
 
-    // 3. Query published timetable entries for scheduled hours
-    const timetableRes = await TimetableRepository.getTimetable({ staffId });
     let scheduledTimetableHours = 0;
-
     if (timetableRes.success && Array.isArray(timetableRes.data)) {
       for (const entry of timetableRes.data as Array<{ startTime: string; endTime: string }>) {
         scheduledTimetableHours += calculateDurationHours(entry.startTime, entry.endTime);
       }
     }
-
-    // 4. Query total recorded attendance sessions count
-    const totalRecordedSessionsCount = await prisma.attendanceSession.count({
-      where: {
-        facultyId: staffId,
-        status: { not: "CANCELLED" },
-      },
-    });
 
     const dto: FacultySelfProfileDTO = {
       staff: {

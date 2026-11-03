@@ -86,14 +86,14 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({ initialPro
 
   const [, startTransition] = useTransition();
 
-  // Sync tab state with URL parameter for shareability and deep-linking
+  // Sync tab state with URL parameter without triggering expensive Next.js RSC re-renders
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
-    startTransition(() => {
+    if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.set("tab", tab);
-      router.replace(url.pathname + url.search, { scroll: false });
-    });
+      window.history.replaceState(null, "", url.pathname + url.search);
+    }
 
     if (tab === "academics" && !curriculum && !isLoadingCurriculum) {
       setIsLoadingCurriculum(true);
