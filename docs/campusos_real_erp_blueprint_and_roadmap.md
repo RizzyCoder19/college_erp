@@ -442,8 +442,8 @@ The following canonical documents must be maintained continuously as living reco
 2. **Product Reality Audit:** [`CAMPUSOS_PRODUCT_AUDIT.md`](file:///g:/rpihm-campusos/CAMPUSOS_PRODUCT_AUDIT.md)
 3. **Domain & Milestone Blueprints:**
    - [`docs/PHASE_2A4_SELF_SERVICE_PORTALS_BLUEPRINT.md`](file:///g:/rpihm-campusos/docs/PHASE_2A4_SELF_SERVICE_PORTALS_BLUEPRINT.md)
-   - [`docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md`](file:///g:/rpihm-campusos/docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md) *(Milestone 2A.4 Stage 3: Architecture Discovery & Plan — Proposed / Not Implemented)*
-   - [`docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_BLUEPRINT.md`](file:///g:/rpihm-campusos/docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_BLUEPRINT.md) *(Milestone 2A.4 Stage 3: Blueprint — Proposed / Not Implemented)*
+   - [`docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md`](file:///g:/rpihm-campusos/docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md) *(Milestone 2A.4 Stage 3: Architecture Discovery Approved — Workstream 1 Implemented & Verified / Workstream 2 Not Started)*
+   - [`docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_BLUEPRINT.md`](file:///g:/rpihm-campusos/docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_BLUEPRINT.md) *(Milestone 2A.4 Stage 3: Blueprint Approved — Workstream 1 Implemented & Verified / Workstream 2 Not Started)*
 4. **Milestone Implementation Reports:**
    - [`docs/MILESTONE_2A4_STAGE_2_IMPLEMENTATION_REPORT.md`](file:///g:/rpihm-campusos/docs/MILESTONE_2A4_STAGE_2_IMPLEMENTATION_REPORT.md)
    - [`docs/MILESTONE_2A4_STAGE_1_IMPLEMENTATION_REPORT.md`](file:///g:/rpihm-campusos/docs/MILESTONE_2A4_STAGE_1_IMPLEMENTATION_REPORT.md)

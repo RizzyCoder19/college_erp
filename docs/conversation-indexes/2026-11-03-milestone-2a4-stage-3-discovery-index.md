@@ -24,21 +24,22 @@
 
 | # | Document Title | Exact Filename | Full Project Path | Status | Brief Description | Working Relative Markdown Link |
 | :- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 1 | **Stage 3 Discovery & Implementation Plan** | `PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md` | `docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md` | **DELIVERED (PROPOSED / NOT IMPLEMENTED)** | Authoritative 14-section architectural discovery, baseline empirical audit, role authorization matrix, privacy rules, attendance workflow analysis, workstream breakdown, and 4 approval decisions. | [Open Discovery Report](../PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md) |
-| 2 | **Stage 3 Technical Blueprint** | `PHASE_2A4_STAGE_3_FACULTY_PORTAL_BLUEPRINT.md` | `docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_BLUEPRINT.md` | **SYNCHRONIZED (PROPOSED / NOT IMPLEMENTED)** | Technical implementation blueprint detailing sequence diagrams, UX component specs, and implementation workstreams. | [Open Stage 3 Blueprint](../PHASE_2A4_STAGE_3_FACULTY_PORTAL_BLUEPRINT.md) |
+| 1 | **Stage 3 Discovery & Implementation Plan** | `PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md` | `docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md` | **APPROVED (WS1 IMPLEMENTED / WS2 NOT STARTED)** | Authoritative 14-section architectural discovery, baseline empirical audit, role authorization matrix, privacy rules, attendance workflow analysis, workstream breakdown, and approved decisions. | [Open Discovery Report](../PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md) |
+| 2 | **Stage 3 Technical Blueprint** | `PHASE_2A4_STAGE_3_FACULTY_PORTAL_BLUEPRINT.md` | `docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_BLUEPRINT.md` | **APPROVED (WS1 IMPLEMENTED / WS2 NOT STARTED)** | Technical implementation blueprint detailing sequence diagrams, UX component specs, and implementation workstreams. | [Open Stage 3 Blueprint](../PHASE_2A4_STAGE_3_FACULTY_PORTAL_BLUEPRINT.md) |
 | 3 | **Master Blueprint & Strategic Roadmap** | `campusos_real_erp_blueprint_and_roadmap.md` | `docs/campusos_real_erp_blueprint_and_roadmap.md` | **SYNCHRONIZED** | Updated canonical documents index under Section 7.1 to register Stage 3 discovery and blueprint specifications. | [Open Master Blueprint](../campusos_real_erp_blueprint_and_roadmap.md) |
-| 4 | **Product Reality Audit** | `CAMPUSOS_PRODUCT_AUDIT.md` | `CAMPUSOS_PRODUCT_AUDIT.md` | **SYNCHRONIZED** | Updated Section 2 Module Reality Inventory to document the current status of `/portal/faculty` (Proposed / Not Implemented). | [Open Product Audit](../../CAMPUSOS_PRODUCT_AUDIT.md) |
-| 5 | **Conversation Report Index (Stage 3 Discovery)** | `2026-11-03-milestone-2a4-stage-3-discovery-index.md` | `docs/conversation-indexes/2026-11-03-milestone-2a4-stage-3-discovery-index.md` | **CREATED** | Navigation index tracking Stage 3 discovery findings, empirical database baselines, and implementation roadmap. | [Open Conversation Index](2026-11-03-milestone-2a4-stage-3-discovery-index.md) |
+| 4 | **Product Reality Audit** | `CAMPUSOS_PRODUCT_AUDIT.md` | `CAMPUSOS_PRODUCT_AUDIT.md` | **SYNCHRONIZED** | Updated Section 2 Module Reality Inventory to document `/portal/faculty` (In Progress — Workstream 1 DAL Implemented; Route & UI Not Started). | [Open Product Audit](../../CAMPUSOS_PRODUCT_AUDIT.md) |
+| 5 | **Conversation Report Index (Stage 3 Discovery)** | `2026-11-03-milestone-2a4-stage-3-discovery-index.md` | `docs/conversation-indexes/2026-11-03-milestone-2a4-stage-3-discovery-index.md` | **SYNCHRONIZED** | Navigation index tracking Stage 3 discovery findings, empirical database baselines, and implementation roadmap. | [Open Conversation Index](2026-11-03-milestone-2a4-stage-3-discovery-index.md) |
 
 ---
 
-## 2. Source Code Status (Strictly No Code Modified)
+## 2. Source Code Status (Workstream 1 Implemented / Route & UI Not Started)
 
-| Layer / Component | Status in Stage 3 Discovery | Architectural Notes |
+| Layer / Component | Status in Stage 3 | Architectural Notes |
 | :--- | :---: | :--- |
 | **Prisma Schema (`prisma/schema.prisma`)** | **Unchanged (0 modifications)** | Current schema natively contains all required relations (`Staff`, `TeachingAssignment`, `TimetableEntry`, `AttendanceSession`, `AttendanceRecord`). Zero migrations required. |
 | **Operational Database (`prisma/dev.db`)** | **Unchanged (100% Invariant)** | SHA-256 hash verified invariant: `415b64ac68f85d57e32b5aa5f5323cefdb2986d5c44a75e1a4f4e53f153fb3d8`. |
-| **Application Source Code (`src/`)** | **Unchanged (0 modifications)** | Strictly no application coding performed. Implementation deferred to post-approval Workstreams 1–6. |
+| **Server Actions (`src/lib/actions/portalFaculty.ts`)** | **Workstream 1 Implemented & Verified** | Exactly 5 read operations implemented and verified with 80/80 automated assertions. |
+| **Page Route (`/portal/faculty`) & UI** | **Not Started (Workstream 2+)** | Route and UI components not yet mounted. Returns HTTP 404. |
 
 ---
 

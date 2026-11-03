@@ -7,7 +7,9 @@
 **Stage:** Stage 3 — Faculty Self-Service Portal Implementation Blueprint  
 **Author:** Lead Product & Systems Architecture Engineering  
 **Date:** November 3, 2026  
-**Status:** **PROPOSED ARCHITECTURE SPECIFICATION — STRICTLY PROPOSED / NOT IMPLEMENTED — AWAITING STAKEHOLDER APPROVAL**  
+**Status:** **ARCHITECTURE DISCOVERY APPROVED — WORKSTREAM 1 IMPLEMENTED & VERIFIED (80/80 TESTS PASSED) — WORKSTREAM 2 NOT STARTED**  
+**Latest Git Commit:** [`457589c`](https://github.com/RizzyCoder19/college_erp/commit/457589c)  
+**Operational Database:** Local SQLite (`prisma/dev.db`, SHA-256: `415b64ac68f85d57e32b5aa5f5323cefdb2986d5c44a75e1a4f4e53f153fb3d8`, 745,472 bytes — **100% Invariant, Zero Mutations**)  
 **Companion Discovery Report:** [`docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md`](file:///g:/rpihm-campusos/docs/PHASE_2A4_STAGE_3_FACULTY_PORTAL_DISCOVERY.md)  
 
 ---
@@ -194,52 +196,80 @@ All faculty self-service server actions reside in a dedicated file: `src/lib/act
 
 ## 6. Implementation Workstreams & Acceptance Criteria
 
-### Workstream A: Faculty Portal Foundation & Profile
+### Workstream 1: Dedicated Faculty Data Access Layer & Server Actions
+- **Status:** **IMPLEMENTED & VERIFIED (80/80 Automated Assertions Passed — Awaiting Final Readiness Review)**
 - **Deliverables:**
-  - `src/app/portal/faculty/page.tsx`: Server component with role guard and unlinked profile prompt.
-  - `src/lib/actions/portalFaculty.ts`: `getFacultySelfProfile()` returning staff details, active assignments count, and workload.
-  - `src/components/modules/portal/FacultyPortalView.tsx`: Client container with tab switching.
-  - `src/components/layout/Sidebar.tsx`: Faculty navigation integration.
+  - `src/lib/actions/portalFaculty.ts`: Exactly five read-only server actions:
+    1. `getFacultySelfProfile()`: Resolves authenticated faculty profile, department, and computed workload metrics.
+    2. `getFacultySelfTeachingAssignments()`: Returns active subject and division assignments.
+    3. `getFacultySelfTimetable()`: Returns day-wise timetable slots strictly scoped to `user.staffId`.
+    4. `getFacultyClassRoster(teachingAssignmentId)`: Returns enrolled students for an owned teaching assignment with strict privacy filtering.
+    5. `getFacultyAttendanceSessions(filter)`: Returns historical attendance sessions conducted by the faculty member.
+  - `scripts/test_m2a4_s3_workstream_1.ts`: 10-suite automated test asserting 80/80 boundaries against `prisma/isolated_test.db`.
+- **Architectural Scope & Boundary:**
+  - Attendance creation, draft amendment, and finalization mutations are strictly excluded from Workstream 1 and assigned to Workstream 5.
+  - Zero client-supplied `staffId` acceptance; 100% session derivation.
+  - Zero generic `READ_STUDENTS` bypass.
+
+### Workstream 2: Faculty Workspace Route & Navigation Shell
+- **Status:** **NOT STARTED (Ready for Authorization)**
+- **Deliverables:**
+  - `src/app/portal/faculty/page.tsx`: Server component with role guard (`user.role === 'FACULTY_MEMBER'`), unauthenticated redirect, and unlinked/inactive staff handling.
+  - `src/components/layout/Sidebar.tsx`: Dedicated `FACULTY WORKSPACE` navigation branch suppressing administrative module links.
+  - `src/app/page.tsx`: Automatic root-dashboard redirect for `FACULTY_MEMBER` users.
 - **Acceptance Criteria:**
   - Unauthenticated access redirects to `/login`.
-  - `STUDENT_VIEWER`, `ACADEMIC_ADMIN`, and `SYSTEM_ADMIN` accessing `/portal/faculty` receive `Workspace Access Denied`.
-  - Unlinked faculty account displays informative instructions to contact administration.
-  - Authenticated faculty sees personal name, employee ID, designation, and department.
+  - Non-faculty users accessing `/portal/faculty` receive `Workspace Access Denied`.
+  - Unlinked faculty accounts receive informative instructions without leaking system details.
+  - Navigation renders clean faculty-specific items without administrative noise.
 
-### Workstream B: Faculty Timetable & Teaching Schedule
+### Workstream 3: Faculty Overview, Teaching Workload & Weekly Timetable
+- **Status:** **NOT STARTED**
 - **Deliverables:**
-  - `portalFaculty.ts`: `getFacultySelfTimetable()` returning day-wise timetable slots strictly for `user.staffId`.
-  - Tab UI: Weekly 6-day matrix (Monday–Saturday) with time, subject, room, and session type.
+  - `src/components/modules/portal/FacultyPortalView.tsx`: Client container housing tab navigation and Visual Comfort styling.
+  - Tab 1 UI (`overview`): Header card, KPI strip (active classes, weekly workload, today's schedule count), and today's agenda.
+  - Tab 3 UI (`timetable`): 6-day matrix (Monday–Saturday) with time, subject, room, and session type.
+  - Tab 5 UI (`curriculum`): Assigned course specifications (credits, theory/practical breakdown).
 - **Acceptance Criteria:**
-  - Slots display only classes taught by the authenticated faculty member.
-  - Zero cross-faculty schedule exposure.
-  - Neutral empty state displayed when no entries exist.
+  - Workload metrics and agenda strictly reflect authenticated instructor's records.
+  - Timetable displays honest neutral empty state when 0 entries exist.
 
-### Workstream C: Assigned Classes & Class Directory
+### Workstream 4: Assigned Class Directory & Privacy-Masked Rosters
+- **Status:** **NOT STARTED**
 - **Deliverables:**
-  - `portalFaculty.ts`: `getFacultySelfClasses()` and `getFacultyClassRoster(assignmentId)`.
-  - Tab UI: Card catalog of assigned subjects, divisions, and enrolled student counts.
-  - Modal/Drawer: Enrolled student roster showing Roll Number, PRN, Name, and Status.
+  - Tab 2 UI (`classes`): Card directory of assigned subjects, divisions, and active student counts.
+  - Modal/Slide-Over: Enrolled student class roster.
+- **Approved Roster Fields Strictly:**
+  - Roll Number
+  - PRN
+  - Full Name
+  - Academic Enrolment Status (`ENROLLED`)
 - **Acceptance Criteria:**
-  - Requesting a roster for an unassigned division returns `FORBIDDEN`.
-  - Student guardian phone numbers and private fee records are strictly masked.
+  - Gender is strictly **excluded** from default rosters.
+  - Personal contact details (phone, email), guardian PII, and financial records are strictly masked/omitted.
+  - Unassigned class rosters cannot be viewed (returns `FORBIDDEN`).
 
-### Workstream D: Session-Bound Attendance Recording & Ledger
+### Workstream 5: Daily Attendance Roll-Call & Session Ledger
+- **Status:** **NOT STARTED (Planned Attendance Mutations)**
 - **Deliverables:**
-  - `portalFaculty.ts`: `getFacultyAttendanceSessions()` and `recordFacultyAttendanceSession()`.
-  - Tab UI: Roll-call marking interface with status toggles, batch controls, and topic covered.
-  - Dual-action buttons: *"Save Draft"* and *"Finalize Session"*.
-  - Historical session ledger showing past marked attendance.
+  - `portalFaculty.ts`: Mutation actions `recordFacultyAttendanceSession(dto)` and `amendFacultyDraftAttendance(recordId, status, remarks)`.
+  - Tab 4 UI (`attendance`): Interactive roll-call marking sheet, batch toggles (`Mark All Present`), topic covered input.
+  - Dual-action controls: Save as `DRAFT` (editable) vs. `FINALIZED` (locks session).
+  - Historical session ledger table with draft resumption.
 - **Acceptance Criteria:**
   - Attempting to record attendance for an unassigned class returns `UNASSIGNED_CLASS_ACCESS_DENIED`.
   - Duplicate recording for the same timetable slot on the same date is blocked.
-  - Finalized sessions lock against further faculty edits without admin intervention.
+  - Finalized sessions lock immediately against further faculty modification.
 
-### Workstream E: Subject Curriculum Specifications
+### Workstream 6: Automated Quality Gates & Real Browser Verification
+- **Status:** **NOT STARTED**
 - **Deliverables:**
-  - Tab UI: Course details card for assigned subjects (credits, theory/practical classification).
+  - Automated regression suite (`scripts/test_faculty_portal_boundaries.ts`).
+  - Headless Edge verification orchestrator (`scripts/run_browser_verification_m2a4_s3.ts`) capturing desktop and mobile screenshots.
+  - Quality gate verification (`npx tsc --noEmit`, `npm run lint`, `npm run build`, DB hash check).
 - **Acceptance Criteria:**
-  - Only subjects associated with active teaching assignments are displayed.
+  - 100% database invariance for `prisma/dev.db`.
+  - 0 TypeScript errors, 0 ESLint errors, clean production build.
 
 ---
 
@@ -282,30 +312,38 @@ All faculty self-service server actions reside in a dedicated file: `src/lib/act
 
 ---
 
-## 9. Proposed Implementation Sequence
+## 9. Implementation Sequence & Current Status
 
 ```
-Phase 1: Foundation & Profile (Workstream A)
-├── 1.1 Create src/lib/actions/portalFaculty.ts (getFacultySelfProfile)
-├── 1.2 Implement src/app/portal/faculty/page.tsx (Guards & Shell)
-├── 1.3 Implement src/components/modules/portal/FacultyPortalView.tsx (Shell & Tab 1)
-└── 1.4 Update Sidebar.tsx (Contextual Faculty Navigation)
+Workstream 1: Data Access Layer & Server Actions [IMPLEMENTED & VERIFIED — 80/80 TESTS PASSED]
+├── 1.1 Create src/lib/actions/portalFaculty.ts (5 read actions)
+├── 1.2 Implement strict session derivation & IDOR protections
+└── 1.3 Validate across 10-suite test suite (scripts/test_m2a4_s3_workstream_1.ts)
 
-Phase 2: Timetable & Class Rosters (Workstreams B & C)
-├── 2.1 Add getFacultySelfTimetable & getFacultySelfClasses to portalFaculty.ts
-├── 2.2 Implement Tab 2 (Assigned Classes & Class Directory Modal)
-└── 2.3 Implement Tab 3 (Weekly Schedule & Timetable Matrix)
+Workstream 2: Faculty Workspace Route & Navigation Shell [NOT STARTED — READY FOR AUTHORIZATION]
+├── 2.1 Implement src/app/portal/faculty/page.tsx (Guards, unlinked & inactive states)
+├── 2.2 Update src/components/layout/Sidebar.tsx (FACULTY WORKSPACE contextual navigation)
+└── 2.3 Implement root redirect for FACULTY_MEMBER in src/app/page.tsx
 
-Phase 3: Attendance Recording & Ledger (Workstreams D & E)
-├── 3.1 Add getFacultyAttendanceSessions & recordFacultyAttendanceSession to portalFaculty.ts
-├── 3.2 Implement Tab 4 (Interactive Roll-Call Sheet & Session Ledger)
+Workstream 3: Faculty Overview, Teaching Workload & Weekly Timetable [NOT STARTED]
+├── 3.1 Implement src/components/modules/portal/FacultyPortalView.tsx (Shell & Tab 1 Overview)
+├── 3.2 Implement Tab 3 (Weekly Schedule & 6-Day Timetable Matrix)
 └── 3.3 Implement Tab 5 (Subject Curriculum Specifications)
 
-Phase 4: Automated Testing & Visual Verification
-├── 4.1 Execute scripts/test_faculty_portal_boundaries.ts against isolated_test.db
-├── 4.2 Execute scripts/run_browser_verification_m2a4_s3.ts (Edge CDP 10 captures)
-├── 4.3 Verify 100% dev.db database invariance
-└── 4.4 Run TypeScript (0 errors) & Turbopack build (code 0)
+Workstream 4: Assigned Class Directory & Privacy-Masked Rosters [NOT STARTED]
+├── 4.1 Implement Tab 2 (Assigned Classes Card Catalog)
+└── 4.2 Implement Class Roster Modal (Strictly Roll, PRN, Name, Status; Zero Gender/Contact PII)
+
+Workstream 5: Daily Attendance Roll-Call & Session Ledger [NOT STARTED — PLANNED MUTATIONS]
+├── 5.1 Add recordFacultyAttendanceSession & amendFacultyDraftAttendance to portalFaculty.ts
+├── 5.2 Implement Tab 4 (Interactive Roll-Call Sheet, Mark All Present, Topic Input)
+└── 5.3 Implement Draft & Finalized Session Ledger with resumption controls
+
+Workstream 6: Automated Quality Gates & Real Browser Verification [NOT STARTED]
+├── 6.1 Execute scripts/test_faculty_portal_boundaries.ts against isolated_test.db
+├── 6.2 Execute scripts/run_browser_verification_m2a4_s3.ts (Edge CDP visual captures)
+├── 6.3 Verify 100% dev.db database invariance
+└── 6.4 Execute TypeScript, ESLint, and Next.js Turbopack build
 ```
 
 ---

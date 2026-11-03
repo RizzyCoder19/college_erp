@@ -1,12 +1,12 @@
 # CAMPUSOS — MILESTONE 2A.4, STAGE 3: FACULTY SELF-SERVICE PORTAL
 ## Architecture Discovery, Baseline Assessment & Implementation Plan
 **Document Classification:** Architectural Assessment & Implementation Deliverable  
-**Current Status:** **PROPOSED ARCHITECTURE & SCOPE DISCOVERY — STRICTLY NO CODE IMPLEMENTED — AWAITING STAKEHOLDER APPROVAL**  
+**Current Status:** **ARCHITECTURE DISCOVERY APPROVED — WORKSTREAM 1 IMPLEMENTED & VERIFIED (80/80 TESTS PASSED) — WORKSTREAM 2 NOT STARTED**  
 **Author:** Antigravity Systems & Product Engineering  
 **Project:** R.P. Institute of Hospitality & Management (CampusOS ERP)  
 **Date:** November 3, 2026  
-**Baseline Git Commit:** [`34aaa4374d8b12303ff03c3a6ed5c6246c016d96`](file:///g:/rpihm-campusos/AGENTS.md)  
-**Operational Database:** Local SQLite (`prisma/dev.db`, SHA-256: `415b64ac68f85d57e32b5aa5f5323cefdb2986d5c44a75e1a4f4e53f153fb3d8`, 745,472 bytes — 100% Invariant, Read-Only Audit)
+**Latest Git Commit:** [`457589c`](https://github.com/RizzyCoder19/college_erp/commit/457589c)  
+**Operational Database:** Local SQLite (`prisma/dev.db`, SHA-256: `415b64ac68f85d57e32b5aa5f5323cefdb2986d5c44a75e1a4f4e53f153fb3d8`, 745,472 bytes — **100% Invariant, Zero Mutations**)
 
 ---
 
@@ -126,7 +126,7 @@ Profile, Workload  Assigned Classes, Student Lists Weekly Matrix,      Session R
   - Division Placement badge: e.g. `Division A` or `Cohort-Wide (All Divisions)`.
   - Enrolled Student Count: Real-time count of active enrolled students in this specific division.
 - **Interactive Student Roster Modal:** Clicking *"View Student Roster"* opens an authorized class list displaying:
-  - Roll Number, PRN, Full Name, Gender (needed for kitchen lab stations/uniforms), and Academic Enrolment Status (`ENROLLED`).
+  - Roll Number, PRN, Full Name, and Academic Enrolment Status (`ENROLLED`). (Gender, personal contact details, and guardian PII are strictly excluded).
   - Student photo/avatar placeholder.
   - **Zero Access to Unassigned Classes:** Attempting to view a roster for an unassigned division returns HTTP 403 `FORBIDDEN`.
 
@@ -236,14 +236,14 @@ The existing `AttendanceRepository` (`src/lib/dal/attendanceRepository.ts`) prov
 
 ### 8.2 Application-Only Changes (To Implement in Stage 3)
 1. **`src/app/portal/faculty/page.tsx`:** New App Router page component. Server-rendered route enforcing `requireAuth()`, asserting `user.role === "FACULTY_MEMBER"`, resolving `user.staffId`, and handling unlinked profiles.
-2. **`src/lib/actions/portalFaculty.ts`:** New dedicated server actions file implementing session-derived actions:
-   - `getFacultySelfProfile()`
-   - `getFacultySelfTeachingAssignments()`
-   - `getFacultySelfTimetable()`
-   - `getFacultyClassRoster(teachingAssignmentId)`
-   - `getFacultyAttendanceSessions(filter)`
-   - `recordFacultyAttendanceSession(dto)`
-   - `amendFacultyDraftAttendance(recordId, status, remarks)`
+2. **`src/lib/actions/portalFaculty.ts`:** Dedicated server actions file.
+   - **Workstream 1 (Implemented & Verified — 80/80 Tests Passed):** Five read-only operations derived strictly from server session:
+     - `getFacultySelfProfile()`
+     - `getFacultySelfTeachingAssignments()`
+     - `getFacultySelfTimetable()`
+     - `getFacultyClassRoster(teachingAssignmentId)`
+     - `getFacultyAttendanceSessions()`
+   - **Workstream 5 (Planned Attendance Mutations):** Attendance creation, draft amendment, and finalization actions (`recordFacultyAttendanceSession`, `amendFacultyDraftAttendance`) are strictly deferred to Workstream 5.
 3. **`src/components/modules/portal/FacultyPortalView.tsx`:** New client component housing the Visual Comfort workspace, tabbed navigation, agenda cards, timetable grid, and roll-call sheet.
 4. **`src/components/layout/Sidebar.tsx`:** Add `FACULTY WORKSPACE` branch when `user.role === "FACULTY_MEMBER"`.
 5. **Role Redirection in Root Dashboard (`src/app/page.tsx`):** If authenticated user has `role === "FACULTY_MEMBER"`, redirect automatically to `/portal/faculty`.
@@ -297,27 +297,29 @@ graph TD
     WS1 --> WS2 --> WS3 --> WS4 --> WS5 --> WS6
 ```
 
-1. **Workstream 1: Dedicated Faculty Data Access Layer & Server Actions**
-   - Create `src/lib/actions/portalFaculty.ts`.
-   - Implement `getFacultySelfProfile`, `getFacultySelfTeachingAssignments`, `getFacultySelfTimetable`, `getFacultyClassRoster`, `getFacultyAttendanceSessions`, `recordFacultyAttendanceSession`.
-   - Implement strict session derivation and IDOR defenses.
-2. **Workstream 2: Faculty Workspace Route & Navigation Shell**
+1. **Workstream 1: Dedicated Faculty Data Access Layer & Server Actions** *(STATUS: IMPLEMENTED & VERIFIED — 80/80 AUTOMATED ASSERTIONS PASSED)*
+   - Created `src/lib/actions/portalFaculty.ts`.
+   - Implemented exactly five read-only operations: `getFacultySelfProfile()`, `getFacultySelfTeachingAssignments()`, `getFacultySelfTimetable()`, `getFacultyClassRoster(teachingAssignmentId)`, and `getFacultyAttendanceSessions()`.
+   - Implemented strict session derivation, role enforcement (`FACULTY_MEMBER`), active-staff validation, and IDOR defenses.
+   - Attendance creation, draft amendment, and finalization mutations are strictly deferred to Workstream 5.
+2. **Workstream 2: Faculty Workspace Route & Navigation Shell** *(STATUS: NOT STARTED — READY FOR AUTHORIZATION)*
    - Create `src/app/portal/faculty/page.tsx` with role guard (`FACULTY_MEMBER`) and unlinked staff profile view.
    - Update `src/components/layout/Sidebar.tsx` to mount `FACULTY WORKSPACE` navigation for faculty members.
-   - Configure root dashboard redirect for `FACULTY_MEMBER`.
-3. **Workstream 3: Faculty Overview, Teaching Workload & Weekly Timetable**
+   - Configure root dashboard redirect for `FACULTY_MEMBER` in `src/app/page.tsx`.
+3. **Workstream 3: Faculty Overview, Teaching Workload & Weekly Timetable** *(STATUS: NOT STARTED)*
    - Build Tab 1 (`overview`): Profile header, workload KPIs, today's agenda.
    - Build Tab 3 (`timetable`): Monday–Saturday schedule grid with verified empty state.
    - Build Tab 5 (`curriculum`): Assigned course specifications.
-4. **Workstream 4: Assigned Class Directory & Privacy-Masked Rosters**
+4. **Workstream 4: Assigned Class Directory & Privacy-Masked Rosters** *(STATUS: NOT STARTED)*
    - Build Tab 2 (`classes`): Teaching assignment cards with active student counters.
-   - Build Class Roster modal with PII masking (roll, PRN, name, gender; no guardian or fee data).
-5. **Workstream 5: Daily Attendance Roll-Call & Session Ledger**
+   - Build Class Roster modal with approved fields strictly: Roll Number, PRN, Full Name, and Enrolment Status (gender strictly excluded; zero guardian, contact, or fee data).
+5. **Workstream 5: Daily Attendance Roll-Call & Session Ledger** *(STATUS: NOT STARTED — PLANNED ATTENDANCE MUTATIONS)*
+   - Implement attendance mutations in `portalFaculty.ts`: `recordFacultyAttendanceSession(dto)` and `amendFacultyDraftAttendance(recordId, status, remarks)`.
    - Build Tab 4 (`attendance`): Interactive roll-call sheet, status toggles, `Mark All Present`, topic covered field.
    - Dual-mode support (scheduled slot roll-call and constrained ad-hoc session).
    - `DRAFT` vs. `FINALIZED` lifecycle actions.
    - Past session ledger table with draft resumption.
-6. **Workstream 6: Automated Quality Gates & Real Browser Verification**
+6. **Workstream 6: Automated Quality Gates & Real Browser Verification** *(STATUS: NOT STARTED)*
    - Automated boundary and regression test suite (`scripts/test_faculty_portal_boundaries.ts`).
    - Headless Edge verification orchestrator (`scripts/run_browser_verification_faculty.ts`) capturing desktop and mobile screenshots.
    - Quality gate audit (`tsc`, `lint`, `build`, DB hash check).
